@@ -1,14 +1,6 @@
 {
   "project": "Teste",
-  "tunnels": [
-    {
-      "name": "site",
-      "url": "http://127.0.0.1:4322",
-      "port": 4322,
-      "mode": "http2",
-      "created_at": "2026-08-17T15:26:32.983983325-03:00"
-    }
-  ],
+  "tunnels": [],
   "history": [
     {
       "name": "site",
@@ -67,5 +59,5 @@
       "url": "https://brown-adds-med-savannah.trycloudflare.com"
     }
   ],
-  "updated_at": "2026-08-17T15:26:41.516036837-03:00"
+  "updated_at": "2026-08-17T20:47:24.576236401-03:00"
 }
