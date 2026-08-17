@@ -1,0 +1,2135 @@
+---
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import Base from '../layouts/Base.astro';
+
+/*
+  PORTFOLIO — Igor Fronza.
+
+  Fundo noite azulada, detalhe em anil e roxo, e uma malha de formas
+  geométricas em azul quase preto por baixo de tudo: X, triângulo, círculo,
+  quadrado, losango, hexágono, arco, zigue-zague, asterisco e uma forma
+  orgânica sem nome. Todas em traço de 1 px que não engrossa quando escala
+  (`non-scaling-stroke`), então a página parece prancha técnica, não confete.
+
+  Os projetos vêm da API pública do GitHub — no BUILD, não no navegador. Site
+  estático servido por nginx não tem servidor para proxiar, e api.github.com
+  limita visitante anônimo a 60 chamadas por hora por IP: numa operadora com
+  NAT isso estoura no meio da tarde. Buscando na hora do build a página nasce
+  pronta, funciona sem JS, e um `npm run build` atualiza. O que a API não
+  entrega é curadoria: DESTAQUES é a lista que eu escolho, a API só enriquece
+  com linguagem, estrela, data e link do demo. Se a rede cair no build, os
+  cards ainda saem — só sem os números.
+
+  Sem 3D. O que dá profundidade é parallax de velocidades diferentes entre as
+  camadas de formas, e a luz dos halos.
+*/
+
+/* ────────────── troque estes quatro valores ────────────── */
+const EU = {
+  nome: 'Igor Fronza',
+  papel: 'Desenvolvedor Fullstack',
+  gh: 'PirataZang',
+  email: 'igorfronza20@gmail.com',
+  zap: '5547989022030',
+  zapFmt: '(47) 98902-2030',
+  local: 'Rio do Sul - SC',
+  /* cidade e uf separadas só para o JSON-LD, que exige os campos assim */
+  cidade: 'Rio do Sul',
+  uf: 'SC',
+  site: 'https://igorfronza.dev',
+};
+/* ──────────────────────────────────────────────────────── */
+
+/*
+  Curadoria minha; a API completa. `resumo` ganha da descrição do GitHub
+  porque descrição de repo é escrita para quem já é dev, e esta página é lida
+  por quem está comprando.
+*/
+const DESTAQUES: {
+  repo: string;
+  tipo: string;
+  resumo: string;
+  /* reserva para quando a API não responder; a API ganha quando responde */
+  lang?: string;
+  vivo?: string;
+}[] = [
+  {
+    repo: 'devscope',
+    lang: 'Go',
+    tipo: 'Ferramenta',
+    resumo:
+      'Painel de terminal em Go que gerencia projetos, acompanha CPU e RAM e abre túnel público sem sair do teclado.',
+  },
+  {
+    repo: 'Shoes',
+    lang: 'Vue',
+    vivo: 'https://piratazang.github.io/Shoes/',
+    tipo: 'E-commerce',
+    resumo:
+      'Loja de tênis completa: vitrine, filtro por numeração, carrinho e checkout. Vue com estado persistente.',
+  },
+  {
+    repo: 'Barber_Demo',
+    lang: 'Vue',
+    vivo: 'https://barber-demo-eta.vercel.app',
+    tipo: 'Agendamento',
+    resumo:
+      'Barbearia com agenda por profissional, encaixe de horário e confirmação. O fluxo que uma casa de bairro realmente usa.',
+  },
+  {
+    repo: 'templateSchool01',
+    lang: 'Vue',
+    vivo: 'https://piratazang.github.io/templateSchool01/',
+    tipo: 'Institucional',
+    resumo:
+      'Site de escola e cursos: grade, matrícula, corpo docente e captação de lead. Feito para trocar de marca em uma tarde.',
+  },
+  {
+    repo: 'Template_Mercado_Pago',
+    lang: 'TypeScript',
+    tipo: 'Pagamentos',
+    resumo:
+      'Integração Mercado Pago em TypeScript: checkout, webhook de confirmação e tratamento de recusa.',
+  },
+  {
+    repo: 'PillarArq',
+    lang: 'Vue',
+    tipo: 'Portfolio',
+    resumo:
+      'Site de escritório de arquitetura, com galeria de obras e página por projeto. Peso baixo e foto grande.',
+  },
+  {
+    repo: 'peppercore-admin',
+    lang: 'Vue',
+    tipo: 'Painel',
+    resumo:
+      'Painel administrativo com permissão por papel, CRUD gerado e relatório exportável.',
+  },
+  {
+    repo: 'laravel-sync',
+    lang: 'Vue',
+    tipo: 'Integração',
+    resumo:
+      'Sincronização entre Laravel e front Vue: fila, retentativa e log de divergência.',
+  },
+  {
+    repo: 'peppercore-site',
+    lang: 'Vue',
+    tipo: 'Institucional',
+    resumo: 'Site público do Peppercore, par do painel administrativo.',
+  },
+  {
+    repo: 'pocketBase',
+    lang: 'Vue',
+    tipo: 'Backend',
+    resumo: 'Aplicação Vue sobre PocketBase: autenticação, coleções e regras de acesso.',
+  },
+  {
+    repo: 'mentor-cli',
+    lang: 'JavaScript',
+    tipo: 'CLI',
+    resumo: 'Ferramenta de linha de comando para andaimar e revisar projeto novo.',
+  },
+  {
+    repo: 'POKEAPI',
+    lang: 'JavaScript',
+    tipo: 'Estudo',
+    resumo: 'Consumo da PokéAPI com busca, paginação e cache em memória.',
+  },
+  {
+    repo: 'botrpg',
+    lang: 'JavaScript',
+    tipo: 'Bot',
+    resumo: 'Bot de RPG por mensagem: ficha, rolagem de dado e combate por turno.',
+  },
+];
+
+/*
+  A API pública dá 60 chamadas por hora por IP, e o `astro dev` reexecuta este
+  frontmatter a cada request — duas chamadas por reload torram a cota numa
+  tarde, e a página passa a mostrar "0 repositórios". Então: cache em arquivo,
+  válido por 6 h, e se a chamada falhar o cache velho ganha de nada.
+
+  Fica em node_modules/.cache porque é lixo de build: não versiona, e o
+  .dockerignore não copia — o build de produção sempre busca fresco.
+*/
+const PASTA = 'node_modules/.cache';
+const CACHE = `${PASTA}/github-${EU.gh}.json`;
+const VALIDADE = 6 * 60 * 60 * 1000;
+
+type Dados = { perfil: any; repos: any[] };
+
+function lerCache(): { em: number; d: Dados } | null {
+  try {
+    return JSON.parse(readFileSync(CACHE, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function pegar(caminho: string) {
+  const r = await fetch(`https://api.github.com${caminho}`, {
+    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'portfolio-build' },
+  });
+  if (!r.ok) throw new Error(`${r.status} em ${caminho}`);
+  return r.json();
+}
+
+async function github(): Promise<Dados> {
+  const cache = lerCache();
+  if (cache && Date.now() - cache.em < VALIDADE) return cache.d;
+
+  try {
+    const [perfil, repos] = await Promise.all([
+      pegar(`/users/${EU.gh}`),
+      pegar(`/users/${EU.gh}/repos?per_page=100&sort=pushed`),
+    ]);
+    /* resposta de limite estourado vem 200 em alguns casos, e é um objeto:
+       sem esta checagem `repos.filter` explodiria o build */
+    if (!perfil?.login || !Array.isArray(repos)) throw new Error('resposta inesperada');
+    const d: Dados = { perfil, repos };
+    try {
+      mkdirSync(PASTA, { recursive: true });
+      writeFileSync(CACHE, JSON.stringify({ em: Date.now(), d }));
+    } catch {
+      /* sem permissão de escrita: perde só o cache, não a página */
+    }
+    return d;
+  } catch {
+    return cache?.d ?? { perfil: null, repos: [] };
+  }
+}
+
+const { perfil, repos } = await github();
+const porNome = new Map(repos.map((r) => [r.name.toLowerCase(), r]));
+
+const veste = (r: any) => ({
+  nome: r.name,
+  tipo: r.language ?? 'Projeto',
+  resumo: r.description ?? '',
+  lang: r.language ?? null,
+  estrelas: r.stargazers_count ?? 0,
+  url: r.html_url,
+  aoVivo: r.homepage || null,
+  empurrado: r.pushed_at ?? null,
+});
+
+/*
+  Os curados abrem a fila; todo repositório público que eu criar depois entra
+  no fim sozinho, sem eu voltar aqui. Fora: fork, arquivado e o repo de mesmo
+  nome do usuário, que é só o README do perfil.
+*/
+const naLista = new Set(DESTAQUES.map((d) => d.repo.toLowerCase()));
+const resto = repos
+  .filter(
+    (r) =>
+      !r.fork &&
+      !r.archived &&
+      r.name.toLowerCase() !== EU.gh.toLowerCase() &&
+      !naLista.has(r.name.toLowerCase()),
+  )
+  .map(veste);
+
+const projetos = [
+  ...DESTAQUES.map((d) => {
+    const r = porNome.get(d.repo.toLowerCase());
+    return {
+      ...d,
+      nome: r?.name ?? d.repo,
+      lang: r?.language ?? d.lang ?? null,
+      estrelas: r?.stargazers_count ?? 0,
+      url: r?.html_url ?? `https://github.com/${EU.gh}/${d.repo}`,
+      aoVivo: r?.homepage || d.vivo || null,
+      empurrado: r?.pushed_at ?? null,
+    };
+  }),
+  ...resto,
+];
+
+/* cor de linguagem do próprio GitHub, para o ponto do card */
+const CORES: Record<string, string> = {
+  Go: '#00ADD8',
+  JavaScript: '#f1e05a',
+  TypeScript: '#3178c6',
+  PHP: '#4F5D95',
+  Python: '#3572A5',
+  Vue: '#41b883',
+  CSS: '#663399',
+  HTML: '#e34c26',
+};
+
+/*
+  Sai de `projetos`, não de `repos`: assim a linha sobrevive a um build com o
+  limite da API estourado, apoiada na linguagem de reserva da curadoria.
+*/
+const linguagens = [...new Set(projetos.map((p) => p.lang).filter(Boolean))] as string[];
+const desde = perfil?.created_at ? new Date(perfil.created_at).getFullYear() : 2023;
+
+const numeros = [
+  /*
+    `||` e não `??`: com a API fora, `repos.length` é 0 — e 0 não é nulo, então
+    `??` pararia nele e o herói anunciaria "0 repositórios públicos".
+  */
+  { v: perfil?.public_repos || projetos.length, l: 'repositórios públicos' },
+  { v: linguagens.length, l: 'linguagens em produção' },
+  { v: DESTAQUES.length, l: 'projetos em destaque' },
+  { v: desde, ano: true, l: 'publicando código desde' },
+];
+
+/*
+  Preço de referência, não orçamento. Escopo fecha depois de conversa — mas
+  página de serviço sem número faz o visitante fechar a aba.
+*/
+const SERVICOS = [
+  {
+    id: 'site',
+    icone: 'fa-solid fa-laptop-code',
+    t: 'Criação de Site',
+    sub: 'Landing, institucional ou loja',
+    de: 'R$ 800',
+    unidade: 'uma página, escopo fechado',
+    extra: '+ R$ 100 por página adicional',
+    prazo: '2 a 4 semanas',
+    d: 'Do rascunho ao ar. Você recebe o site publicado, com domínio configurado e um painel para trocar texto e foto sem me chamar.',
+    itens: [
+      'Design sob medida, sem tema comprado',
+      'Responsivo de 320 px a 4K',
+      'SEO técnico, dados estruturados e Open Graph',
+      'Formulário que cai no seu WhatsApp',
+      'Deploy, domínio e HTTPS inclusos',
+      '30 dias de ajuste sem custo',
+    ],
+    destaque: true,
+  },
+  {
+    id: 'sistema',
+    icone: 'fa-solid fa-project-diagram',
+    t: 'Sistema sob medida',
+    sub: 'Painel, ERP leve, integração',
+    de: 'R$ 3.000',
+    unidade: 'escopo fechado, por módulo',
+    prazo: '4 a 12 semanas',
+    d: 'Quando a planilha não dá mais conta. Sistema que nasce do seu processo, não de um molde que você tem que aprender.',
+    itens: [
+      'Login, papéis e permissão por tela',
+      'Banco modelado do zero',
+      'API documentada para integrar',
+      'Relatório exportável em CSV e PDF',
+      'Fila, retentativa e log de erro',
+      'Deploy em container, com backup',
+    ],
+    destaque: false,
+  },
+  {
+    id: 'consultoria',
+    icone: 'fa-solid fa-drafting-compass',
+    t: 'Consultoria técnica',
+    sub: 'Arquitetura, revisão, performance',
+    de: 'R$ 220',
+    unidade: 'por hora · pacotes de 10 h',
+    prazo: 'agenda na semana',
+    d: 'Seu time já constrói, mas travou. Entro para revisar, medir e destravar — e saio deixando a decisão documentada.',
+    itens: [
+      'Revisão de código e de arquitetura',
+      'Diagnóstico de performance com número',
+      'Escolha de stack e de hospedagem',
+      'Pair programming em cima do problema',
+      'Plano de migração em etapas',
+      'Relatório escrito no fim',
+    ],
+    destaque: false,
+  },
+  {
+    id: 'hosting',
+    icone: 'fa-solid fa-server',
+    t: 'Hosting',
+    sub: 'Só site estático, e é de propósito',
+    de: 'R$ 50',
+    unidade: 'por mês, por site',
+    prazo: 'no ar em 24 h',
+    d: 'Seu site publicado na minha infra, com HTTPS e domínio próprio. Estático apenas: HTML, CSS e JS. Sem banco, sem PHP, sem painel — e é justamente isso que faz não cair.',
+    itens: [
+      'Site estático: HTML, CSS e JavaScript',
+      'HTTPS com renovação automática',
+      'Seu domínio apontado e configurado',
+      'Deploy a cada atualização, sem custo',
+      'Backup e histórico de versão',
+      'Sem limite de visita e sem taxa de banda',
+    ],
+    naoEntra: 'Fora daqui: WordPress, banco de dados, API, e-mail e qualquer coisa que precise rodar servidor. Para isso eu monto sua VPS e cobro o serviço uma vez.',
+    destaque: false,
+  },
+];
+
+/*
+  O caminho, em linha do tempo horizontal. Fica ACIMA do preço de propósito:
+  quem chega no valor sem saber como a coisa anda acha caro qualquer número.
+*/
+const CAMINHO = [
+  { n: '01', i: 'fa-solid fa-comments', t: 'A conversa', marco: 'no mesmo dia',
+    d: 'Uma call de trinta minutos, e eu pergunto o que o site precisa resolver — não de quantas páginas você quer. Sai daí um resumo escrito da demanda, que vira a régua do resto.' },
+  { n: '02', i: 'fa-solid fa-file-signature', t: 'Escopo e orçamento', marco: 'em até 48 h',
+    d: 'Proposta por escrito: o que entra, o que fica de fora, prazo e valor fechado. Sem hora surpresa no fim, e sem a linha “a definir”.' },
+  { n: '03', i: 'fa-solid fa-tower-broadcast', t: 'Acompanhamento em tempo real', marco: 'link permanente',
+    d: 'Link de preview que atualiza a cada avanço meu. Você abre no celular e vê o site crescer — corrige no caminho, não no dia da entrega.' },
+  { n: '04', i: 'fa-brands fa-docker', t: 'Entrega em Docker', marco: 'imagem + fonte',
+    d: 'O projeto sai em container, com Dockerfile e compose no repositório. Roda igual na minha máquina, na sua e no servidor — e você não fica preso a mim para subir de novo.' },
+  { n: '05', i: 'fa-solid fa-server', t: 'No ar, e depois', marco: '30 dias de ajuste',
+    d: 'Publico, aponto o domínio e te ensino a mexer. Se quiser, fica na minha hospedagem por R$ 50 ao mês; se não quiser, o container é seu e sobe em qualquer lugar.' },
+];
+
+/* as demos que moram neste repositório */
+const DEMOS = [
+  { slug: 'forno-antico', nome: 'Forno Antico', tag: 'Cantina italiana', nota: 'Cardápio, sacola e pedido no WhatsApp', pronto: true },
+  { slug: 'arquitetura', nome: 'PRUMO', tag: 'Arquitetura e engenharia', nota: 'Planta interativa e cena dirigida por scroll', pronto: true },
+  { slug: 'marmoraria', nome: 'Marmoraria', tag: 'Mármores e granitos', nota: 'Comparador de acabamento e orçamento', pronto: true },
+  { slug: 'nova', nome: 'Nova', tag: 'Produto', nota: 'Em construção', pronto: false },
+  { slug: 'pulse', nome: 'Pulse', tag: 'Fitness', nota: 'Em construção', pronto: false },
+];
+
+const PROCESSO = [
+  { n: '01', t: 'Conversa', d: 'Trinta minutos de call. Eu pergunto o que o site precisa resolver, não de quantas páginas você quer.' },
+  { n: '02', t: 'Escopo e preço', d: 'Proposta por escrito: o que entra, o que fica de fora, prazo e valor fechado. Sem hora surpresa no fim.' },
+  { n: '03', t: 'Construção', d: 'Link de preview atualizado a cada avanço. Você acompanha e corrige no caminho, não no dia da entrega.' },
+  { n: '04', t: 'No ar e depois', d: 'Publico, configuro domínio e te ensino a mexer. Trinta dias de ajuste inclusos e suporte opcional depois.' },
+];
+
+const STACK = [
+  {
+    g: 'Front-end',
+    itens: ['Vue 3', 'Nuxt', 'React', 'Astro', 'TypeScript', 'JavaScript', 'Tailwind', 'Sass', 'Motion'],
+  },
+  {
+    g: 'Back-end',
+    itens: ['Laravel', 'PHP', 'NestJS', 'Node', 'Go', 'Python', 'PostgreSQL', 'SQL', 'SQLite', 'REST'],
+  },
+  {
+    g: 'Infra',
+    itens: [
+      'Docker',
+      'docker-compose',
+      'Git',
+      'GitHub Actions',
+      'nginx',
+      'Cloudflare',
+      'Cloudflare Tunnel',
+      'ngrok',
+      'Vercel',
+      'GitHub Pages',
+      'Linux',
+      'SSH',
+    ],
+  },
+];
+
+/*
+  O campo de formas. Coordenadas em cima de um viewBox 1200×700 recortado
+  (`slice`), então cada seção ganha um recorte diferente do mesmo plano.
+  Escolhidas à mão: aleatório de verdade sempre empilha duas no mesmo canto.
+*/
+type Forma = { f: string; x: number; y: number; s: number; r?: number; o?: number };
+
+/*
+  Como cada forma se mexe. Quem tem eixo claro gira; quem é aberto ou
+  direcional flutua, porque um arco girando sem parar vira ventilador.
+  Duração e atraso saem do índice e não de random: precisa ser estável entre
+  um build e outro, e nenhuma dupla pode entrar em sincronia.
+*/
+const GIRA = new Set(['x', 'ast', 'mira', 'hex', 'los', 'qua', 'malha']);
+const modo = (f: string) => (GIRA.has(f) ? 'gira' : 'flutua');
+const ritmo = (i: number) => ({
+  dur: 22 + ((i * 7) % 9) * 3.5,    // 22 s a 50 s
+  atraso: -((i * 3.7) % 19),         // negativo: cada uma já começa no meio
+  sentido: i % 3 === 0 ? 'reverse' : 'normal',
+});
+
+const CAMPO_HEROI: Forma[] = [
+  { f: 'x', x: 78, y: 96, s: 28, r: 12 },
+  { f: 'cir', x: 990, y: 96, s: 104 },
+  { f: 'tri', x: 1108, y: 392, s: 52, r: -18 },
+  { f: 'qua', x: 196, y: 566, s: 38, r: 24 },
+  { f: 'lin', x: 26, y: 338, s: 130 },
+  { f: 'los', x: 872, y: 512, s: 44 },
+  { f: 'hex', x: 690, y: 52, s: 58, r: 14 },
+  { f: 'malha', x: 1064, y: 596, s: 66 },
+  { f: 'zig', x: 414, y: 632, s: 78 },
+  { f: 'ast', x: 610, y: 372, s: 32 },
+  { f: 'arc', x: 288, y: 132, s: 70, r: -30 },
+  { f: 'mira', x: 936, y: 268, s: 76 },
+  { f: 'x', x: 772, y: 638, s: 20, r: 40 },
+  { f: 'cir', x: 138, y: 424, s: 24 },
+  { f: 'chev', x: 512, y: 148, s: 26, r: -10 },
+];
+
+const CAMPO_SERVICOS: Forma[] = [
+  { f: 'tri', x: 60, y: 90, s: 74, r: 16 },
+  { f: 'malha', x: 1080, y: 120, s: 72 },
+  { f: 'x', x: 1140, y: 520, s: 30, r: -8 },
+  { f: 'cir', x: 44, y: 520, s: 96 },
+  { f: 'los', x: 600, y: 640, s: 34, r: 12 },
+  { f: 'lin', x: 900, y: 300, s: 140 },
+  { f: 'cota', x: 296, y: 302, s: 70, r: -8 },
+  { f: 'ast', x: 1020, y: 660, s: 26 },
+];
+
+const CAMPO_PROJETOS: Forma[] = [
+  { f: 'hex', x: 90, y: 120, s: 88, r: -6 },
+  { f: 'zig', x: 940, y: 90, s: 92 },
+  { f: 'qua', x: 1120, y: 420, s: 44, r: 18 },
+  { f: 'cir', x: 520, y: 620, s: 40 },
+  { f: 'chev', x: 220, y: 560, s: 32, r: 8 },
+  { f: 'x', x: 720, y: 130, s: 22, r: 22 },
+  { f: 'cota', x: 600, y: 330, s: 84 },
+  { f: 'canto', x: 300, y: 110, s: 40 },
+  { f: 'arc', x: 1040, y: 600, s: 76, r: 120 },
+];
+
+const CAMPO_CONTATO: Forma[] = [
+  { f: 'cir', x: 70, y: 80, s: 120 },
+  { f: 'tri', x: 1060, y: 96, s: 62, r: 28 },
+  { f: 'malha', x: 140, y: 540, s: 70 },
+  { f: 'los', x: 1120, y: 500, s: 50 },
+  { f: 'lin', x: 420, y: 660, s: 160 },
+  { f: 'ast', x: 660, y: 100, s: 34 },
+  { f: 'mira', x: 420, y: 300, s: 44 },
+  { f: 'canto', x: 876, y: 556, s: 72 },
+];
+
+const titulo = `${EU.nome} — Criação de sites, sistemas e consultoria em ${EU.local}`;
+const descricao =
+  'Desenvolvedor fullstack. Sites sob medida a partir de R$ 800, sistemas por módulo e consultoria técnica por hora. Vue, Go, Astro e Docker. Projetos abertos no GitHub.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'ProfessionalService',
+      '@id': `${EU.site}/#servico`,
+      name: `${EU.nome} · Desenvolvimento`,
+      description: descricao,
+      url: EU.site,
+      email: EU.email,
+      areaServed: 'BR',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: EU.cidade,
+        addressRegion: EU.uf,
+        addressCountry: 'BR',
+      },
+      founder: {
+        '@type': 'Person',
+        name: EU.nome,
+        jobTitle: EU.papel,
+        sameAs: `https://github.com/${EU.gh}`,
+      },
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Serviços',
+        itemListElement: SERVICOS.map((s) => ({
+          '@type': 'Offer',
+          name: s.t,
+          description: s.d,
+          priceCurrency: 'BRL',
+          price: s.de.replace(/[^\d]/g, ''),
+          priceSpecification: {
+            '@type': 'PriceSpecification',
+            minPrice: s.de.replace(/[^\d]/g, ''),
+            priceCurrency: 'BRL',
+          },
+        })),
+      },
+    },
+  ],
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <link rel="canonical" href={EU.site} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#07080f" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="pf">
+    {/* ---------- biblioteca de formas: definida uma vez, usada em todo lugar ---------- */}
+    <svg class="formas-defs" aria-hidden="true" focusable="false">
+      <defs>
+        {/*
+          Traço de 1 px que não engrossa quando o <use> escala. O atributo vai
+          na forma, não no <g>: vector-effect não é herdado, então num grupo
+          ele não desceria para o path. fill/stroke, esses sim são herdados —
+          vêm do CSS do .campo e atravessam o clone do <use>.
+        */}
+        <g id="s-x"><path vector-effect="non-scaling-stroke" d="M3 3 21 21M21 3 3 21" /></g>
+        <g id="s-cir"><circle vector-effect="non-scaling-stroke" cx="12" cy="12" r="10.5" /></g>
+        <g id="s-tri"><path vector-effect="non-scaling-stroke" d="M12 2 22.5 21H1.5Z" /></g>
+        <g id="s-qua"><rect vector-effect="non-scaling-stroke" x="2.5" y="2.5" width="19" height="19" rx="2.5" /></g>
+        <g id="s-lin"><path vector-effect="non-scaling-stroke" d="M0 12h24" /></g>
+        <g id="s-los"><path vector-effect="non-scaling-stroke" d="M12 1 23 12 12 23 1 12Z" /></g>
+        <g id="s-hex"><path vector-effect="non-scaling-stroke" d="M12 1.5 21.5 7v10L12 22.5 2.5 17V7Z" /></g>
+        <g id="s-chev"><path vector-effect="non-scaling-stroke" d="M7 2.5 18 12 7 21.5" /></g>
+        <g id="s-arc"><path vector-effect="non-scaling-stroke" d="M2 21A19 19 0 0 1 21 2" /></g>
+        <g id="s-zig"><path vector-effect="non-scaling-stroke" d="M1 17 6.75 7l5.75 10 5.75-10L23 17" /></g>
+        <g id="s-ast"><path vector-effect="non-scaling-stroke" d="M12 1v22M2.5 6.5 21.5 17.5M21.5 6.5 2.5 17.5" /></g>
+        {/*
+          Marcas de desenho técnico. Entraram no lugar de uma forma orgânica
+          que era a única coisa sem régua no conjunto — e por isso destoava de
+          todo o resto. Mira de centro, cota e marca de canto dão a variedade
+          sem sair da prancheta.
+        */}
+        <g id="s-mira">
+          <circle vector-effect="non-scaling-stroke" cx="12" cy="12" r="7" />
+          <path vector-effect="non-scaling-stroke" d="M12 1v6M12 17v6M1 12h6M17 12h6" />
+        </g>
+        <g id="s-cota">
+          <path vector-effect="non-scaling-stroke" d="M2 4v16M22 4v16M2 12h20" />
+          <path vector-effect="non-scaling-stroke" d="M6.5 8.5 2 12l4.5 3.5M17.5 8.5 22 12l-4.5 3.5" />
+        </g>
+        <g id="s-canto">
+          <path vector-effect="non-scaling-stroke" d="M2 9.5V2h7.5M22 14.5V22h-7.5" />
+        </g>
+        {/* nove aros de 1 px viram sujeira: esta é a única forma preenchida */}
+        <g id="s-malha">
+          <circle cx="3" cy="3" r="1.5" /><circle cx="12" cy="3" r="1.5" /><circle cx="21" cy="3" r="1.5" />
+          <circle cx="3" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="21" cy="12" r="1.5" />
+          <circle cx="3" cy="21" r="1.5" /><circle cx="12" cy="21" r="1.5" /><circle cx="21" cy="21" r="1.5" />
+        </g>
+      </defs>
+    </svg>
+
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="topo">
+      <div class="topo-barra" data-progresso aria-hidden="true"></div>
+      <a class="marca" href="#">
+        <span class="marca-sig">IF</span>
+        <span class="marca-txt">{EU.nome}<small>{EU.papel}</small></span>
+      </a>
+      <nav class="topo-nav" aria-label="Seções">
+        <a href="#servicos">Serviços</a>
+        <a href="#projetos">Projetos</a>
+        <a href="#demos">Demos</a>
+        <a href="#processo">Como funciona</a>
+      </nav>
+      <a class="btn btn-p btn-min" href="#contato">
+        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Pedir orçamento
+      </a>
+    </header>
+
+    <main id="conteudo">
+      {/* ================= HERÓI ================= */}
+      <section class="heroi blueprint">
+        <div class="halo halo-anil" aria-hidden="true"></div>
+        <div class="halo halo-roxo" aria-hidden="true"></div>
+        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="0.16" aria-hidden="true" focusable="false">
+          {
+            CAMPO_HEROI.map((f, i) => (
+              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
+                <use
+                  href={`#s-${f.f}`}
+                  opacity={f.o ?? 1}
+                  class={`fm fm-${modo(f.f)}`}
+                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
+                />
+              </g>
+            ))
+          }
+        </svg>
+
+        <div class="heroi-txt">
+          <p class="fita" data-anima>
+            <span class="pisca" aria-hidden="true"></span>
+            Disponível para projeto · {EU.local}
+          </p>
+          <h1>
+            <span class="linha" data-linha>Sites e sistemas</span>
+            <span class="linha" data-linha>feitos <em>sob medida</em>,</span>
+            <span class="linha" data-linha>não sobre molde.</span>
+          </h1>
+          <p class="lead" data-anima>
+            {perfil?.bio ?? '💻 Fullstack Developer | Criador de Soluções Inteligentes'} —
+            escrevo Vue, Go e TypeScript, entrego em container e deixo o
+            código aberto para você conferir.
+          </p>
+          <div class="acoes" data-anima>
+            <a class="btn btn-p btn-g" href="#servicos">
+              <i class="fa-solid fa-tags" aria-hidden="true"></i> Ver serviços e preços
+            </a>
+            <a class="btn btn-fant btn-g" href={`https://github.com/${EU.gh}`} rel="noopener">
+              <i class="fa-brands fa-github" aria-hidden="true"></i> Ver o código
+            </a>
+          </div>
+
+          <dl class="nums" data-anima>
+            {
+              numeros.map((n) => (
+                <div>
+                  <dt data-conta-ate={n.v} data-ano={n.ano ? '1' : null}>{n.v}</dt>
+                  <dd>{n.l}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+
+        <p class="rola" aria-hidden="true">scroll</p>
+      </section>
+
+      {/* ================= O CAMINHO — seção presa, uma etapa por vez ================= */}
+      {/*
+        Mesmo mecanismo das cenas 3D dos outros sites do portfolio: a seção é
+        alta, o miolo fica `sticky` e o scroll troca o conteúdo no lugar. A
+        classe `.presa` entra pelo JS — sem ela, e sem JS, as cinco caixas
+        aparecem empilhadas numa lista normal, que é um estado legível.
+      */}
+      <section class="caminho blueprint" id="processo" data-caminho>
+        <div class="caminho-miolo">
+          <div class="caixa caminho-caixa">
+            <header class="cab" data-anima>
+              <p class="olho olho-escuro">Como a coisa anda</p>
+              <h2>Da primeira conversa ao container rodando</h2>
+            </header>
+
+            {/* a barra fica ACIMA da caixa e avança junto com o scroll */}
+            <div class="cam-barra" aria-hidden="true">
+              <span class="cam-trilho"><span class="cam-preenche" data-cam-preenche></span></span>
+              <ol class="cam-marcos">
+                {CAMINHO.map((c) => (
+                  <li data-cam-marco><span></span>{c.n}</li>
+                ))}
+              </ol>
+            </div>
+
+            <p class="cam-conta" aria-live="polite">
+              <b data-cam-atual>1</b> de {CAMINHO.length}
+            </p>
+
+            <div class="cam-palco">
+              {CAMINHO.map((c, i) => (
+                <article class="cam-cx" data-cam-cx aria-hidden={i === 0 ? null : 'true'}>
+                  <div class="cam-cx-cab">
+                    <span class="cam-n">{c.n}</span>
+                    <i class={c.i} aria-hidden="true"></i>
+                    <span class="cam-marco">{c.marco}</span>
+                  </div>
+                  <h3>{c.t}</h3>
+                  <p>{c.d}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= SERVIÇOS ================= */}
+      <section class="secao servicos blueprint" id="servicos">
+        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="-0.1" aria-hidden="true" focusable="false">
+          {
+            CAMPO_SERVICOS.map((f, i) => (
+              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
+                <use
+                  href={`#s-${f.f}`}
+                  class={`fm fm-${modo(f.f)}`}
+                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
+                />
+              </g>
+            ))
+          }
+        </svg>
+
+        <div class="caixa caixa-larga">
+          <header class="cab" data-anima>
+            <p class="olho">Serviços</p>
+            <h2>Três formas de trabalhar junto</h2>
+            <p class="lead">
+              Preço de referência para você calibrar orçamento agora. O valor
+              fecha depois da conversa, por escrito, e não muda no meio.
+            </p>
+          </header>
+
+          <ul class="grade-serv">
+            {
+              SERVICOS.map((s) => (
+                <li class={`serv${s.destaque ? ' serv-d' : ''}`} data-anima data-brilho>
+                  <div class="serv-luz" aria-hidden="true"></div>
+                  {s.destaque && <span class="serv-selo">mais pedido</span>}
+                  <i class={`serv-i ${s.icone}`} aria-hidden="true"></i>
+                  <h3>{s.t}</h3>
+                  <p class="serv-sub">{s.sub}</p>
+                  <p class="serv-preco">
+                    <small>a partir de</small>
+                    <b>{s.de}</b>
+                    <span>{s.unidade}</span>
+                  </p>
+                  {s.extra && <p class="serv-extra">{s.extra}</p>}
+                  <p class="serv-txt">{s.d}</p>
+                  <ul class="serv-itens">
+                    {s.itens.map((i) => (
+                      <li>
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        {i}
+                      </li>
+                    ))}
+                  </ul>
+                  {s.naoEntra && <p class="serv-fora">{s.naoEntra}</p>}
+                  <p class="serv-prazo">
+                    <i class="fa-solid fa-stopwatch" aria-hidden="true"></i> {s.prazo}
+                  </p>
+                  <a class={`btn ${s.destaque ? 'btn-p' : 'btn-fant'} btn-cheio`} href={`#contato`} data-servico={s.t}>
+                    Quero um orçamento
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="nota-preco" data-anima>
+            Parcelo em até 6× sem juros no cartão, ou 10% de desconto no Pix à
+            vista. Manutenção mensal é opcional e cotada separada.
+          </p>
+        </div>
+      </section>
+
+      {/* ================= PROJETOS DO GITHUB ================= */}
+      <section class="secao projetos" id="projetos">
+        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="0.13" aria-hidden="true" focusable="false">
+          {
+            CAMPO_PROJETOS.map((f, i) => (
+              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
+                <use
+                  href={`#s-${f.f}`}
+                  class={`fm fm-${modo(f.f)}`}
+                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
+                />
+              </g>
+            ))
+          }
+        </svg>
+
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Código aberto</p>
+            <h2>Projetos no GitHub</h2>
+            <p class="lead">
+              Puxado da API pública do GitHub na hora do build. Nada de
+              mockup: é o repositório, com a linguagem e a data reais. Passe o
+              ponteiro para a esteira parar.
+            </p>
+          </header>
+        </div>
+
+        {/*
+          Esteira infinita. A fila é renderizada duas vezes e a faixa desliza
+          exatamente uma cópia, então a emenda nunca aparece. A segunda cópia é
+          decoração: `aria-hidden` e `inert` para não duplicar link nem parada
+          de tabulação para quem navega por teclado ou leitor de tela.
+        */}
+        <div class="trilha no-bar" data-trilha data-anima>
+          <div class="esteira">
+            {
+              [0, 1].map((copia) => (
+                <ul class={`fila${copia ? ' fila-clone' : ''}`} aria-hidden={copia ? 'true' : null} inert={copia === 1}>
+                  {
+                    projetos.map((p) => (
+                <li class="proj" data-brilho>
+                  <div class="serv-luz" aria-hidden="true"></div>
+                  <div class="proj-cab">
+                    <span class="proj-tipo">{p.tipo}</span>
+                    {p.estrelas > 0 && (
+                      <span class="proj-estrela">
+                        <i class="fa-solid fa-star" aria-hidden="true"></i> {p.estrelas}
+                      </span>
+                    )}
+                  </div>
+                  <h3><span class="cerquilha">/</span>{p.nome}</h3>
+                  <p class="proj-d">{p.resumo}</p>
+                  <p class="proj-pe">
+                    {p.lang && (
+                      <span class="proj-lang">
+                        <i style={`--cor:${CORES[p.lang] ?? '#8b93b5'}`} aria-hidden="true"></i>
+                        {p.lang}
+                      </span>
+                    )}
+                    {p.empurrado && (
+                      <span class="proj-data">
+                        {new Date(p.empurrado).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                      </span>
+                    )}
+                  </p>
+                  <div class="proj-links">
+                    <a href={p.url} rel="noopener">
+                      <i class="fa-brands fa-github" aria-hidden="true"></i> Código
+                    </a>
+                    {p.aoVivo && (
+                      <a href={p.aoVivo} rel="noopener" class="proj-vivo">
+                        <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> Ver no ar
+                      </a>
+                    )}
+                  </div>
+                </li>
+                    ))
+                  }
+                </ul>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="caixa">
+          <p class="trilha-pe" data-anima>
+            <a class="btn btn-fant" href={`https://github.com/${EU.gh}?tab=repositories`} rel="noopener">
+              <i class="fa-brands fa-github" aria-hidden="true"></i>
+              Ver todos os projetos
+            </a>
+          </p>
+        </div>
+      </section>
+
+      {/* ================= DEMOS ================= */}
+      <section class="secao demos" id="demos">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Demonstrações</p>
+            <h2>Sites completos, para você abrir e clicar</h2>
+            <p class="lead">
+              Cada demo é um site de verdade, com conteúdo escrito e fluxo que
+              funciona. É o que eu entrego, não um print.
+            </p>
+          </header>
+
+          <ul class="grade-demos">
+            {
+              DEMOS.map((d) => (
+                <li class="demo" data-anima>
+                  <a href={`/sites/${d.slug}`} class={d.pronto ? '' : 'demo-wip'}>
+                    <span class="demo-tag">{d.tag}</span>
+                    <span class="demo-nome">{d.nome}</span>
+                    <span class="demo-nota">{d.nota}</span>
+                    <span class="demo-seta" aria-hidden="true">
+                      <i class="fa-solid fa-arrow-right"></i>
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </section>
+
+      {/* ================= STACK ================= */}
+      <section class="secao stack blueprint" id="stack">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Ferramental</p>
+            <h2>Com o que eu construo</h2>
+            <p class="lead">
+              Escolha de stack é decisão de manutenção, não de moda. Estas são
+              as que eu sustento em produção.
+            </p>
+          </header>
+
+          <div class="grade-stack">
+            {
+              STACK.map((g) => (
+                <section class="stack-g" data-anima>
+                  <h3>{g.g}</h3>
+                  <ul>
+                    {g.itens.map((i) => <li>{i}</li>)}
+                  </ul>
+                </section>
+              ))
+            }
+          </div>
+
+          {linguagens.length > 0 && (
+            <p class="stack-nota" data-anima>
+              Nos repositórios públicos hoje:{' '}
+              {linguagens.map((l, i) => (
+                <>
+                  <span class="stack-lang">
+                    <i style={`--cor:${CORES[l] ?? '#8b93b5'}`} aria-hidden="true"></i>{l}
+                  </span>
+                  {i < linguagens.length - 1 ? ' · ' : ''}
+                </>
+              ))}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* ================= CONTATO ================= */}
+      <section class="secao contato" id="contato">
+        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="-0.14" aria-hidden="true" focusable="false">
+          {
+            CAMPO_CONTATO.map((f, i) => (
+              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
+                <use
+                  href={`#s-${f.f}`}
+                  class={`fm fm-${modo(f.f)}`}
+                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
+                />
+              </g>
+            ))
+          }
+        </svg>
+        <div class="halo halo-roxo halo-baixo" aria-hidden="true"></div>
+
+        <div class="caixa">
+          <div class="contato-grade">
+            <div data-anima>
+              <p class="olho">Contato</p>
+              <h2>Me conte o que precisa resolver</h2>
+              <p class="lead">
+                Responda em três campos e eu volto com uma faixa de preço e um
+                prazo no mesmo dia. Se não for meu tipo de projeto, eu digo — e
+                indico quem faz.
+              </p>
+              <ul class="contato-links">
+                <li>
+                  <a href={`https://wa.me/${EU.zap}`} rel="noopener">
+                    <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp {EU.zapFmt}
+                  </a>
+                </li>
+                <li>
+                  <a href={`mailto:${EU.email}`}>
+                    <i class="fa-solid fa-envelope" aria-hidden="true"></i> {EU.email}
+                  </a>
+                </li>
+                <li>
+                  <a href={`https://github.com/${EU.gh}`} rel="noopener">
+                    <i class="fa-brands fa-github" aria-hidden="true"></i> github.com/{EU.gh}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <form class="form" data-form data-zap={EU.zap} data-anima>
+              <div class="form-2">
+                <label>
+                  Nome
+                  <input name="nome" type="text" required autocomplete="name" placeholder="Como te chamo" />
+                </label>
+                <label>
+                  WhatsApp ou e-mail
+                  <input name="contato" type="text" required placeholder="(47) 90000-0000" />
+                </label>
+              </div>
+
+              <label>
+                O que você precisa
+                <select name="servico" data-alvo>
+                  {SERVICOS.map((s) => <option>{s.t}</option>)}
+                  <option>Ainda não sei</option>
+                </select>
+              </label>
+
+              <div class="form-2">
+                <label>
+                  Orçamento previsto
+                  <select name="verba">
+                    <option>Até R$ 1.500</option>
+                    <option selected>R$ 1.500 a R$ 3.000</option>
+                    <option>R$ 3.000 a R$ 8.000</option>
+                    <option>Acima de R$ 8.000</option>
+                    <option>Prefiro que você me diga</option>
+                  </select>
+                </label>
+                <label>
+                  Prazo
+                  <select name="prazo">
+                    <option>Sem pressa</option>
+                    <option selected>Nas próximas semanas</option>
+                    <option>É urgente</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                O problema, em duas linhas
+                <textarea
+                  name="obs"
+                  rows="3"
+                  required
+                  placeholder="Hoje eu perco pedido porque… / minha planilha não dá mais conta de…"></textarea>
+              </label>
+
+              <button class="btn btn-p btn-cheio btn-g" type="submit">
+                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Enviar pelo WhatsApp
+              </button>
+              <p class="form-nota">
+                Abre a conversa com tudo preenchido. Nada fica gravado neste site.
+              </p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <div class="caixa rodape-grade">
+        <div>
+          <p class="rodape-marca">{EU.nome}<small>{EU.papel} · {EU.local}</small></p>
+          <p class="rodape-d">
+            Sites, sistemas e consultoria. Código aberto no GitHub, entrega em
+            container, conversa em português.
+          </p>
+        </div>
+        <nav aria-label="Rodapé">
+          <p class="rodape-t">Navegar</p>
+          <ul>
+            <li><a href="#servicos">Serviços e preços</a></li>
+            <li><a href="#projetos">Projetos no GitHub</a></li>
+            <li><a href="#demos">Demos completas</a></li>
+            <li><a href="#processo">Como funciona</a></li>
+          </ul>
+        </nav>
+        <div>
+          <p class="rodape-t">Falar comigo</p>
+          <ul>
+            <li><a href={`https://wa.me/${EU.zap}`} rel="noopener">WhatsApp</a></li>
+            <li><a href={`mailto:${EU.email}`}>{EU.email}</a></li>
+            <li><a href={`https://github.com/${EU.gh}`} rel="noopener">GitHub</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="caixa rodape-fim">
+        <span>© 2026 {EU.nome}</span>
+      </p>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .pf {
+    /* noite azulada: preto que puxa para anil, nunca cinza */
+    --noite: #07080f;
+    --noite-2: #0a0c17;
+    --noite-3: #0f1224;
+    --carta: #121629;
+
+    /* o azul quase preto das formas do fundo */
+    --tracado: #1b2650;
+
+    --anil: #1e2b6b;
+    --anil-luz: #4472f7;
+    --roxo: #5b2ec4;
+    --roxo-luz: #a259f7;
+    --ciano: #35d6f0;
+
+    --gelo: #eaeefc;
+    --gelo-60: #98a1c4;
+    --gelo-40: #666f93;
+    --borda: #1c2140;
+    --borda-viva: #2b3468;
+
+    --clara: #eef1f9;
+    --clara-2: #e2e7f4;
+    --escuro: #0b0e1c;
+    --escuro-60: #4a5273;
+
+    --raio: 14px;
+    --raio-g: 22px;
+    --topo-h: 4rem;
+    --t: 0.4s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --brilho: 0 0 0 1px var(--borda-viva), 0 20px 50px -24px rgba(91, 46, 196, 0.55);
+
+    position: relative;
+    background: var(--noite);
+    color: var(--gelo);
+    font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.62;
+  }
+
+  :global(body) { background: #07080f; color: #eaeefc; }
+  :global(::selection) { background: #5b2ec4; color: #fff; }
+
+  .formas-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--roxo); color: #fff; padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0;
+  }
+  .pular:focus { left: 0; }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3 {
+    font-weight: 700; letter-spacing: -0.032em; line-height: 1.1;
+    margin: 0; text-wrap: balance;
+  }
+  h1 { font-size: clamp(2.4rem, 6.2vw, 4.6rem); font-weight: 800; line-height: 1.04; }
+  h2 { font-size: clamp(1.8rem, 3.6vw, 2.9rem); }
+  h3 { font-size: 1.18rem; letter-spacing: -0.02em; }
+  p { margin: 0; text-wrap: pretty; }
+  .lead { font-size: 1.04rem; color: var(--gelo-60); max-width: 56ch; }
+
+  .olho {
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.2em;
+    text-transform: uppercase; margin: 0 0 0.9rem;
+    color: var(--anil-luz);
+  }
+  .olho::before {
+    content: ''; width: 22px; height: 1px; flex: none;
+    background: linear-gradient(90deg, transparent, var(--roxo-luz));
+  }
+  .olho-escuro { color: #2743b8; }
+  .olho-escuro::before { background: linear-gradient(90deg, transparent, #6b21d6); }
+
+  /*
+    Texto em gradiente. Cor sólida é o estado base, e o gradiente só entra
+    onde background-clip: text existe — senão `color: transparent` deixaria
+    título e rótulo invisíveis.
+  */
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .olho, h1 em, .nums dt, .serv-d .serv-preco b {
+      color: transparent;
+      -webkit-background-clip: text; background-clip: text;
+    }
+    .olho { background-image: linear-gradient(90deg, var(--anil-luz), var(--roxo-luz)); }
+    .olho-escuro { background-image: linear-gradient(90deg, #2743b8, #6b21d6); }
+    h1 em { background-image: linear-gradient(100deg, var(--anil-luz) 8%, var(--roxo-luz) 62%, var(--ciano)); }
+    .nums dt { background-image: linear-gradient(140deg, var(--gelo) 25%, var(--anil-luz)); }
+    .serv-d .serv-preco b { background-image: linear-gradient(110deg, var(--gelo), var(--roxo-luz)); }
+  }
+
+  .caixa { max-width: 1200px; margin: 0 auto; padding-inline: clamp(1rem, 4vw, 2.6rem); }
+  /* quatro cartões de preço lado a lado não cabem em 1200: esta seção usa
+     mais tela que o resto da página, de propósito */
+  .caixa-larga { max-width: 1560px; }
+  /* o campo de formas transborda de propósito; o corte é aqui e não no .pf,
+     que é ancestral do topo fixo */
+  .secao { position: relative; overflow: hidden; padding-block: clamp(3.8rem, 8vw, 7rem); }
+  .cab { margin-bottom: clamp(2.2rem, 4vw, 3.2rem); max-width: 60ch; }
+  .cab .lead { margin-top: 0.9rem; }
+  .cab-larga {
+    max-width: none; display: flex; flex-wrap: wrap; gap: 1.5rem;
+    align-items: flex-end; justify-content: space-between;
+  }
+  .cab-larga > div:first-child { max-width: 60ch; }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+    padding: 0.78rem 1.4rem; border-radius: 999px;
+    font-family: inherit; font-size: 0.93rem; font-weight: 600; text-decoration: none;
+    border: 1px solid transparent; white-space: nowrap; cursor: pointer;
+    transition: background var(--t) var(--e), border-color var(--t) var(--e),
+      color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .btn-g { padding: 0.95rem 1.7rem; font-size: 1rem; }
+  .btn-min { padding: 0.55rem 1.05rem; font-size: 0.85rem; }
+  .btn-cheio { width: 100%; }
+  .btn-p {
+    background: linear-gradient(120deg, var(--anil-luz), var(--roxo));
+    color: #fff;
+    box-shadow: 0 12px 30px -16px rgba(91, 46, 196, 0.95);
+  }
+  .btn-p:hover {
+    box-shadow: 0 0 0 1px rgba(162, 89, 247, 0.5), 0 16px 40px -16px rgba(91, 46, 196, 1);
+  }
+  .btn-fant { background: rgba(234, 238, 252, 0.04); color: var(--gelo); border-color: var(--borda-viva); }
+  .btn-fant:hover { border-color: var(--roxo-luz); background: rgba(162, 89, 247, 0.1); }
+
+  /* ---------- formas de fundo ---------- */
+  .campo {
+    position: absolute; inset: -6% -2%; width: 104%; height: 112%;
+    /* fill/stroke são herdados e atravessam o <use>; vector-effect não é,
+       e por isso mora como atributo nos <g> do <defs> */
+    fill: none; stroke: var(--tracado); stroke-width: 1;
+    pointer-events: none; z-index: 0;
+  }
+  /* a malha de pontos é sólida, senão nove aros minúsculos viram sujeira */
+  .campo use[href='#s-malha'] { fill: var(--tracado); stroke: none; }
+
+  /*
+    O movimento de cada forma. A posição vive no <g> de fora e a animação no
+    <use> de dentro, e essa separação é obrigatória: `transform` em CSS
+    SUBSTITUI o atributo transform do SVG — no mesmo elemento, a forma perderia
+    o lugar e voaria para o canto da tela.
+
+    `transform-box: fill-box` faz o eixo ser o centro da própria forma e não a
+    origem do SVG. Sem isso, girar 20° manda a peça para o outro lado.
+  */
+  .fm {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    transform: rotate(var(--r, 0deg));
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .fm-gira {
+      animation: fm-gira var(--d, 30s) linear var(--a, 0s) infinite;
+      animation-direction: var(--sentido, normal);
+    }
+    .fm-flutua {
+      animation: fm-flutua var(--d, 30s) ease-in-out var(--a, 0s) infinite;
+      animation-direction: var(--sentido, normal);
+    }
+  }
+  @keyframes fm-gira {
+    from { transform: rotate(var(--r, 0deg)); }
+    to { transform: rotate(calc(var(--r, 0deg) + 360deg)); }
+  }
+  /* deriva curta com uma inclinada de ida e volta. O valor é pré-escala,
+     então forma grande deriva mais — profundidade de graça. */
+  @keyframes fm-flutua {
+    0%, 100% { transform: rotate(var(--r, 0deg)) translate(0, 0); }
+    33% { transform: rotate(calc(var(--r, 0deg) + 5deg)) translate(1.5px, -3.5px); }
+    66% { transform: rotate(calc(var(--r, 0deg) - 4deg)) translate(-1.5px, 2.5px); }
+  }
+  .secao > .caixa, .heroi-txt { position: relative; z-index: 2; }
+
+  /* halo: a luz que faz o preto não ser preto */
+  .halo {
+    position: absolute; border-radius: 50%; pointer-events: none; z-index: 1;
+    filter: blur(90px); opacity: 0.5;
+  }
+  .halo-anil {
+    width: 46rem; height: 32rem; top: -14rem; right: -12rem;
+    background: radial-gradient(circle, var(--anil) 0%, transparent 68%);
+  }
+  .halo-roxo {
+    width: 38rem; height: 30rem; bottom: -14rem; left: -10rem;
+    background: radial-gradient(circle, var(--roxo) 0%, transparent 66%);
+    opacity: 0.38;
+  }
+  .halo-baixo { top: auto; bottom: -16rem; left: 50%; translate: -50% 0; }
+
+  /* malha de engenharia, esmaecida no meio */
+  /*
+    A grade de prancheta. Dois níveis é o que separa papel de engenharia de uma
+    grade qualquer: fio fino a cada 34 px e fio forte a cada 170 px, um a cada
+    cinco. Esmaece no topo e no pé para não cortar seco na emenda das seções.
+
+    Uma regra só, e cada seção escolhe a cor pelas duas variáveis — a clara
+    precisa de azul escuro, as escuras de azul luminoso.
+  */
+  .blueprint {
+    --g-fina: rgba(68, 114, 247, 0.045);
+    --g-forte: rgba(68, 114, 247, 0.09);
+  }
+  .blueprint::before {
+    content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(to right, var(--g-fina) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--g-fina) 1px, transparent 1px),
+      linear-gradient(to right, var(--g-forte) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--g-forte) 1px, transparent 1px);
+    background-size: 34px 34px, 34px 34px, 170px 170px, 170px 170px;
+    mask-image: linear-gradient(180deg, transparent, #000 16%, #000 84%, transparent);
+  }
+
+  /* ---------- herói ---------- */
+  .heroi {
+    position: relative; overflow: hidden;
+    min-height: min(94svh, 52rem);
+    display: grid; align-items: center;
+    padding: calc(var(--topo-h) + clamp(2.5rem, 6vh, 4.5rem)) clamp(1rem, 4vw, 2.6rem)
+      clamp(4.5rem, 10vh, 7rem);
+    border-bottom: 1px solid var(--borda);
+  }
+  .heroi-txt { max-width: 1200px; margin: 0 auto; width: 100%; }
+
+  .fita {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    padding: 0.42rem 0.95rem 0.42rem 0.75rem; margin-bottom: 1.7rem;
+    border-radius: 999px; border: 1px solid var(--borda-viva);
+    background: rgba(68, 114, 247, 0.08);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.74rem; color: var(--gelo-60);
+  }
+  .pisca {
+    width: 7px; height: 7px; border-radius: 50%; flex: none;
+    background: #37e08a; box-shadow: 0 0 10px 1px #37e08a;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pisca { animation: respira 2.4s ease-in-out infinite; }
+  }
+  @keyframes respira { 50% { opacity: 0.35; box-shadow: 0 0 4px 0 #37e08a; } }
+
+  h1 .linha { display: block; }
+  h1 em { font-style: normal; color: var(--roxo-luz); }
+  .heroi .lead { margin-top: 1.6rem; font-size: 1.1rem; max-width: 48ch; }
+  .acoes { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.2rem; }
+
+  .nums {
+    margin: 3.2rem 0 0; padding-top: 1.8rem;
+    border-top: 1px solid var(--borda);
+    display: grid; gap: 1.4rem 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  }
+  .nums dt {
+    font-size: clamp(1.9rem, 3.4vw, 2.5rem); font-weight: 800; letter-spacing: -0.04em;
+    line-height: 1; font-variant-numeric: tabular-nums;
+    color: var(--gelo);
+  }
+  .nums dd {
+    margin: 0.5rem 0 0; font-size: 0.82rem; color: var(--gelo-40);
+    max-width: 20ch; line-height: 1.5;
+  }
+
+  .rola {
+    position: absolute; z-index: 2; left: 50%; bottom: 1.2rem; translate: -50% 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gelo-40);
+  }
+  .rola::after {
+    content: ''; display: block; width: 1px; height: 2rem; margin: 0.55rem auto 0;
+    background: linear-gradient(var(--roxo-luz), transparent);
+  }
+
+  /* ---------- serviços ---------- */
+  .servicos { background: var(--noite-2); border-bottom: 1px solid var(--borda); }
+  /*
+    Quatro colunas fixas a partir de 1180 px. `auto-fit` resolvia pela largura
+    e não pela contagem: com quatro cartões dava 3+1, e o último ficava órfão
+    na fileira de baixo. Abaixo disso vai para 2+2, e no celular empilha.
+
+    Sem `align-items: start`: os quatro esticam até a mesma altura e o
+    `flex: 1` da lista empurra prazo e botão para a mesma linha de base.
+  */
+  .grade-serv {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(0.9rem, 1.6vw, 1.3rem);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) { .grade-serv { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1180px) { .grade-serv { grid-template-columns: repeat(4, 1fr); } }
+  .serv, .proj {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+    background: var(--carta); border: 1px solid var(--borda);
+    border-radius: var(--raio-g); padding: clamp(1.2rem, 1.9vw, 1.6rem);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e),
+      background var(--t) var(--e);
+  }
+  .serv:hover, .proj:hover { border-color: var(--borda-viva); box-shadow: var(--brilho); }
+  /* fio luminoso no topo do card, mais forte no destaque */
+  .serv::before, .proj::before {
+    content: ''; position: absolute; inset: 0 0 auto; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--anil-luz), var(--roxo-luz), transparent);
+    opacity: 0.35; transition: opacity var(--t) var(--e);
+  }
+  .serv:hover::before, .proj:hover::before { opacity: 1; }
+  .serv-d { border-color: var(--borda-viva); background: linear-gradient(170deg, #17193a, var(--carta) 55%); }
+  .serv-d::before { opacity: 1; }
+
+  /* o brilho que segue o ponteiro — coordenadas vêm do JS em --mx/--my */
+  .serv-luz {
+    position: absolute; inset: -1px; pointer-events: none; opacity: 0;
+    background: radial-gradient(
+      16rem 16rem at var(--mx, 50%) var(--my, 0%),
+      rgba(162, 89, 247, 0.16),
+      transparent 62%
+    );
+    transition: opacity 0.45s var(--e);
+  }
+  .serv:hover .serv-luz, .proj:hover .serv-luz { opacity: 1; }
+
+  .serv-selo {
+    position: absolute; right: 1rem; top: 1rem;
+    padding: 0.22rem 0.6rem; border-radius: 999px;
+    background: linear-gradient(100deg, var(--anil-luz), var(--roxo));
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .serv-i {
+    width: 2.5rem; height: 2.5rem; display: grid; place-items: center;
+    border-radius: 11px; margin-bottom: 1rem; font-size: 1rem;
+    color: var(--anil-luz);
+    background: rgba(68, 114, 247, 0.1);
+    border: 1px solid var(--borda-viva);
+  }
+  .serv-d .serv-i { color: var(--roxo-luz); background: rgba(162, 89, 247, 0.12); }
+  .serv-sub { margin-top: 0.3rem; font-size: 0.85rem; color: var(--gelo-40); }
+  .serv-preco {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem;
+    margin: 1.3rem 0 0; padding: 1rem 0; border-block: 1px solid var(--borda);
+  }
+  .serv-preco small {
+    width: 100%; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gelo-40);
+  }
+  .serv-preco b { font-size: clamp(1.6rem, 2.4vw, 1.95rem); font-weight: 800; letter-spacing: -0.04em; }
+  .serv-preco span { font-size: 0.76rem; color: var(--gelo-40); }
+
+  .serv-txt { margin-top: 1rem; font-size: 0.87rem; color: var(--gelo-60); }
+  .serv-itens { list-style: none; margin: 1.2rem 0 0; padding: 0; display: grid; gap: 0.55rem; flex: 1; }
+  .serv-itens li {
+    display: grid; grid-template-columns: 0.95rem 1fr; gap: 0.5rem;
+    font-size: 0.83rem; color: var(--gelo-60); line-height: 1.42;
+  }
+  .serv-itens i { color: var(--ciano); font-size: 0.68rem; margin-top: 0.35rem; }
+  .serv-prazo {
+    display: flex; align-items: center; gap: 0.45rem;
+    margin: 1.3rem 0 1.1rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--gelo-40);
+  }
+  .nota-preco {
+    margin-top: 1.6rem; font-size: 0.82rem; color: var(--gelo-40); text-align: center;
+  }
+
+  /* ---------- projetos ---------- */
+  .projetos { background: var(--noite); }
+
+  /*
+    Esteira infinita.
+
+    O movimento é do Motion, não de @keyframes. A volta tem que ser a largura
+    exata de uma fila, e isso só se sabe medindo — mas `var()` dentro de
+    keyframe é resolvido quando a animação é aplicada, e escrever a medida
+    depois não atualiza a volta de forma confiável. Duas tentativas morreram
+    aí. Movendo pelo JS, a distância é um número em pixel e acabou a discussão.
+
+    Estado base, sem JS: rolagem horizontal manual e o clone escondido, que
+    seria lista duplicada para leitor de tela e para o dedo.
+  */
+  .trilha {
+    --vao: clamp(1.7rem, 3.2vw, 3rem);
+    position: relative; z-index: 2;
+    overflow-x: auto; overflow-y: hidden;
+    padding-block: 0.5rem;
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  }
+  .trilha:not(.ligada) .fila-clone { display: none; }
+  /* com o Motion no comando a rolagem manual sai de cena */
+  .trilha.ligada { overflow: hidden; }
+  .esteira { display: flex; width: max-content; will-change: transform; }
+  .fila { list-style: none; margin: 0; padding: 0; display: flex; }
+  .proj { flex: 0 0 clamp(16.5rem, 25vw, 20.5rem); margin-right: var(--vao); }
+
+  .proj-cab { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 1.1rem; }
+  .proj-tipo {
+    padding: 0.24rem 0.65rem; border-radius: 999px;
+    border: 1px solid var(--borda-viva); background: rgba(68, 114, 247, 0.09);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gelo-60);
+  }
+  .proj-estrela {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: #f5c451;
+  }
+  .proj h3 { font-size: 1.1rem; word-break: break-word; }
+  .cerquilha { color: var(--roxo-luz); font-weight: 800; }
+  .proj-d { margin-top: 0.7rem; font-size: 0.87rem; color: var(--gelo-60); flex: 1; }
+  .proj-pe {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem;
+    margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--borda);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--gelo-40);
+  }
+  .proj-lang { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .proj-lang i, .stack-lang i {
+    width: 8px; height: 8px; border-radius: 50%; flex: none;
+    background: var(--cor, #8b93b5); box-shadow: 0 0 8px -1px var(--cor, #8b93b5);
+  }
+  .proj-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.1rem; }
+  .proj-links a {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 0.85rem; border-radius: 999px;
+    font-size: 0.79rem; font-weight: 600; text-decoration: none;
+    color: var(--gelo-60); border: 1px solid var(--borda);
+    transition: color var(--t) var(--e), border-color var(--t) var(--e), background var(--t) var(--e);
+  }
+  .proj-links a:hover {
+    color: #fff; border-color: var(--roxo-luz);
+    background: rgba(162, 89, 247, 0.16);
+    box-shadow: 0 0 0 1px rgba(162, 89, 247, 0.45), 0 0 18px -2px rgba(162, 89, 247, 0.55);
+  }
+  /* "Ver no ar" é a ação principal do card: nasce preenchido, não vazado */
+  .proj-vivo {
+    color: var(--noite) !important; font-weight: 700;
+    background: linear-gradient(110deg, var(--ciano), #7fe3f5) !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 18px -10px rgba(53, 214, 240, 0.9);
+  }
+  .proj-vivo:hover {
+    color: var(--noite) !important;
+    background: linear-gradient(110deg, #5ce3fa, #a5eeff) !important;
+    box-shadow: 0 0 0 1px rgba(53, 214, 240, 0.7), 0 0 24px -2px rgba(53, 214, 240, 0.8) !important;
+  }
+  .proj-vivo i { color: var(--noite); }
+  .trilha-pe { margin-top: 2rem; text-align: center; }
+
+  /* ---------- demos ---------- */
+  .demos { background: var(--noite-3); border-block: 1px solid var(--borda); }
+  .grade-demos {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(0.8rem, 1.6vw, 1.1rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  }
+  .demo a {
+    position: relative; overflow: hidden;
+    display: grid; gap: 0.35rem; height: 100%;
+    padding: 1.5rem 3.2rem 1.5rem 1.5rem;
+    border-radius: var(--raio-g); text-decoration: none;
+    background: var(--carta); border: 1px solid var(--borda);
+    transition: border-color var(--t) var(--e), background var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .demo a:hover { border-color: var(--borda-viva); box-shadow: var(--brilho); }
+  .demo-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--anil-luz);
+  }
+  .demo-nome { font-size: 1.22rem; font-weight: 700; letter-spacing: -0.02em; color: var(--gelo); }
+  .demo-nota { font-size: 0.84rem; color: var(--gelo-40); }
+  .demo-seta {
+    position: absolute; right: 1.3rem; top: 50%; translate: 0 -50%;
+    color: var(--gelo-40); transition: color var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .demo a:hover .demo-seta { color: var(--roxo-luz); translate: 4px -50%; }
+  .demo-wip { opacity: 0.55; }
+  .demo-wip .demo-nota { color: #c78a3f; }
+
+  /* ---------- processo: a seção que inverte o contraste ---------- */
+  .caminho {
+    position: relative; z-index: 2;
+    background: var(--clara); color: var(--escuro);
+  }
+  /* fundo claro: a grade tem que ser azul escuro para aparecer */
+  .caminho { --g-fina: rgba(30, 43, 107, 0.05); --g-forte: rgba(30, 43, 107, 0.095); }
+  .caminho .caixa { position: relative; z-index: 2; }
+  .caminho h2, .caminho h3 { color: var(--escuro); }
+  .caminho .lead { color: var(--escuro-60); }
+  /* ---------- o caminho: seção presa, uma etapa por vez ---------- */
+
+  /* estado base — e o que vê quem está sem JS: cinco blocos empilhados */
+  .caminho-caixa { padding-block: clamp(3.6rem, 7.5vw, 6rem); }
+  .cam-palco { display: grid; gap: 1rem; }
+  .cam-cx {
+    background: #fff; border: 1px solid #d5dcee; border-radius: var(--raio-g);
+    padding: clamp(1.4rem, 3vw, 2.2rem);
+    box-shadow: 0 1px 2px rgba(11, 14, 28, 0.04), 0 18px 40px -26px rgba(30, 43, 107, 0.35);
+  }
+  .cam-cx-cab { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.9rem; }
+  .cam-n {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700;
+    letter-spacing: 0.1em; color: #6b21d6;
+  }
+  .cam-cx-cab i { font-size: 1.05rem; color: #2743b8; }
+  .cam-marco {
+    margin-left: auto; padding: 0.24rem 0.7rem; border-radius: 999px;
+    background: #eef1f9; border: 1px solid #d5dcee;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.08em; color: #4a5273;
+  }
+  .cam-cx h3 { font-size: clamp(1.25rem, 2.4vw, 1.75rem); color: var(--escuro); margin-bottom: 0.6rem; }
+  .cam-cx p { font-size: clamp(0.92rem, 1.5vw, 1.05rem); color: var(--escuro-60); max-width: 60ch; }
+
+  /* a barra de progresso, acima da caixa */
+  .cam-barra { margin: 0 0 1.6rem; }
+  .cam-trilho {
+    display: block; height: 4px; border-radius: 999px;
+    background: #d9dfef; overflow: hidden;
+  }
+  .cam-preenche {
+    display: block; height: 100%; width: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #2743b8, #6b21d6);
+    transform: scaleX(var(--cam, 1)); transform-origin: 0 50%;
+  }
+  .cam-marcos {
+    list-style: none; margin: 0.7rem 0 0; padding: 0;
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: #9aa2bd;
+  }
+  .cam-marcos li { display: flex; align-items: center; gap: 0.4rem; transition: color var(--t) var(--e); }
+  .cam-marcos li span {
+    width: 7px; height: 7px; border-radius: 50%; background: #c8d0e6;
+    transition: background var(--t) var(--e), scale var(--t) var(--e);
+  }
+  .cam-marcos li.feito { color: #6b21d6; }
+  .cam-marcos li.feito span { background: #6b21d6; scale: 1.3; }
+  .cam-conta {
+    margin-bottom: 1rem; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.1em; color: #9aa2bd;
+  }
+  .cam-conta b { color: #6b21d6; font-size: 1.1rem; }
+
+  /*
+    O modo preso. Altura da seção = uma tela por etapa, e o miolo gruda no
+    topo: rolar avança a barra e troca a caixa sem a seção sair do lugar.
+    As caixas passam a ocupar o mesmo ponto, empilhadas.
+  */
+  .caminho.presa { height: calc(var(--etapas, 5) * 88vh); }
+  .caminho.presa .caminho-miolo {
+    position: sticky; top: 0; min-height: 100svh;
+    display: grid; align-items: center;
+  }
+  .caminho.presa .cam-palco {
+    position: relative; display: block;
+    min-height: clamp(14rem, 34vh, 20rem);
+  }
+  .caminho.presa .cam-cx {
+    position: absolute; inset: 0 0 auto; opacity: 0;
+  }
+  .caminho.presa .cam-cx.ativa { opacity: 1; }
+
+  .passos {
+    list-style: none; margin: 0; padding: 0; counter-reset: p;
+    display: grid; gap: clamp(1rem, 2vw, 1.4rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  }
+  .passos li {
+    position: relative;
+    background: #fff; border: 1px solid #d5dcee;
+    border-radius: var(--raio-g); padding: 1.6rem 1.4rem;
+    box-shadow: 0 1px 2px rgba(11, 14, 28, 0.04), 0 14px 32px -22px rgba(30, 43, 107, 0.3);
+  }
+  .passos li::before {
+    content: ''; position: absolute; inset: 0 0 auto; height: 3px;
+    border-radius: var(--raio-g) var(--raio-g) 0 0;
+    background: linear-gradient(90deg, #2743b8, #6b21d6);
+  }
+  .passo-n {
+    display: block; margin-bottom: 0.8rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; font-weight: 700;
+    letter-spacing: 0.1em; color: #6b21d6;
+  }
+  .passos h3 { font-size: 1.1rem; margin-bottom: 0.45rem; }
+  .passos p { font-size: 0.88rem; color: var(--escuro-60); }
+
+  /* ---------- stack ---------- */
+  .stack { background: var(--noite-2); border-bottom: 1px solid var(--borda); }
+  .grade-stack {
+    display: grid; gap: clamp(1rem, 2vw, 1.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  }
+  .stack-g {
+    background: var(--carta); border: 1px solid var(--borda);
+    border-radius: var(--raio-g); padding: 1.5rem 1.4rem;
+  }
+  .stack-g h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--anil-luz); margin-bottom: 1.1rem;
+  }
+  .stack-g ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.45rem; }
+  .stack-g li {
+    padding: 0.4rem 0.8rem; border-radius: 8px;
+    background: rgba(234, 238, 252, 0.045); border: 1px solid var(--borda);
+    font-size: 0.84rem; color: var(--gelo-60);
+    transition: border-color var(--t) var(--e), color var(--t) var(--e);
+  }
+  .stack-g li:hover { border-color: var(--borda-viva); color: var(--gelo); }
+  .stack-nota {
+    margin-top: 1.6rem; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem; color: var(--gelo-40);
+  }
+  .stack-lang { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+  /* ---------- contato ---------- */
+  .contato { position: relative; overflow: hidden; background: var(--noite); }
+  .contato-grade { display: grid; gap: clamp(2rem, 4vw, 3.5rem); align-items: start; }
+  .contato-links { list-style: none; margin: 1.8rem 0 0; padding: 0; display: grid; gap: 0.7rem; }
+  .contato-links a {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    color: var(--gelo); text-decoration: none; font-size: 0.93rem; font-weight: 500;
+    transition: color var(--t) var(--e);
+  }
+  .contato-links i { color: var(--roxo-luz); width: 1.1rem; }
+  .contato-links a:hover { color: var(--roxo-luz); }
+
+  .form {
+    display: grid; gap: 0.9rem;
+    background: var(--carta); border: 1px solid var(--borda);
+    border-radius: var(--raio-g); padding: clamp(1.2rem, 2.8vw, 1.9rem);
+  }
+  .form label {
+    display: grid; gap: 0.35rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gelo-40);
+  }
+  .form-2 { display: grid; gap: 0.9rem; grid-template-columns: 1fr; }
+  .form :is(input, select, textarea) {
+    font-family: 'Sora', sans-serif; font-size: 0.93rem; font-weight: 400;
+    letter-spacing: 0; text-transform: none; color: var(--gelo);
+    background: var(--noite); border: 1px solid var(--borda); border-radius: 10px;
+    padding: 0.68rem 0.8rem; width: 100%;
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .form :is(input, select, textarea):focus {
+    outline: none; border-color: var(--roxo-luz);
+    box-shadow: 0 0 0 3px rgba(162, 89, 247, 0.16);
+  }
+  .form textarea { resize: vertical; }
+  .form option { background: var(--noite-3); color: var(--gelo); }
+  .form-nota { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--gelo-40); text-align: center; }
+
+  /* ---------- topo ---------- */
+  .topo {
+    position: fixed; inset: 0 0 auto; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem clamp(1rem, 4vw, 2.6rem);
+    background: rgba(7, 8, 15, 0.72);
+    backdrop-filter: blur(16px) saturate(1.4);
+    border-bottom: 1px solid var(--borda);
+  }
+  .topo-barra {
+    position: absolute; inset: auto 0 -1px; height: 2px;
+    background: linear-gradient(90deg, var(--anil-luz), var(--roxo-luz), var(--ciano));
+    transform: scaleX(0); transform-origin: 0 50%;
+  }
+  .marca { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; color: var(--gelo); }
+  .marca-sig {
+    width: 2.4rem; height: 2.4rem; display: grid; place-items: center; flex: none;
+    border-radius: 9px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.92rem; font-weight: 700; color: #fff;
+    background: linear-gradient(130deg, var(--anil-luz), var(--roxo));
+    box-shadow: 0 6px 18px -8px rgba(91, 46, 196, 0.9);
+  }
+  .marca-txt { font-size: 1.12rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .marca-txt small {
+    display: block; font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    font-size: 0.68rem; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--gelo-60); margin-top: 0.3rem;
+  }
+  .topo-nav { display: none; gap: 1.5rem; }
+  .topo-nav a {
+    position: relative; font-size: 0.89rem; font-weight: 500;
+    color: var(--gelo-60); text-decoration: none;
+    transition: color var(--t) var(--e);
+  }
+  .topo-nav a::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px;
+    background: linear-gradient(90deg, var(--anil-luz), var(--roxo-luz));
+    transform: scaleX(0); transform-origin: 0 50%;
+    transition: transform var(--t) var(--e);
+  }
+  .topo-nav a:hover { color: var(--gelo); }
+  .topo-nav a:hover::after { transform: scaleX(1); }
+
+  .pf section[id] { scroll-margin-top: calc(var(--topo-h) + 0.8rem); }
+
+  /* ---------- rodapé ---------- */
+  .rodape { background: var(--noite-2); border-top: 1px solid var(--borda); color: var(--gelo-60); }
+  .rodape-grade {
+    display: grid; gap: 2.4rem;
+    padding-block: clamp(2.6rem, 6vw, 4rem) 1.6rem;
+  }
+  .rodape-marca { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; color: var(--gelo); }
+  .rodape-marca small {
+    display: block; font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gelo-40); margin-top: 0.45rem;
+  }
+  .rodape-d { margin-top: 1rem; font-size: 0.86rem; color: var(--gelo-40); max-width: 40ch; }
+  .rodape-t {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gelo); margin-bottom: 1rem;
+  }
+  .rodape ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+  .rodape a { color: var(--gelo-60); text-decoration: none; font-size: 0.88rem; transition: color var(--t) var(--e); }
+  .rodape a:hover { color: var(--roxo-luz); }
+  .rodape-fim {
+    display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: space-between;
+    padding-block: 1.2rem 1.7rem; border-top: 1px solid var(--borda);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--gelo-40);
+  }
+
+  .pf :focus-visible { outline: 2px solid var(--roxo-luz); outline-offset: 3px; border-radius: 8px; }
+  .caminho :focus-visible { outline-color: #6b21d6; }
+
+  /* o que o Motion revela nasce escondido — só com JS e com vontade de movimento */
+  :global(.anima-on) .pf [data-anima],
+  :global(.anima-on) .pf [data-linha] { opacity: 0; }
+
+  /* ---------- do tablet para cima ---------- */
+  @media (min-width: 700px) {
+    .form-2 { grid-template-columns: 1fr 1fr; }
+    .rodape-grade { grid-template-columns: 1.4fr 1fr 1fr; }
+  }
+  @media (min-width: 920px) {
+    .pf { --topo-h: 4.4rem; }
+    .topo-nav { display: flex; }
+    .contato-grade { grid-template-columns: 1fr 1.05fr; }
+  }
+
+  /* ---------- movimento reduzido ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .pf * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .trilha, .trilha.ligada { overflow-x: auto; }
+    .esteira { will-change: auto; }
+    .fila-clone { display: none; }
+  }
+</style>
+
+<script>
+  /*
+    Movimento pelo Motion One. Regra de sempre: conteúdo antes de efeito — se
+    o import falhar, o `catch` devolve tudo visível.
+  */
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SAIDA = [0.22, 0.61, 0.36, 1] as const;
+  const raiz = document.documentElement;
+
+  /* ---------------- formulário ---------------- */
+
+  /* clicar em "quero um orçamento" num card já escolhe o serviço no form */
+  const alvo = document.querySelector<HTMLSelectElement>('[data-alvo]');
+  document.querySelectorAll<HTMLAnchorElement>('[data-servico]').forEach((a) => {
+    a.addEventListener('click', () => {
+      if (alvo) alvo.value = a.dataset.servico!;
+    });
+  });
+
+  /* site estático não tem para onde postar; o pedido vai pelo zap */
+  const form = document.querySelector<HTMLFormElement>('[data-form]');
+  form?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const d = new FormData(form);
+    const v = (k: string) => String(d.get(k) ?? '').trim();
+    const linhas = [
+      'Olá, Igor! Vim pelo site.',
+      '',
+      `Preciso de: ${v('servico')}`,
+      `Orçamento previsto: ${v('verba')}`,
+      `Prazo: ${v('prazo')}`,
+      '',
+      `O problema: ${v('obs')}`,
+      '',
+      `Nome: ${v('nome')}`,
+      `Contato: ${v('contato')}`,
+    ];
+    window.open(
+      `https://wa.me/${form.dataset.zap}?text=${encodeURIComponent(linhas.join('\n'))}`,
+      '_blank',
+      'noopener',
+    );
+  });
+
+  /* ---------------- luz que segue o ponteiro ---------------- */
+
+  /* ponteiro fino só: no toque não existe hover, e o listener seria desperdício */
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.querySelectorAll<HTMLElement>('[data-brilho]').forEach((el) => {
+      el.addEventListener(
+        'pointermove',
+        (e) => {
+          const r = el.getBoundingClientRect();
+          el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
+          el.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+        },
+        { passive: true },
+      );
+    });
+  }
+
+  /* ---------------- movimento ---------------- */
+
+  async function ligarMovimento() {
+    if (reduz) return;
+    const { animate, inView, scroll, stagger, press } = await import('motion');
+
+    /* inView do Motion re-dispara a cada reentrada; revelação é estreia */
+    const umaVez = (
+      el: Element,
+      efeito: () => void,
+      opcoes?: Parameters<typeof inView>[2],
+    ) => {
+      let parar = () => {};
+      parar = inView(el, () => { efeito(); parar(); }, opcoes);
+    };
+
+    /* 1. barra de progresso do topo */
+    const barra = document.querySelector<HTMLElement>('[data-progresso]');
+    if (barra) scroll(animate(barra, { scaleX: [0, 1] }, { ease: 'linear' }));
+
+    /* 2. herói: as linhas do título sobem por baixo de uma máscara */
+    animate(
+      document.querySelectorAll('[data-linha]'),
+      { opacity: [0, 1], y: [26, 0], filter: ['blur(8px)', 'blur(0px)'] },
+      { duration: 0.8, delay: stagger(0.09), ease: SAIDA },
+    );
+    animate(
+      document.querySelectorAll('.heroi [data-anima]'),
+      { opacity: [0, 1], y: [16, 0] },
+      { duration: 0.7, delay: stagger(0.09, { startDelay: 0.3 }), ease: SAIDA },
+    );
+
+    /* 3. revelação em cascata, agrupada por pai para o stagger correr entre irmãos */
+    const grupos = new Map<Element, HTMLElement[]>();
+    for (const el of document.querySelectorAll<HTMLElement>('[data-anima]')) {
+      if (el.closest('.heroi')) continue;
+      const pai = el.parentElement!;
+      grupos.set(pai, [...(grupos.get(pai) ?? []), el]);
+    }
+    for (const irmaos of grupos.values()) {
+      umaVez(
+        irmaos[0],
+        () =>
+          animate(
+            irmaos,
+            { opacity: [0, 1], y: [22, 0] },
+            { duration: 0.65, delay: stagger(0.075), ease: SAIDA },
+          ),
+        { amount: 0.12, margin: '0px 0px -8% 0px' },
+      );
+    }
+
+    /* 4. os números contam ao entrar na tela */
+    document.querySelectorAll<HTMLElement>('[data-conta-ate]').forEach((el) => {
+      const fim = Number(el.dataset.contaAte);
+      const ano = el.dataset.ano === '1';
+      /* ano não é contagem: 1.400 anos passando na tela não quer dizer nada */
+      if (ano) return;
+      umaVez(
+        el,
+        () =>
+          animate(0, fim, {
+            duration: 1.2,
+            ease: SAIDA,
+            onUpdate: (n) => (el.textContent = String(Math.round(n))),
+          }),
+        { amount: 0.8 },
+      );
+    });
+
+    /* 5. as camadas de formas andam em velocidades diferentes: profundidade sem 3D */
+    document.querySelectorAll<HTMLElement>('[data-campo]').forEach((el) => {
+      const v = Number(el.dataset.campo) * 220;
+      scroll(animate(el, { y: [-v, v] }, { ease: 'linear' }), {
+        target: el.parentElement!,
+        offset: ['start end', 'end start'],
+      });
+    });
+
+    /*
+      6a. O CAMINHO. A seção prende no topo e o scroll dela vira progresso:
+      a barra avança contínua, a caixa troca em degrau. Mesma mecânica das
+      cenas 3D dos outros sites do portfolio — `scroll()` com offset
+      start/start a end/end cobre exatamente o trecho em que o sticky está
+      grudado, então p vai de 0 a 1 ao longo das cinco etapas.
+
+      A classe `.presa` só entra aqui: sem JS a seção continua sendo a lista
+      empilhada do CSS base, que é legível e não depende de nada.
+    */
+    const caminho = document.querySelector<HTMLElement>('[data-caminho]');
+    const caixas = caminho ? [...caminho.querySelectorAll<HTMLElement>('[data-cam-cx]')] : [];
+    if (caminho && caixas.length) {
+      const marcos = [...caminho.querySelectorAll<HTMLElement>('[data-cam-marco]')];
+      const preenche = caminho.querySelector<HTMLElement>('[data-cam-preenche]');
+      const conta = caminho.querySelector<HTMLElement>('[data-cam-atual]');
+
+      caminho.style.setProperty('--etapas', String(caixas.length));
+      caminho.classList.add('presa');
+
+      let atual = -1;
+      const mostrar = (i: number) => {
+        if (i === atual || !caixas[i]) return;
+        const antes = caixas[atual];
+        atual = i;
+        /* a que sai desce um fio, a que entra sobe: dá direção ao avanço */
+        if (antes) {
+          antes.classList.remove('ativa');
+          antes.setAttribute('aria-hidden', 'true');
+          animate(antes, { opacity: 0, y: -14 }, { duration: 0.25, ease: 'easeIn' });
+        }
+        caixas[i].classList.add('ativa');
+        caixas[i].removeAttribute('aria-hidden');
+        animate(caixas[i], { opacity: [0, 1], y: [18, 0] }, { duration: 0.45, ease: SAIDA });
+        marcos.forEach((m, n) => m.classList.toggle('feito', n <= i));
+        if (conta) conta.textContent = String(i + 1);
+      };
+      mostrar(0);
+
+      scroll(
+        (p: number) => {
+          /* barra contínua, caixa em degrau — as duas leem o mesmo p */
+          if (preenche) preenche.style.setProperty('--cam', p.toFixed(4));
+          mostrar(Math.min(caixas.length - 1, Math.floor(p * caixas.length * 0.999)));
+        },
+        { target: caminho, offset: ['start start', 'end end'] },
+      );
+    }
+
+    /*
+      6b. A ESTEIRA. Uma fila tem largura exata de um período — `.fila` é flex
+      e a largura dela já inclui a margem direita de cada cartão, então quando
+      a faixa anda essa distância o clone cai no lugar da original e a emenda
+      não existe. `repeat: Infinity` reinicia em 0, que é visualmente o mesmo
+      ponto.
+
+      Velocidade constante em px/s: assim uma esteira de 5 cartões e outra de
+      30 andam no mesmo ritmo, e não em durações iguais.
+    */
+    const trilha = document.querySelector<HTMLElement>('[data-trilha]');
+    const esteira = trilha?.querySelector<HTMLElement>('.esteira');
+    const filaUm = trilha?.querySelector<HTMLElement>('.fila');
+    if (trilha && esteira && filaUm) {
+      const PX_POR_S = 58;
+      let laco: ReturnType<typeof animate> | null = null;
+
+      const ligar = () => {
+        const periodo = filaUm.getBoundingClientRect().width;
+        if (periodo < 1) return;               // ainda sem layout: tenta depois
+        trilha.classList.add('ligada');
+        laco?.stop();
+        laco = animate(
+          esteira,
+          { x: [0, -periodo] },
+          { duration: periodo / PX_POR_S, ease: 'linear', repeat: Infinity },
+        );
+      };
+      ligar();
+      /* fonte que chega atrasada muda a largura do cartão e, com ela, a volta */
+      document.fonts?.ready.then(ligar);
+      let t: number | undefined;
+      addEventListener('resize', () => {
+        clearTimeout(t);
+        t = setTimeout(ligar, 200) as unknown as number;
+      });
+
+      /* quem quer ler ou clicar precisa que pare */
+      const pausar = () => laco?.pause();
+      const seguir = () => laco?.play();
+      trilha.addEventListener('pointerenter', pausar);
+      trilha.addEventListener('pointerleave', seguir);
+      trilha.addEventListener('focusin', pausar);
+      trilha.addEventListener('focusout', seguir);
+    }
+
+    /* 7. tato: tudo que se clica afunda um fio */
+    press('.pf :is(.btn, .demo a, .proj-links a)', (el) => {
+      animate(el, { scale: 0.97 }, { duration: 0.12 });
+      return () => animate(el, { scale: 1 }, { type: 'spring', stiffness: 480, damping: 26 });
+    });
+
+    /* 8. o halo do herói respira junto com o scroll */
+    document.querySelectorAll<HTMLElement>('.heroi .halo').forEach((h, i) => {
+      scroll(animate(h, { opacity: [0.5, 0.14], scale: [1, 1.18 + i * 0.06] }, { ease: 'linear' }), {
+        target: document.querySelector<HTMLElement>('.heroi')!,
+        offset: ['start start', 'end start'],
+      });
+    });
+  }
+
+  const revelarTudo = () => raiz.classList.remove('anima-on');
+  const socorro = setTimeout(revelarTudo, 3000);
+  ligarMovimento()
+    .catch(revelarTudo)
+    .finally(() => clearTimeout(socorro));
+  if (reduz) revelarTudo();
+</script>

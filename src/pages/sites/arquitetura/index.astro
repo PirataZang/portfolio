@@ -1,0 +1,2276 @@
+---
+import Base from '../../../layouts/Base.astro';
+import {
+  PAREDES, COMODOS, LIM, LARG, PROF, H, ESP, ETAPAS, BEIRAL, SUBIDA, Y_LAJE,
+  blocos, vaos, area, m2, AREA_CONSTRUIDA,
+} from '../../../scripts/casa-plano';
+
+/*
+  PRUMO — Arquitetura e Engenharia.
+
+  Layout de prancha: papel milimetrado, fio de cabelo em vez de caixa, cota e
+  legenda em monoespaçada, e um carimbo fixo no canto que troca o número da
+  folha conforme a seção entra — como quem vira prancha numa pasta.
+
+  A espinha continua sendo a mesma de antes, e é o que dá a esta página o
+  direito de existir: planta 2D e modelo 3D saem do MESMO arquivo
+  (scripts/casa-plano.ts). Nada aqui é ilustração de banco de imagem.
+
+  Três momentos dirigidos pelo scroll:
+    1. a capa, com a elevação lateral se desenhando traço a traço
+    2. a prancha escura, onde a planta baixa se levanta camada por camada na
+       ordem em que um desenhista desenha: piso, alvenaria, esquadria, cota, texto
+    3. a planta vira volume — cena WebGL em scroll fixo, a casa subindo etapa
+       por etapa da locação ao habite-se
+
+  O movimento é todo do Motion One. Antes era `animation-timeline` nativo, que
+  é mais barato mas só existe em navegador recente e não deixa sequenciar a
+  planta como uma prancha de verdade. Quem pede menos movimento não recebe
+  nenhum, e se o Motion não carregar o conteúdo aparece inteiro.
+*/
+
+const EMPRESA = {
+  nome: 'PRUMO',
+  sub: 'Arquitetura e Engenharia',
+  fone: '+55 11 4000-2200',
+  foneLink: '+551140002200',
+  zap: '5511940002200',
+  zapFmt: '(11) 94000-2200',
+  email: 'projetos@prumoae.com.br',
+  rua: 'Rua Girassol, 480 — conj. 92',
+  bairro: 'Vila Madalena',
+  cidade: 'São Paulo',
+  uf: 'SP',
+  cep: '05433-001',
+  lat: -23.5546,
+  lon: -46.6903,
+  site: 'https://prumoae.com.br',
+  cau: 'CAU/BR A-148.902-6',
+  crea: 'CREA-SP 5070419-8',
+  desde: 2008,
+};
+
+const mapaQuery = encodeURIComponent(`Rua Girassol, 480, ${EMPRESA.bairro}, ${EMPRESA.cidade} - ${EMPRESA.uf}`);
+
+/* numéricos, porque o Motion conta até eles quando entram na tela */
+const numeros = [
+  { v: 18, u: 'anos', l: 'projetando e executando em São Paulo' },
+  { v: 240, u: '+', l: 'obras entregues, da reforma ao multifamiliar' },
+  { v: 92, u: 'mil m²', l: 'de área projetada e aprovada' },
+  { v: 100, u: '%', l: 'dos projetos compatibilizados em BIM' },
+];
+
+const pilares = [
+  { t: 'Projeto executivo', d: 'Arquitetura, estrutura e instalações compatibilizados no mesmo modelo BIM, com detecção de interferência antes da primeira fôrma.' },
+  { t: 'Aprovação legal', d: 'Prefeitura, alvará de aprovação e execução, ART/RRT, habite-se e averbação na matrícula do imóvel.' },
+  { t: 'Orçamento fechado', d: 'Analítico por composição de serviço, com quantitativo extraído do modelo. Sem a linha “verba a definir”.' },
+  { t: 'Execução medida', d: 'Cronograma físico-financeiro, medição por etapa, diário de obra e visita semanal com relatório fotográfico.' },
+];
+
+const ficha = [
+  { d: 'Registro', v: `${EMPRESA.cau} · ${EMPRESA.crea}` },
+  { d: 'Equipe', v: '4 arquitetos, 2 engenheiros civis e 1 orçamentista' },
+  { d: 'Ferramentas', v: 'Revit · AutoCAD · TQS · QiBuilder · Sienge' },
+  { d: 'Cobertura', v: 'Seguro de responsabilidade civil profissional' },
+  { d: 'Atendimento', v: 'São Paulo capital e Grande São Paulo' },
+  { d: 'Escritório', v: `${EMPRESA.rua} — ${EMPRESA.bairro}` },
+];
+
+/*
+  Acervo. Sem foto: este escritório não existe, e inventar render de banco de
+  imagem seria a única mentira da página. Cada obra ganha um diagrama de massa
+  gerado a partir do próprio número de pavimentos — um prédio de oito andares
+  fica alto ao lado de um galpão de um, e isso já informa.
+*/
+const OBRAS = [
+  {
+    cod: 'ARQ-118', nome: 'Casa Girassol', tipo: 'Residencial unifamiliar',
+    local: 'Vila Madalena · SP', area: 248, pav: 2, ano: 2024,
+    sistema: 'Alvenaria estrutural', obra: '11 meses', status: 'Entregue',
+    nota: 'Terreno de 8 m de frente. A caixa de escada virou poço de luz e resolveu a ventilação dos três dormitórios sem um metro de duto.',
+  },
+  {
+    cod: 'ARQ-104', nome: 'Edifício Aurora', tipo: 'Multifamiliar',
+    local: 'Pinheiros · SP', area: 3480, pav: 8, ano: 2023,
+    sistema: 'Concreto armado', obra: '22 meses', status: 'Entregue',
+    nota: '24 unidades de 52 a 74 m². Laje nervurada liberou o pavimento-tipo do pilar no meio da sala, que era o vício do terreno.',
+  },
+  {
+    cod: 'ARQ-131', nome: 'Retrofit Barão', tipo: 'Retrofit comercial',
+    local: 'Centro · SP', area: 1120, pav: 4, ano: 2025,
+    sistema: 'Reforço metálico', obra: '9 meses', status: 'Em obra',
+    nota: 'Prédio de 1948 sem projeto original em cartório. Levantamento a laser scanner antes de autorizar qualquer demolição.',
+  },
+  {
+    cod: 'ARQ-126', nome: 'Pavilhão Ipê', tipo: 'Industrial leve',
+    local: 'Barueri · SP', area: 2150, pav: 1, ano: 2024,
+    sistema: 'Pré-moldado e metálica', obra: '7 meses', status: 'Entregue',
+    nota: 'Vão livre de 22 m sem pilar intermediário. Telha termoacústica com lanternim dispensou exaustor mecânico e a conta de energia dele.',
+  },
+  {
+    cod: 'ARQ-134', nome: 'Clínica Sereno', tipo: 'Comercial · saúde',
+    local: 'Moema · SP', area: 640, pav: 2, ano: 2025,
+    sistema: 'Alvenaria e drywall', obra: '8 meses', status: 'Em obra',
+    nota: 'A RDC 50 da Anvisa manda no fluxo: sujo e limpo não se cruzam. O layout saiu da norma, não do gosto de ninguém.',
+  },
+  {
+    cod: 'ARQ-097', nome: 'Casa Pedra Alta', tipo: 'Residencial em declive',
+    local: 'Cotia · SP', area: 320, pav: 3, ano: 2022,
+    sistema: 'Concreto aparente', obra: '14 meses', status: 'Entregue',
+    nota: 'Declive de 32%. Escalonar a casa em três platôs custou menos que aterrar o terreno e conter o talude depois.',
+  },
+];
+
+const servicos = [
+  {
+    t: 'Projeto arquitetônico', cod: '01',
+    d: 'Estudo preliminar, anteprojeto, projeto legal e executivo. Plantas, cortes, fachadas, detalhamento de esquadria e paginação de piso — tudo cotado, nada resolvido na obra.',
+    itens: ['Estudo de implantação e insolação', 'Plantas, cortes e fachadas', 'Detalhamento executivo 1:20', 'Imagens 3D para aprovação'],
+  },
+  {
+    t: 'Projeto estrutural', cod: '02',
+    d: 'Concreto armado, metálica ou wood frame, dimensionados por cálculo com memorial. Cada pilar existe porque a conta pediu, não porque coube na planta.',
+    itens: ['Sondagem SPT e escolha de fundação', 'Fôrmas, armação e memorial', 'Controle de fck por corpo de prova', 'ART de projeto e de execução'],
+  },
+  {
+    t: 'Instalações prediais', cod: '03',
+    d: 'Elétrica, hidrossanitária, gás, SPDA e cabeamento. Projetadas antes do reboco, com prumada e caixa locadas em prancha.',
+    itens: ['Elétrica e quadro de cargas', 'Água fria, quente e esgoto', 'Reuso de água e captação pluvial', 'Automação e infra de dados'],
+  },
+  {
+    t: 'Aprovação e regularização', cod: '04',
+    d: 'Prefeitura, alvará de aprovação e execução, ART/RRT, habite-se e averbação em cartório. Obra sem papel não financia, não vende e não escritura.',
+    itens: ['Consulta de zoneamento e recuos', 'Protocolo e acompanhamento', 'Habite-se e CND da obra', 'Regularização de existente'],
+  },
+  {
+    t: 'Gerenciamento de obra', cod: '05',
+    d: 'Cronograma físico-financeiro, medição por etapa, diário de obra e visita semanal com relatório fotográfico. Você sabe onde está o dinheiro.',
+    itens: ['Orçamento analítico por composição', 'Cronograma e curva S', 'Medição e liberação de pagamento', 'Relatório semanal de obra'],
+  },
+  {
+    t: 'Interiores e luminotécnico', cod: '06',
+    d: 'Layout, marcenaria, revestimento e iluminação com cálculo de lux por ambiente. O projeto acaba na tomada certa, na altura certa.',
+    itens: ['Layout e ergonomia', 'Marcenaria detalhada', 'Projeto luminotécnico', 'Especificação e lista de compras'],
+  },
+];
+
+/*
+  Comparativo de sistema construtivo. É a pergunta que todo cliente faz na
+  segunda reunião, e a resposta honesta é uma tabela — não "depende".
+*/
+const SISTEMAS = [
+  {
+    s: 'Alvenaria estrutural', vao: 'até 4 m', prazo: 'Médio', custo: 'R$ 2.900 – 3.900 / m²',
+    q: 'Residência de até dois pavimentos com planta que repete. Sai mais barato, mas aqui parede é estrutura: reforma futura fica limitada ao que o cálculo permitir.',
+  },
+  {
+    s: 'Concreto armado moldado', vao: 'até 8 m', prazo: 'Longo', custo: 'R$ 3.600 – 5.200 / m²',
+    q: 'Padrão do multifamiliar e de qualquer coisa acima de três pavimentos. Liberdade total de planta e de reforma, ao custo de fôrma, escoramento e tempo de cura.',
+  },
+  {
+    s: 'Pré-moldado', vao: 'até 25 m', prazo: 'Curto', custo: 'R$ 2.400 – 3.600 / m²',
+    q: 'Galpão, escola, centro logístico. A peça chega pronta e o canteiro vira montagem — mas exige acesso para carreta e área de giro para grua.',
+  },
+  {
+    s: 'Steel frame', vao: 'até 6 m', prazo: 'Curto', custo: 'R$ 3.400 – 4.800 / m²',
+    q: 'Ampliação sobre laje existente e obra com prazo apertado. Leve, seco e preciso; pede mão de obra treinada, que é o gargalo real e não o material.',
+  },
+  {
+    s: 'Wood frame', vao: 'até 5 m', prazo: 'Curto', custo: 'R$ 3.200 – 4.600 / m²',
+    q: 'Residência de até dois pavimentos com bom desempenho térmico. Madeira certificada e tratada; o detalhe de estanqueidade é o que decide a vida útil.',
+  },
+];
+
+const fases = [
+  { n: '01', t: 'Briefing e viabilidade', p: '1 semana', d: 'Levantamento do terreno, consulta de zoneamento, recuos, taxa de ocupação e coeficiente de aproveitamento. Antes de desenhar, saber o que a lei deixa construir.' },
+  { n: '02', t: 'Estudo preliminar', p: '2 a 3 semanas', d: 'Partido arquitetônico, setorização, implantação e estudo de insolação e ventilação. Sai em planta e em volumetria 3D, para você decidir vendo.' },
+  { n: '03', t: 'Anteprojeto e aprovação', p: '30 a 90 dias', d: 'Projeto legal protocolado na prefeitura. O prazo aqui é do órgão, não nosso — por isso ele entra no cronograma desde o primeiro dia.' },
+  { n: '04', t: 'Projeto executivo', p: '3 a 5 semanas', d: 'Arquitetura, estrutura e instalações compatibilizados em BIM. Interferência encontrada no modelo custa um clique; encontrada na obra, custa uma semana.' },
+  { n: '05', t: 'Orçamento e contratação', p: '2 semanas', d: 'Orçamento analítico por composição, concorrência entre construtoras e contrato com escopo fechado. Sem “verba a definir”.' },
+  { n: '06', t: 'Execução acompanhada', p: '6 a 14 meses', d: 'Visita semanal, diário de obra, medição por etapa e resposta técnica em 24 h. A obra segue a prancha e o desvio aparece na hora, não no fim.' },
+  { n: '07', t: 'Entrega e habite-se', p: '3 a 6 semanas', d: 'Vistoria assistida, lista de pendências, as built, manual do proprietário e habite-se emitido. Só então a obra está de fato entregue.' },
+];
+
+/* ---------- investimento ---------- */
+const PADROES = [
+  { p: 'Popular', m2: 'R$ 2.300 – 3.000', d: 'Acabamento simples, esquadria de alumínio linha branca, piso cerâmico, forro de PVC ou laje pintada.' },
+  { p: 'Normal', m2: 'R$ 3.500 – 4.800', d: 'Porcelanato, esquadria linha média, marcenaria em MDF, forro de gesso, aquecimento a gás.' },
+  { p: 'Alto', m2: 'R$ 5.200 – 8.000+', d: 'Esquadria com ruptura térmica, automação, marcenaria sob medida, pedra natural, climatização.' },
+];
+const HONORARIOS = [
+  { i: 'Projeto arquitetônico completo', v: 'R$ 90 – 220 / m²' },
+  { i: 'Complementares: estrutura e instalações', v: 'R$ 45 – 95 / m²' },
+  { i: 'Aprovação e regularização', v: 'R$ 6.500 – 24.000 / processo' },
+  { i: 'Interiores e luminotécnico', v: 'R$ 120 – 280 / m²' },
+  { i: 'Gerenciamento de obra', v: 'mensal fixo, nunca % do gasto' },
+];
+const FORA_DO_CUB = [
+  'Fundação especial e contenção', 'Projetos e taxas legais', 'Elevador e equipamento',
+  'Terreno, ITBI e escritura', 'Ligações definitivas de água e energia', 'Paisagismo e mobiliário',
+];
+
+const EQUIPE = [
+  { n: 'Helena Prado', c: 'Arquiteta e urbanista · sócia', r: 'CAU A-148.902-6', f: 'Partido, projeto legal e aprovação' },
+  { n: 'Rubens Sato', c: 'Engenheiro civil · sócio', r: 'CREA-SP 5070419-8', f: 'Estrutura, fundação e execução' },
+  { n: 'Marina Alencar', c: 'Arquiteta', r: 'CAU A-201.774-3', f: 'Executivo, detalhamento e interiores' },
+  { n: 'Caio Bandeira', c: 'Engenheiro civil', r: 'CREA-SP 5182033-1', f: 'Instalações e compatibilização BIM' },
+  { n: 'Tereza Vidal', c: 'Orçamentista', r: 'Téc. edificações', f: 'Orçamento, medição e cronograma' },
+];
+
+const normas = [
+  { n: 'NBR 6118', t: 'Estruturas de concreto', d: 'Define cobrimento de armadura, fissuração e durabilidade por classe de agressividade do ambiente.' },
+  { n: 'NBR 6122', t: 'Fundações', d: 'Exige investigação do subsolo antes do projeto. Sondagem SPT é o mínimo, não um extra opcional.' },
+  { n: 'NBR 15575', t: 'Desempenho', d: 'Estabelece desempenho térmico, acústico, lumínico e vida útil de projeto para habitação.' },
+  { n: 'NBR 9050', t: 'Acessibilidade', d: 'Dimensiona rota acessível, largura de porta, área de manobra e altura de comandos.' },
+  { n: 'NBR 5410', t: 'Instalações elétricas', d: 'Rege dimensionamento de circuitos, proteção diferencial (DR) e aterramento em baixa tensão.' },
+  { n: 'NBR 5626', t: 'Água fria e quente', d: 'Projeto, execução e manutenção dos sistemas prediais de água, com pressão e vazão mínimas.' },
+  { n: 'NBR 8160', t: 'Esgoto sanitário', d: 'Traçado, declividade e ventilação da rede — o que evita cheiro de esgoto em banheiro novo.' },
+  { n: 'NBR 16280', t: 'Reforma em edificação', d: 'Obriga plano de reforma com responsável técnico. Em condomínio, o síndico é obrigado a exigir.' },
+  { n: 'NBR 16636', t: 'Serviços de projeto', d: 'Padroniza as etapas do serviço técnico de arquitetura, do levantamento ao as built.' },
+  { n: 'RDC 50', t: 'Estabelecimento de saúde', d: 'Da Anvisa: dimensiona ambiente, fluxo de material sujo e limpo e infraestrutura em clínica e hospital.' },
+];
+
+const entregaveis = [
+  'Planta de situação e implantação', 'Plantas baixas cotadas', 'Cortes longitudinal e transversal',
+  'Elevações de todas as fachadas', 'Planta de cobertura', 'Detalhamento de escada e esquadrias',
+  'Planta de fôrmas e armação', 'Prancha de elétrica e hidrossanitária', 'Paginação de piso e revestimento',
+  'Memorial descritivo', 'Orçamento analítico', 'Cronograma físico-financeiro',
+  'Caderno de especificação técnica', 'Relatório de compatibilização', 'As built e manual do proprietário',
+];
+
+const DEPOIMENTOS = [
+  { t: 'O que me convenceu foi o orçamento. Vinha de duas propostas com “verba a definir” e recebi uma planilha de 180 linhas com composição de serviço. A obra fechou 4% acima, e eu sabia de cada centavo.', n: 'Eduardo Nakamura', o: 'Casa Girassol · 2024' },
+  { t: 'Achei exagero pagar por compatibilização até ver o relatório: 61 interferências resolvidas no modelo. Meu pedreiro disse que nunca tinha visto obra com tão pouca quebra.', n: 'Cláudia Bertoldi', o: 'Edifício Aurora · 2023' },
+  { t: 'Prédio de 1948, sem planta em lugar nenhum. Escanearam o prédio inteiro antes de deixar alguém encostar uma marreta. Descobriram que duas paredes que a gente ia derrubar eram contraventamento.', n: 'Ricardo Salles', o: 'Retrofit Barão · em obra' },
+];
+
+const faq = [
+  { p: 'Quanto custa um projeto de arquitetura?', r: 'Projeto arquitetônico completo (do estudo preliminar ao executivo) fica entre R$ 90 e R$ 220 por metro quadrado de área construída, conforme complexidade, nível de detalhamento e se há complementares no pacote. A referência de mercado é a tabela de honorários do CAU/BR, que calcula por hora técnica e porte da obra. Projeto costuma representar de 6 % a 12 % do custo total — e é justamente o percentual que impede o desperdício nos outros 90 %.' },
+  { p: 'Quanto custa construir por metro quadrado hoje?', r: 'A referência oficial é o CUB/m², publicado todo mês pelo Sinduscon de cada estado. O CUB, porém, não inclui fundação especial, elevador, projetos, terreno, ligações definitivas e paisagismo — por isso o custo real de uma casa de padrão normal costuma ficar entre 1,5 e 1,8 vez o CUB do mês. Na prática, em São Paulo, obra de padrão normal a alto tem ficado na faixa de R$ 3.500 a R$ 6.500 por m². Orçamento sério é analítico, por composição de serviço, e não um número redondo por metro.' },
+  { p: 'Qual a diferença entre ART e RRT?', r: 'ART é a Anotação de Responsabilidade Técnica, emitida no CREA por engenheiro ou técnico. RRT é o Registro de Responsabilidade Técnica, emitido no CAU por arquiteto e urbanista. Os dois têm a mesma função: vincular um profissional habilitado, com CPF e registro, ao serviço executado. Sem ART ou RRT, a prefeitura não aprova, o financiamento não sai e ninguém responde tecnicamente pela obra.' },
+  { p: 'Preciso mesmo aprovar o projeto na prefeitura?', r: 'Sim, para qualquer obra nova, ampliação ou mudança de uso. Sem alvará, a obra é passível de embargo e multa; sem habite-se, o imóvel não é averbado na matrícula, o que impede financiamento, venda regular e, muitas vezes, a ligação definitiva de água e energia. Regularizar depois custa mais caro que aprovar antes — e nem sempre é possível.' },
+  { p: 'O que é compatibilização de projetos?', r: 'É sobrepor arquitetura, estrutura e instalações no mesmo modelo para encontrar conflito antes da obra: viga cortando janela, tubulação passando dentro de pilar, forro sem altura para o duto. Fazemos em BIM, com detecção automática de interferência. Cada conflito resolvido no modelo custa minutos; o mesmo conflito descoberto na obra custa quebra, retrabalho e prazo.' },
+  { p: 'Vocês executam a obra ou só projetam?', r: 'Os dois, e você escolhe o formato. Podemos entregar apenas o pacote de projetos, gerenciar a obra executada pela construtora que você contratar, ou assumir a execução completa com equipe própria e preço fechado. No gerenciamento, nossa remuneração é mensal fixa e não percentual do gasto — assim não existe incentivo para a obra ficar mais cara.' },
+  { p: 'Quanto tempo leva do briefing à chave na mão?', r: 'Para uma residência unifamiliar de 150 a 250 m²: de 8 a 12 semanas de projeto, de 30 a 90 dias de aprovação na prefeitura (prazo do órgão) e de 8 a 14 meses de obra. O cronograma físico-financeiro entregue no início já traz essas etapas com datas, e ele é medido semana a semana.' },
+  { p: 'E no caso de reforma?', r: 'Reforma tem norma própria: a ABNT NBR 16280 exige plano de reforma com responsável técnico, principalmente em condomínio, onde o síndico é obrigado a exigir o documento. Antes de qualquer demolição, verificamos o que é vedação e o que é estrutura — parede que parece divisória e é contraventamento derruba mais obra que qualquer economia justifica.' },
+  { p: 'Como escolher o sistema construtivo?', r: 'Pelo vão que a planta pede, pelo prazo que você tem e pelo acesso do terreno — nessa ordem. Alvenaria estrutural é a mais barata e a menos flexível; concreto armado libera planta e reforma; pré-moldado vence em vão livre e prazo, mas precisa de carreta e grua; steel e wood frame são rápidos e secos, e o gargalo é mão de obra treinada. A tabela comparativa desta página traz faixa de custo e vão máximo de cada um.' },
+  { p: 'Trabalham com projeto sustentável?', r: 'Sim, começando pelo que é gratuito: orientação solar correta, ventilação cruzada, brise e beiral dimensionados pela carta solar do local. Depois vêm os sistemas — aquecimento solar, fotovoltaico, reuso de água cinza e captação pluvial —, sempre com cálculo de retorno do investimento, não como discurso.' },
+];
+
+/* ---------- geração do SVG da planta a partir do módulo compartilhado ---------- */
+const S = 100;                                   // px por metro
+const px = (x: number) => +((x - LIM.x1) * S).toFixed(1);
+const py = (z: number) => +((z - LIM.z1) * S).toFixed(1);
+const W = LARG * S;
+const Hp = PROF * S;
+
+const todos = PAREDES.flatMap((p) => blocos(p));
+const cheias = todos.filter((b) => b.y0 === 0 && Math.abs(b.y1 - H) < 1e-6);
+const peitoris = todos.filter((b) => b.y0 === 0 && b.y1 < H - 1e-6);   // janelas
+const todosVaos = PAREDES.flatMap((p) => vaos(p));
+
+/* porta: folha + arco de abertura, sempre girando para dentro da casa */
+const portas = todosVaos.filter((v) => v.tipo === 'porta').map((v) => {
+  const mx = (v.ax + v.bx) / 2;
+  const mz = (v.az + v.bz) / 2;
+  const s = -mx * v.nx - mz * v.nz >= 0 ? 1 : -1;
+  const nx = v.nx * s;
+  const nz = v.nz * s;
+  const r = v.larg;
+  const k = 0.5523 * r;
+  const p0 = [v.ax + v.ux * r, v.az + v.uz * r];
+  const p3 = [v.ax + nx * r, v.az + nz * r];
+  const p1 = [p0[0] + nx * k, p0[1] + nz * k];
+  const p2 = [p3[0] + v.ux * k, p3[1] + v.uz * k];
+  return {
+    folha: { x1: px(v.ax), y1: py(v.az), x2: px(p3[0]), y2: py(p3[1]) },
+    arco: `M ${px(p0[0])} ${py(p0[1])} C ${px(p1[0])} ${py(p1[1])} ${px(p2[0])} ${py(p2[1])} ${px(p3[0])} ${py(p3[1])}`,
+  };
+});
+
+const cotasH = [
+  { a: LIM.x1, b: LIM.x2, z: LIM.z2, off: 72, txt: '10,40' },
+  { a: -5.2, b: -1.8, z: LIM.z1, off: -46, txt: '3,40' },
+  { a: -1.8, b: 0.8, z: LIM.z1, off: -46, txt: '2,60' },
+  { a: 0.8, b: 2.4, z: LIM.z1, off: -46, txt: '1,60' },
+  { a: 2.4, b: 5.2, z: LIM.z1, off: -46, txt: '2,80' },
+];
+const cotasV = [
+  { a: LIM.z1, b: LIM.z2, x: LIM.x1, off: -72, txt: '8,00' },
+  { a: LIM.z1, b: -0.2, x: LIM.x2, off: 46, txt: '3,80' },
+  { a: -0.2, b: 1.0, x: LIM.x2, off: 46, txt: '1,20' },
+  { a: 1.0, b: LIM.z2, x: LIM.x2, off: 46, txt: '3,00' },
+];
+
+const comodos = COMODOS.map((c) => ({
+  ...c,
+  cx: px((c.x1 + c.x2) / 2),
+  cy: py((c.z1 + c.z2) / 2),
+  a: m2(area(c)),
+}));
+
+const AREA_UTIL_TXT = m2(COMODOS.reduce((s, c) => s + area(c), 0));
+
+/*
+  Elevação lateral — sai da parede oeste (PAREDES[3]) e das constantes de
+  cobertura. É a mesma casa da planta e do 3D, vista de lado.
+*/
+const E = 56;                                   // px por metro
+const TOPO = Y_LAJE + SUBIDA + 0.35;
+const ex = (m: number) => +(m * E).toFixed(1);
+const ey = (m: number) => +((TOPO - m) * E).toFixed(1);
+
+const elevVaos = vaos(PAREDES[3]).map((v) => ({
+  x: ex(v.at), l: ex(v.larg), y: ey(v.y1), a: ex(v.y1 - v.y0),
+}));
+const elevTelhado = [
+  [ex(-BEIRAL), ey(Y_LAJE)],
+  [ex(PROF / 2), ey(Y_LAJE + SUBIDA)],
+  [ex(PROF + BEIRAL), ey(Y_LAJE)],
+].map((c) => c.join(',')).join(' ');
+
+const titulo = 'Arquitetura e Engenharia Civil em São Paulo | Projeto, Aprovação e Obra — PRUMO';
+const descricao =
+  'Escritório de arquitetura e engenharia civil em São Paulo. Projeto arquitetônico e estrutural, instalações, aprovação na prefeitura, orçamento analítico e gerenciamento de obra. Da planta ao habite-se.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['ProfessionalService', 'HomeAndConstructionBusiness'],
+      '@id': `${EMPRESA.site}/#escritorio`,
+      name: `${EMPRESA.nome} ${EMPRESA.sub}`,
+      description: descricao,
+      url: EMPRESA.site,
+      telephone: EMPRESA.fone,
+      email: EMPRESA.email,
+      priceRange: 'R$$$',
+      foundingDate: String(EMPRESA.desde),
+      numberOfEmployees: { '@type': 'QuantitativeValue', value: EQUIPE.length + 2 },
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: EMPRESA.rua,
+        addressLocality: EMPRESA.cidade,
+        addressRegion: EMPRESA.uf,
+        postalCode: EMPRESA.cep,
+        addressCountry: 'BR',
+      },
+      geo: { '@type': 'GeoCoordinates', latitude: EMPRESA.lat, longitude: EMPRESA.lon },
+      openingHoursSpecification: [
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '09:00', closes: '18:00' },
+      ],
+      employee: EQUIPE.map((p) => ({ '@type': 'Person', name: p.n, jobTitle: p.c })),
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Serviços de arquitetura e engenharia',
+        itemListElement: servicos.map((s) => ({
+          '@type': 'Offer',
+          itemOffered: { '@type': 'Service', name: s.t, description: s.d },
+        })),
+      },
+    },
+    {
+      '@type': 'ItemList',
+      '@id': `${EMPRESA.site}/#acervo`,
+      name: 'Obras projetadas e executadas',
+      itemListElement: OBRAS.map((o, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'Residence',
+          name: o.nome,
+          description: `${o.tipo} · ${o.area} m² · ${o.sistema} · ${o.local}`,
+        },
+      })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${EMPRESA.site}/#duvidas`,
+      mainEntity: faq.map((f) => ({
+        '@type': 'Question',
+        name: f.p,
+        acceptedAnswer: { '@type': 'Answer', text: f.r },
+      })),
+    },
+  ],
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <link rel="canonical" href={EMPRESA.site} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="geo.region" content="BR-SP" />
+    <meta name="geo.placename" content="São Paulo" />
+    <meta name="geo.position" content={`${EMPRESA.lat};${EMPRESA.lon}`} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content={EMPRESA.nome} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:url" content={EMPRESA.site} />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    {/* bloqueante e mínimo: esconde o que o Motion vai revelar, antes da primeira pintura */}
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="pr">
+    <script type="application/json" data-etapas set:html={JSON.stringify(ETAPAS)}></script>
+
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    {/* fio de prumo: o progresso da página medido como quem confere alinhamento */}
+    <div class="prumo" aria-hidden="true"><span data-prumo></span></div>
+
+    {/* carimbo de folha, fixo no canto — troca de número conforme a seção entra */}
+    <p class="folha-atual" aria-hidden="true">
+      <span data-folha-cod>ARQ-01</span><em data-folha-nome>Capa</em>
+    </p>
+
+    <header class="topo">
+      <a class="marca" href="/">
+        <span class="marca-simbolo" aria-hidden="true"></span>
+        <span class="marca-txt">{EMPRESA.nome}<small>{EMPRESA.sub}</small></span>
+      </a>
+      <nav class="topo-nav" aria-label="Seções">
+        <a href="#projeto">Prancha</a>
+        <a href="#obra">Obra</a>
+        <a href="#acervo">Acervo</a>
+        <a href="#servicos">Serviços</a>
+        <a href="#investimento">Investimento</a>
+        <a href="#duvidas">Dúvidas</a>
+      </nav>
+      <a class="btn btn-p btn-min" href="#contato">Pedir diagnóstico</a>
+    </header>
+
+    <main id="conteudo">
+      {/* ═════════ ARQ-01 · CAPA ═════════ */}
+      <section class="capa" data-folha="ARQ-01" data-folha-t="Capa">
+        <div class="capa-grade">
+          <div class="capa-txt">
+            <p class="olho" data-anima>Arquitetura e engenharia civil · São Paulo · desde {EMPRESA.desde}</p>
+            <h1>
+              <span class="linha" data-linha>Da primeira linha</span>
+              <span class="linha" data-linha>no papel <em>ao habite-se</em></span>
+              <span class="linha" data-linha>na sua mão.</span>
+            </h1>
+            <p class="lead" data-anima>
+              Projeto, aprovação, orçamento e execução no mesmo escritório, com o
+              mesmo responsável técnico assinando do estudo preliminar à vistoria
+              de entrega. Você acompanha por prancha, cronograma e medição.
+            </p>
+            <div class="capa-acoes" data-anima>
+              <a class="btn btn-p btn-g" href="#contato">Quero um diagnóstico</a>
+              <a class="btn btn-v btn-g" href="#projeto">Ver um projeto nascendo</a>
+            </div>
+            <ul class="selos" data-anima>
+              <li>Executivo compatibilizado em BIM</li>
+              <li>Aprovação e habite-se inclusos</li>
+              <li>Medição semanal de obra</li>
+            </ul>
+          </div>
+
+          <div class="capa-lado" aria-hidden="true">
+            <div class="capa-desenho" data-desenha>
+                <svg viewBox={`${ex(-BEIRAL) - 150} -18 ${ex(PROF + BEIRAL * 2) + 430} ${ey(0) + 96}`} class="svg-elev">
+                  <polyline class="el-telha" points={elevTelhado} />
+                  <rect class="el-laje" x={ex(-0.06)} y={ey(Y_LAJE)} width={ex(PROF + 0.12)} height={ex(Y_LAJE - H)} />
+                  <rect class="el-parede" x="0" y={ey(H)} width={ex(PROF)} height={ex(H)} />
+                  {elevVaos.map((v) => (
+                    <>
+                      <rect class="el-vao" x={v.x} y={v.y} width={v.l} height={v.a} />
+                      <line class="el-vao-c" x1={v.x} y1={v.y + v.a / 2} x2={v.x + v.l} y2={v.y + v.a / 2} />
+                    </>
+                  ))}
+                  <line class="el-solo" x1={ex(-BEIRAL) - 34} y1={ey(0)} x2={ex(PROF + BEIRAL) + 34} y2={ey(0)} />
+                  {Array.from({ length: 19 }, (_, i) => (
+                    <line class="el-hachura"
+                          x1={ex(-BEIRAL) - 28 + i * 30} y1={ey(0)}
+                          x2={ex(-BEIRAL) - 42 + i * 30} y2={ey(0) + 14} />
+                  ))}
+                  <g class="el-cota">
+                    <line x1={ex(PROF) + 44} y1={ey(0)} x2={ex(PROF) + 44} y2={ey(Y_LAJE + SUBIDA)} />
+                    <line class="el-ext" x1={ex(PROF)} y1={ey(0)} x2={ex(PROF) + 52} y2={ey(0)} />
+                    <line class="el-ext" x1={ex(PROF / 2)} y1={ey(Y_LAJE + SUBIDA)} x2={ex(PROF) + 52} y2={ey(Y_LAJE + SUBIDA)} />
+                    <text x={ex(PROF) + 36} y={ey((Y_LAJE + SUBIDA) / 2)}
+                          transform={`rotate(-90 ${ex(PROF) + 36} ${ey((Y_LAJE + SUBIDA) / 2)})`}>4,79</text>
+                  </g>
+                  <g class="el-nota">
+                    <line x1={ex(PROF / 2 + 1.1)} y1={ey(Y_LAJE + SUBIDA * 0.55)} x2={ex(PROF) + 70} y2={ey(Y_LAJE + SUBIDA + 0.45)} />
+                    <text x={ex(PROF) + 76} y={ey(Y_LAJE + SUBIDA + 0.5)}>TELHA CERÂMICA · i=36 %</text>
+                    <line x1={ex(0.5)} y1={ey(H + 0.1)} x2={ex(-BEIRAL) - 26} y2={ey(H + 0.9)} />
+                    <text x={ex(-BEIRAL) - 32} y={ey(H + 0.95)} text-anchor="end">LAJE + CINTA</text>
+                  </g>
+                  <text class="el-titulo" x="0" y={ey(0) + 48}>ELEVAÇÃO LATERAL · ESC. 1:100</text>
+                </svg>
+            </div>
+
+            <div class="carimbo">
+              <div class="carimbo-l"><span>Projeto</span><b>Residência unifamiliar</b></div>
+              <div class="carimbo-l"><span>Área</span><b>{m2(AREA_CONSTRUIDA)} m²</b></div>
+              <div class="carimbo-l"><span>Escala</span><b>1:100</b></div>
+              <div class="carimbo-l"><span>Prancha</span><b>ARQ-01 / 12</b></div>
+              <div class="carimbo-l"><span>Resp. técnico</span><b>{EMPRESA.cau}</b></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="rolar" aria-hidden="true"><span></span>role para entrar no projeto</p>
+      </section>
+
+      {/* ═════════ NÚMEROS ═════════ */}
+      <section class="faixa" aria-label="Números do escritório">
+        <dl class="nums">
+          {numeros.map((n) => (
+            <div class="num" data-anima>
+              <dt><span data-conta-ate={n.v}>{n.v}</span><i>{n.u}</i></dt>
+              <dd>{n.l}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* ═════════ ARQ-02 · ABORDAGEM ═════════ */}
+      <section class="secao" id="abordagem" data-folha="ARQ-02" data-folha-t="Abordagem">
+        <div class="caixa">
+          <div class="dupla">
+            <header class="cab" data-anima>
+              <p class="olho">O que vem depois do desenho</p>
+              <h2>Uma prancha só resolve a obra quando alguém responde por ela até o fim.</h2>
+              <p class="lead">
+                O projeto barato costuma ser o que para na aprovação. O nosso segue
+                até a vistoria — e é o mesmo CAU e o mesmo CREA que assinam as duas
+                pontas.
+              </p>
+              <a class="btn btn-p" href="#contato">Começar pelo diagnóstico</a>
+            </header>
+
+            <dl class="ficha" data-anima>
+              <p class="ficha-t">Ficha do escritório</p>
+              {ficha.map((f) => (
+                <div><dt>{f.d}</dt><dd>{f.v}</dd></div>
+              ))}
+            </dl>
+          </div>
+
+          <ul class="pilares">
+            {pilares.map((p, i) => (
+              <li data-anima>
+                <span class="pilar-n">{String(i + 1).padStart(2, '0')}</span>
+                <b>{p.t}</b>
+                <span class="pilar-d">{p.d}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-03 · PRANCHA (a planta se desenha) ═════════ */}
+      <section class="prancha" id="projeto" data-folha="ARQ-03" data-folha-t="Planta baixa" data-escura>
+        <div class="caixa">
+          <header class="prancha-cab" data-anima>
+            <p class="olho olho-claro">Prancha ARQ-03 · planta baixa · escala 1:100</p>
+            <h2>Tudo começa por um desenho que já sabe quanto vai custar.</h2>
+            <p class="lead-claro">
+              Planta real do acervo: {m2(AREA_CONSTRUIDA)} m² de área construída,
+              {' '}{AREA_UTIL_TXT} m² de área útil, três dormitórios e varanda. Cada parede
+              já tem espessura, cada vão já tem verga e cada cota foi conferida contra
+              o levantamento do terreno. Ela se desenha na ordem em que um desenhista
+              desenha.
+            </p>
+          </header>
+
+          <div class="prancha-palco">
+            <ol class="camadas" aria-hidden="true">
+              {['Eixos e piso', 'Alvenaria', 'Esquadrias', 'Cotas', 'Textos e áreas'].map((c) => (
+                <li data-camada>{c}</li>
+              ))}
+            </ol>
+
+        <figure class="folha">
+          <svg class="svg-planta" viewBox={`-140 -120 ${W + 280} ${Hp + 300}`} role="img"
+               aria-label="Planta baixa da residência com três dormitórios, sala integrada, cozinha, área de serviço e varanda">
+            <defs>
+              <pattern id="malha" width="50" height="50" patternUnits="userSpaceOnUse">
+                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1" />
+              </pattern>
+              <pattern id="malha-g" width="250" height="250" patternUnits="userSpaceOnUse">
+                <path d="M 250 0 L 0 0 0 250" fill="none" stroke="rgba(255,255,255,.24)" stroke-width="1.2" />
+              </pattern>
+            </defs>
+
+            <rect x="-140" y="-120" width={W + 280} height={Hp + 300} fill="url(#malha)" />
+            <rect x="-140" y="-120" width={W + 280} height={Hp + 300} fill="url(#malha-g)" />
+
+            {/* piso dos cômodos */}
+            <g class="pl-piso">
+              {comodos.map((c) => (
+                <rect x={px(c.x1)} y={py(c.z1)} width={px(c.x2) - px(c.x1)} height={py(c.z2) - py(c.z1)} />
+              ))}
+            </g>
+
+            {/* alvenaria */}
+            <g class="pl-parede">
+              {cheias.map((b, i) => (
+                <line data-risca style={`--i:${i}`} pathLength="1"
+                      x1={px(b.ax)} y1={py(b.az)} x2={px(b.bx)} y2={py(b.bz)}
+                      stroke-width={ESP * S} />
+              ))}
+            </g>
+
+            {/* janelas: peitoril cheio + linha do vidro */}
+            <g class="pl-janela">
+              {peitoris.map((b, i) => (
+                <>
+                  <line class="pl-jan-caixa" x1={px(b.ax)} y1={py(b.az)} x2={px(b.bx)} y2={py(b.bz)} stroke-width={ESP * S} />
+                  <line class="pl-jan-vidro" data-risca style={`--i:${i + 24}`} pathLength="1"
+                        x1={px(b.ax)} y1={py(b.az)} x2={px(b.bx)} y2={py(b.bz)} />
+                </>
+              ))}
+            </g>
+
+            {/* portas */}
+            <g class="pl-porta">
+              {portas.map((p, i) => (
+                <>
+                  <line data-risca style={`--i:${i + 30}`} pathLength="1"
+                        x1={p.folha.x1} y1={p.folha.y1} x2={p.folha.x2} y2={p.folha.y2} class="pl-folha" />
+                  <path d={p.arco} class="pl-arco" data-risca style={`--i:${i + 32}`} pathLength="1" />
+                </>
+              ))}
+            </g>
+
+            {/* cotas */}
+            <g class="pl-cota">
+              {cotasH.map((c) => (
+                <>
+                  <line x1={px(c.a)} y1={py(c.z) + c.off} x2={px(c.b)} y2={py(c.z) + c.off} />
+                  <line class="pl-ext" x1={px(c.a)} y1={py(c.z)} x2={px(c.a)} y2={py(c.z) + c.off * 1.18} />
+                  <line class="pl-ext" x1={px(c.b)} y1={py(c.z)} x2={px(c.b)} y2={py(c.z) + c.off * 1.18} />
+                  <text x={(px(c.a) + px(c.b)) / 2} y={py(c.z) + c.off + (c.off > 0 ? 26 : -12)}>{c.txt}</text>
+                </>
+              ))}
+              {cotasV.map((c) => (
+                <>
+                  <line x1={px(c.x) + c.off} y1={py(c.a)} x2={px(c.x) + c.off} y2={py(c.b)} />
+                  <line class="pl-ext" x1={px(c.x)} y1={py(c.a)} x2={px(c.x) + c.off * 1.18} y2={py(c.a)} />
+                  <line class="pl-ext" x1={px(c.x)} y1={py(c.b)} x2={px(c.x) + c.off * 1.18} y2={py(c.b)} />
+                  <text x={px(c.x) + c.off} y={(py(c.a) + py(c.b)) / 2}
+                        transform={`rotate(-90 ${px(c.x) + c.off} ${(py(c.a) + py(c.b)) / 2})`}
+                        dy="-12">{c.txt}</text>
+                </>
+              ))}
+            </g>
+
+            {/* nomes dos ambientes */}
+            <g class="pl-nome">
+              {comodos.map((c) => (
+                <>
+                  <text x={c.cx} y={c.cy - 6} class="pl-nome-t">{c.nome.toUpperCase()}</text>
+                  <text x={c.cx} y={c.cy + 18} class="pl-nome-a">{c.a} m²</text>
+                </>
+              ))}
+            </g>
+
+            {/* norte e escala */}
+            <g class="pl-info">
+              <g transform={`translate(${W + 96} -56)`}>
+                <circle r="26" class="pl-norte-c" />
+                <path d="M 0 -34 L 9 8 L 0 1 L -9 8 Z" class="pl-norte-s" />
+                <text y="-40" class="pl-norte-t">N</text>
+              </g>
+              <g transform={`translate(0 ${Hp + 128})`}>
+                <line x1="0" y1="0" x2="500" y2="0" class="pl-esc" />
+                {[0, 100, 200, 300, 400, 500].map((v) => (
+                  <line x1={v} y1="-7" x2={v} y2="7" class="pl-esc" />
+                ))}
+                <rect x="0" y="-6" width="100" height="12" class="pl-esc-b" />
+                <rect x="200" y="-6" width="100" height="12" class="pl-esc-b" />
+                <rect x="400" y="-6" width="100" height="12" class="pl-esc-b" />
+                <text x="0" y="34" class="pl-esc-t">0</text>
+                <text x="500" y="34" class="pl-esc-t">5 m</text>
+              </g>
+            </g>
+          </svg>
+        </figure>
+          </div>
+
+          <ul class="legenda" data-anima>
+            <li><b>Pé-direito</b> {m2(H).replace('.', ',')} m livre</li>
+            <li><b>Parede</b> {(ESP * 100).toFixed(0)} cm em bloco cerâmico com reboco</li>
+            <li><b>Vãos</b> verga e contraverga em 100 % das aberturas</li>
+            <li><b>Cobertura</b> duas águas, 20°, beiral de 60 cm</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-04 · A PLANTA VIRA OBRA (cena 3D preservada) ═════════ */}
+      <section class="cena" id="obra" data-cena data-folha="ARQ-04" data-folha-t="Da planta à obra">
+        <div class="cena-fixa">
+          <canvas class="cena-canvas" data-canvas></canvas>
+
+          <div class="cena-hud">
+            <p class="olho">Da planta ao habite-se</p>
+            <h2 data-etapa-t>{ETAPAS[0].t}</h2>
+            <p class="cena-d" data-etapa-d>{ETAPAS[0].d}</p>
+            <p class="cena-det" data-etapa-det>{ETAPAS[0].det}</p>
+            <ol class="trilha">
+              {ETAPAS.map((e) => <li data-passo><span></span>{e.t}</li>)}
+            </ol>
+          </div>
+
+          <p class="cena-nota">Modelo gerado a partir da mesma planta acima — nada é ilustração.</p>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-05 · ACERVO ═════════ */}
+      <section class="secao" id="acervo" data-folha="ARQ-05" data-folha-t="Acervo">
+        <div class="caixa">
+          <header class="cab cab-larga" data-anima>
+            <div>
+              <p class="olho">Acervo</p>
+              <h2>Seis obras, do sobrado de oito metros ao pavilhão de vão livre</h2>
+              <p class="lead">
+                Cada card traz o diagrama de massa na escala real de pavimentos — um
+                prédio de oito andares tem que parecer alto ao lado de um galpão de um.
+              </p>
+            </div>
+            <p class="cab-nota">
+              {OBRAS.filter((o) => o.status === 'Entregue').length} entregues ·
+              {' '}{OBRAS.filter((o) => o.status === 'Em obra').length} em obra ·
+              {' '}{OBRAS.reduce((s, o) => s + o.area, 0).toLocaleString('pt-BR')} m² somados
+            </p>
+          </header>
+
+          <ul class="grade-obras">
+            {OBRAS.map((o) => (
+              <li class="obra" data-anima>
+                <div class="obra-cab">
+                  <span class="obra-cod">{o.cod}</span>
+                  <span class={`obra-status${o.status === 'Em obra' ? ' obra-status-a' : ''}`}>{o.status}</span>
+                </div>
+
+                {/*
+                  Diagrama de massa: um retângulo por pavimento, altura fixa por
+                  pavimento. A informação está na proporção, não no desenho.
+                */}
+                <svg class="obra-massa" viewBox="0 0 150 140" aria-hidden="true">
+                  {Array.from({ length: o.pav }, (_, i) => (
+                    <rect x="26" y={120 - (i + 1) * 13} width="98" height="13" />
+                  ))}
+                  {o.pav <= 2 && (
+                    <path class="obra-agua" d={`M 20 ${120 - o.pav * 13} L 75 ${120 - o.pav * 13 - 16} L 130 ${120 - o.pav * 13}`} />
+                  )}
+                  <line class="obra-solo" x1="8" y1="120" x2="142" y2="120" />
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <line class="obra-hachura" x1={10 + i * 11} y1="120" x2={4 + i * 11} y2="128" />
+                  ))}
+                </svg>
+
+                <h3>{o.nome}</h3>
+                <p class="obra-tipo">{o.tipo}</p>
+                <p class="obra-nota">{o.nota}</p>
+                <dl class="obra-dados">
+                  <div><dt>Local</dt><dd>{o.local}</dd></div>
+                  <div><dt>Área</dt><dd>{o.area.toLocaleString('pt-BR')} m²</dd></div>
+                  <div><dt>Pavimentos</dt><dd>{o.pav}</dd></div>
+                  <div><dt>Sistema</dt><dd>{o.sistema}</dd></div>
+                  <div><dt>Obra</dt><dd>{o.obra}</dd></div>
+                  <div><dt>Ano</dt><dd>{o.ano}</dd></div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-06 · SERVIÇOS ═════════ */}
+      <section class="secao secao-osso" id="servicos" data-folha="ARQ-06" data-folha-t="Serviços">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Serviços</p>
+            <h2>Seis frentes, e você contrata só as que precisa</h2>
+            <p class="lead">
+              Dá para levar o pacote inteiro ou uma prancha só. O que não dá é
+              começar a obra sem a parte que sustenta o resto.
+            </p>
+          </header>
+
+          <ul class="grade-serv">
+            {servicos.map((s) => (
+              <li class="serv" data-anima>
+                <span class="serv-cod">{s.cod}</span>
+                <h3>{s.t}</h3>
+                <p>{s.d}</p>
+                <ul class="serv-itens">
+                  {s.itens.map((i) => <li>{i}</li>)}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-07 · SISTEMAS CONSTRUTIVOS ═════════ */}
+      <section class="secao" id="sistemas" data-folha="ARQ-07" data-folha-t="Sistemas">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Sistema construtivo</p>
+            <h2>A pergunta da segunda reunião, respondida em tabela</h2>
+            <p class="lead">
+              Escolhe-se pelo vão que a planta pede, pelo prazo que você tem e pelo
+              acesso do terreno — nessa ordem. Faixa de custo de obra em São Paulo,
+              sem projeto e sem terreno.
+            </p>
+          </header>
+
+          <div class="tabela-rolo no-bar">
+            <table class="tabela" data-anima>
+              <caption class="sr">Comparativo de sistemas construtivos</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Sistema</th>
+                  <th scope="col">Vão livre</th>
+                  <th scope="col">Prazo</th>
+                  <th scope="col">Custo de obra</th>
+                  <th scope="col">Quando faz sentido</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SISTEMAS.map((s) => (
+                  <tr data-linha-tab>
+                    <th scope="row">{s.s}</th>
+                    <td class="mono">{s.vao}</td>
+                    <td><span class={`prazo prazo-${s.prazo.toLowerCase()}`}>{s.prazo}</span></td>
+                    <td class="mono">{s.custo}</td>
+                    <td class="td-q">{s.q}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-08 · ETAPAS ═════════ */}
+      <section class="secao secao-osso" id="etapas" data-folha="ARQ-08" data-folha-t="Cronograma">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Cronograma</p>
+            <h2>Sete etapas, com o prazo de cada uma escrito antes de começar</h2>
+            <p class="lead">
+              A etapa 03 é a única cujo prazo não é nosso: quem responde é a
+              prefeitura. Por isso ela entra no cronograma desde o primeiro dia,
+              e não como surpresa no meio.
+            </p>
+          </header>
+
+          <ol class="fases">
+            {fases.map((f) => (
+              <li class="fase" data-anima>
+                <span class="fase-n">{f.n}</span>
+                <div class="fase-txt">
+                  <h3>{f.t}</h3>
+                  <p>{f.d}</p>
+                </div>
+                <span class="fase-p">{f.p}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-09 · INVESTIMENTO ═════════ */}
+      <section class="secao" id="investimento" data-folha="ARQ-09" data-folha-t="Investimento">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Investimento</p>
+            <h2>Número antes da reunião, porque orçamento não é surpresa</h2>
+            <p class="lead">
+              Faixas de referência para São Paulo. O valor fecha depois do
+              levantamento, por escrito, em orçamento analítico por composição de
+              serviço — e não muda no meio.
+            </p>
+          </header>
+
+          <div class="trio">
+            {PADROES.map((p) => (
+              <article class="padrao" data-anima>
+                <p class="padrao-t">Padrão {p.p}</p>
+                <p class="padrao-v">{p.m2}<small>por m² de obra</small></p>
+                <p class="padrao-d">{p.d}</p>
+              </article>
+            ))}
+          </div>
+
+          <div class="dupla dupla-topo">
+            <div data-anima>
+              <h3 class="sub">Honorários de projeto</h3>
+              <dl class="lista-preco">
+                {HONORARIOS.map((h) => (
+                  <div><dt>{h.i}</dt><dd class="mono">{h.v}</dd></div>
+                ))}
+              </dl>
+            </div>
+
+            <div data-anima>
+              <h3 class="sub">O que o CUB/m² não cobre</h3>
+              <p class="aviso">
+                O CUB do Sinduscon é a referência oficial, mas é um custo parcial.
+                É por isso que a obra real de padrão normal fica entre 1,5 e 1,8 vez
+                o CUB do mês — e por isso um orçamento por “CUB × área” sempre
+                estoura.
+              </p>
+              <ul class="fora">
+                {FORA_DO_CUB.map((f) => <li>{f}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-10 · EQUIPE ═════════ */}
+      <section class="secao secao-osso" id="equipe" data-folha="ARQ-10" data-folha-t="Equipe">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Equipe</p>
+            <h2>Quem assina embaixo</h2>
+            <p class="lead">
+              Registro profissional é público e verificável no CAU e no CREA. Se um
+              escritório não mostra o número, comece perguntando por ele.
+            </p>
+          </header>
+
+          <ul class="grade-equipe">
+            {EQUIPE.map((p) => (
+              <li class="pessoa" data-anima>
+                <span class="pessoa-ini" aria-hidden="true">
+                  {p.n.split(' ').map((x) => x[0]).slice(0, 2).join('')}
+                </span>
+                <b>{p.n}</b>
+                <span class="pessoa-c">{p.c}</span>
+                <span class="pessoa-r mono">{p.r}</span>
+                <span class="pessoa-f">{p.f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-11 · TÉCNICO ═════════ */}
+      <section class="secao" id="tecnico" data-folha="ARQ-11" data-folha-t="Técnico">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Base técnica</p>
+            <h2>As normas que o projeto obedece, e o que você recebe no fim</h2>
+            <p class="lead">
+              Norma não é burocracia: é a diferença entre trinca em dois anos e
+              casa em pé em cinquenta. Cada item da esquerda tem consequência
+              direta na coluna da direita.
+            </p>
+          </header>
+
+          <div class="dupla">
+            <ul class="normas">
+              {normas.map((n) => (
+                <li data-anima>
+                  <span class="norma-n mono">{n.n}</span>
+                  <b>{n.t}</b>
+                  <span class="norma-d">{n.d}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div class="entrega-bloco" data-anima>
+              <h3 class="sub">O pacote entregue</h3>
+              <p class="entrega-i">
+                {entregaveis.length} pranchas e documentos, em DWG, PDF e IFC.
+                O IFC é o que permite outro profissional abrir o modelo sem
+                depender de nós.
+              </p>
+              <ul class="entregas">
+                {entregaveis.map((e) => <li>{e}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-12 · DEPOIMENTOS ═════════ */}
+      <section class="secao secao-escura" id="clientes" data-folha="ARQ-12" data-folha-t="Clientes" data-escura>
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho olho-claro">Clientes</p>
+            <h2>Três obras, contadas por quem pagou a conta</h2>
+          </header>
+          <ul class="depoimentos">
+            {DEPOIMENTOS.map((d) => (
+              <li data-anima>
+                <blockquote>{d.t}</blockquote>
+                <p class="dep-a"><b>{d.n}</b><span>{d.o}</span></p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-13 · DÚVIDAS ═════════ */}
+      <section class="secao" id="duvidas" data-folha="ARQ-13" data-folha-t="Dúvidas">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Dúvidas frequentes</p>
+            <h2>As dez perguntas que aparecem em toda primeira reunião</h2>
+          </header>
+          <div class="faq">
+            {faq.map((f) => (
+              <details data-anima>
+                <summary>{f.p}</summary>
+                <p>{f.r}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ ARQ-14 · CONTATO ═════════ */}
+      <section class="secao secao-cta" id="contato" data-folha="ARQ-14" data-folha-t="Contato">
+        <div class="caixa">
+          <div class="dupla">
+            <div data-anima>
+              <p class="olho">Contato</p>
+              <h2>Comece pelo diagnóstico do terreno</h2>
+              <p class="lead">
+                Uma hora de conversa com consulta de zoneamento inclusa: você
+                descobre a taxa de ocupação, o recuo e o coeficiente do seu lote
+                antes de contratar qualquer coisa. Se o terreno não permitir o que
+                você quer, é melhor saber agora.
+              </p>
+              <dl class="contato-dados">
+                <div><dt>WhatsApp</dt><dd><a href={`https://wa.me/${EMPRESA.zap}`} rel="noopener">{EMPRESA.zapFmt}</a></dd></div>
+                <div><dt>Telefone</dt><dd><a href={`tel:${EMPRESA.foneLink}`}>{EMPRESA.fone}</a></dd></div>
+                <div><dt>E-mail</dt><dd><a href={`mailto:${EMPRESA.email}`}>{EMPRESA.email}</a></dd></div>
+                <div><dt>Escritório</dt><dd>{EMPRESA.rua}<br />{EMPRESA.bairro} · {EMPRESA.cidade}/{EMPRESA.uf}</dd></div>
+                <div><dt>Horário</dt><dd>Segunda a sexta, 9h às 18h</dd></div>
+              </dl>
+            </div>
+
+            <form class="form" data-form data-zap={EMPRESA.zap} data-anima>
+              <div class="form-2">
+                <label>
+                  Nome
+                  <input name="nome" type="text" required autocomplete="name" placeholder="Como te chamamos" />
+                </label>
+                <label>
+                  WhatsApp
+                  <input name="fone" type="tel" required autocomplete="tel" placeholder="(11) 90000-0000" />
+                </label>
+              </div>
+
+              <div class="form-2">
+                <label>
+                  O que você precisa
+                  <select name="tipo">
+                    <option>Casa nova</option>
+                    <option>Reforma ou ampliação</option>
+                    <option>Multifamiliar</option>
+                    <option>Comercial ou industrial</option>
+                    <option>Retrofit ou regularização</option>
+                    <option>Só o projeto executivo</option>
+                    <option>Só gerenciamento de obra</option>
+                  </select>
+                </label>
+                <label>
+                  Área aproximada
+                  <input name="area" type="text" inputmode="numeric" placeholder="m² construídos" />
+                </label>
+              </div>
+
+              <div class="form-2">
+                <label>
+                  Situação do terreno
+                  <select name="terreno">
+                    <option>Já é meu</option>
+                    <option>Em negociação</option>
+                    <option>Ainda procurando</option>
+                    <option>Imóvel existente para reformar</option>
+                  </select>
+                </label>
+                <label>
+                  Quando pretende começar
+                  <select name="prazo">
+                    <option>Nos próximos 3 meses</option>
+                    <option selected>Neste ano</option>
+                    <option>Ainda estudando</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                O que a obra precisa resolver
+                <textarea name="msg" rows="3" placeholder="Somos quatro e a casa tem dois dormitórios… / o galpão precisa de vão livre de 20 m…"></textarea>
+              </label>
+
+              <button class="btn btn-p btn-cheio btn-g" type="submit">Enviar pelo WhatsApp</button>
+              <p class="form-nota">
+                Abre a conversa com tudo preenchido. Nada fica gravado neste site.
+              </p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <div class="caixa rodape-grade">
+        <div>
+          <p class="rodape-marca">{EMPRESA.nome}<small>{EMPRESA.sub}</small></p>
+          <p class="rodape-d">
+            Escritório de arquitetura e engenharia civil em {EMPRESA.cidade}.
+            Projeto, aprovação, orçamento e obra sob a mesma responsabilidade técnica.
+          </p>
+          <p class="rodape-reg mono">{EMPRESA.cau}<br />{EMPRESA.crea}</p>
+        </div>
+
+        <nav aria-label="Rodapé">
+          <p class="rodape-t">Pranchas</p>
+          <ul>
+            <li><a href="#projeto">ARQ-03 · Planta baixa</a></li>
+            <li><a href="#obra">ARQ-04 · Da planta à obra</a></li>
+            <li><a href="#acervo">ARQ-05 · Acervo</a></li>
+            <li><a href="#sistemas">ARQ-07 · Sistemas</a></li>
+            <li><a href="#investimento">ARQ-09 · Investimento</a></li>
+            <li><a href="#tecnico">ARQ-11 · Base técnica</a></li>
+          </ul>
+        </nav>
+
+        <div class="rodape-mapa">
+          <p class="rodape-t">Como chegar</p>
+          <iframe
+            title={`Mapa — ${EMPRESA.rua}`}
+            src={`https://www.google.com/maps?q=${mapaQuery}&z=16&output=embed`}
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen></iframe>
+          <a class="rodape-link" href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+            Abrir no Google Maps →
+          </a>
+        </div>
+      </div>
+
+      <p class="caixa rodape-fim">
+        <span>© 2026 {EMPRESA.nome} · {EMPRESA.bairro}, {EMPRESA.cidade}/{EMPRESA.uf}</span>
+        <a href="/">← Voltar ao portfolio</a>
+      </p>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .pr {
+    --papel: #fff;
+    --osso: #f6f6f3;
+    --linha: #e6e5e1;
+    --tinta: #16181c;
+    --c60: #5c6067;
+    --c40: #9a9da4;
+    --acento: #1b4fd6;
+    --acento-esc: #143aa3;
+    --planta: #0c2747;
+    --planta-2: #123561;
+    --ciano: #7fd3ff;
+
+    --raio: 12px;
+    --raio-g: 18px;
+    --t: 0.4s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --malha: 34px;
+    --topo-h: 4rem;
+
+    position: relative;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.6;
+  }
+
+  :global(body) { background: #fff; color: #16181c; }
+  :global(::selection) { background: #1b4fd6; color: #fff; }
+
+  /* papel milimetrado: fixo, atrás de tudo, dois níveis como prancha de verdade */
+  .pr::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(27, 79, 214, 0.026) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(27, 79, 214, 0.026) 1px, transparent 1px),
+      linear-gradient(rgba(27, 79, 214, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(27, 79, 214, 0.05) 1px, transparent 1px);
+    background-size: var(--malha) var(--malha), var(--malha) var(--malha),
+      calc(var(--malha) * 5) calc(var(--malha) * 5), calc(var(--malha) * 5) calc(var(--malha) * 5);
+  }
+  .pr > * { position: relative; z-index: 1; }
+
+  .sr {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--tinta); color: #fff; padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0;
+  }
+  .pular:focus { left: 0; }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3 {
+    font-weight: 700; letter-spacing: -0.028em; line-height: 1.14;
+    margin: 0; text-wrap: balance;
+  }
+  h1 { font-size: clamp(2.3rem, 5.4vw, 4.2rem); font-weight: 800; line-height: 1.04; letter-spacing: -0.038em; }
+  h2 { font-size: clamp(1.6rem, 3.1vw, 2.5rem); }
+  h3 { font-size: 1.12rem; letter-spacing: -0.018em; }
+  p { margin: 0; text-wrap: pretty; }
+  .lead { font-size: 1.03rem; color: var(--c60); max-width: 58ch; }
+  .lead-claro { font-size: 1.03rem; color: rgba(234, 243, 255, 0.72); max-width: 62ch; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--acento);
+    margin-bottom: 1.1rem;
+  }
+
+  .olho {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.17em;
+    text-transform: uppercase; color: var(--acento); margin: 0 0 1rem;
+  }
+  .olho::before { content: ''; width: 26px; height: 1px; flex: none; background: currentColor; }
+  .olho-claro { color: var(--ciano); }
+
+  .caixa { max-width: 1220px; margin: 0 auto; padding-inline: clamp(1rem, 4vw, 2.6rem); }
+  .secao { position: relative; padding-block: clamp(3.6rem, 7.5vw, 6.5rem); }
+  .secao-osso { background: var(--osso); border-block: 1px solid var(--linha); }
+  .cab { margin-bottom: clamp(2.2rem, 4vw, 3.2rem); max-width: 62ch; }
+  .cab .lead { margin-top: 0.9rem; }
+  .cab .btn { margin-top: 1.6rem; }
+  .cab-larga {
+    max-width: none; display: flex; flex-wrap: wrap; gap: 1.4rem 2.5rem;
+    align-items: flex-end; justify-content: space-between;
+  }
+  .cab-larga > div { max-width: 62ch; }
+  .cab-nota {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+    color: var(--c40); text-align: right;
+  }
+  .dupla { display: grid; gap: clamp(2rem, 4vw, 3.4rem); align-items: start; }
+  .dupla-topo { margin-top: clamp(2.4rem, 4vw, 3.4rem); }
+  .pr section[id] { scroll-margin-top: calc(var(--topo-h) + 0.6rem); }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.75rem 1.4rem; border-radius: 999px;
+    font-family: inherit; font-size: 0.92rem; font-weight: 600; text-decoration: none;
+    border: 1px solid transparent; white-space: nowrap; cursor: pointer;
+    transition: background var(--t) var(--e), color var(--t) var(--e),
+      border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .btn-g { padding: 0.92rem 1.7rem; font-size: 0.98rem; }
+  .btn-min { padding: 0.52rem 1.05rem; font-size: 0.84rem; }
+  .btn-cheio { width: 100%; }
+  .btn-p { background: var(--acento); color: #fff; }
+  .btn-p:hover { background: var(--acento-esc); box-shadow: 0 8px 24px -12px rgba(27, 79, 214, 0.7); }
+  .btn-v { background: transparent; color: var(--tinta); border-color: var(--linha); }
+  .btn-v:hover { border-color: var(--acento); color: var(--acento); }
+
+  /* ---------- fio de prumo e carimbo de folha ---------- */
+  .prumo {
+    position: fixed; z-index: 55; top: var(--topo-h); bottom: 0;
+    left: clamp(0.5rem, 1.6vw, 1.4rem); width: 1px;
+    background: var(--linha); pointer-events: none;
+  }
+  .prumo span {
+    display: block; width: 1px; height: 100%;
+    background: linear-gradient(var(--acento), var(--acento-esc));
+    transform: scaleY(0); transform-origin: 50% 0;
+  }
+  /* o peso do prumo: um losango que desce junto */
+  .prumo::after {
+    content: ''; position: absolute; left: -3px; top: 0; width: 7px; height: 7px;
+    background: var(--acento); rotate: 45deg;
+  }
+  @media (max-width: 900px) { .prumo { display: none; } }
+
+  .folha-atual {
+    position: fixed; z-index: 55; right: clamp(0.7rem, 2vw, 1.6rem); bottom: 1rem;
+    display: none; align-items: baseline; gap: 0.5rem;
+    padding: 0.4rem 0.8rem; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+    border: 1px solid var(--linha);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    color: var(--acento); letter-spacing: 0.1em;
+  }
+  .folha-atual em { font-style: normal; color: var(--c40); letter-spacing: 0.04em; }
+  @media (min-width: 900px) { .folha-atual { display: flex; } }
+
+  /* ---------- topo ---------- */
+  .topo {
+    position: fixed; inset: 0 0 auto; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem clamp(1rem, 4vw, 2.6rem);
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--linha);
+  }
+  .marca { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; color: var(--tinta); }
+  .marca-simbolo {
+    width: 1.6rem; height: 1.6rem; flex: none; position: relative;
+    border: 1.5px solid var(--acento);
+  }
+  /* o símbolo é um esquadro: a diagonal fecha o triângulo */
+  .marca-simbolo::after {
+    content: ''; position: absolute; inset: -1.5px;
+    background: linear-gradient(45deg, transparent 49%, var(--acento) 49% 51%, transparent 51%);
+  }
+  .marca-txt { font-size: 1.02rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1.1; }
+  .marca-txt small {
+    display: block; font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    font-size: 0.55rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--c40); margin-top: 0.28rem;
+  }
+  .topo-nav { display: none; gap: 1.4rem; }
+  .topo-nav a {
+    position: relative; font-size: 0.87rem; font-weight: 500;
+    color: var(--c60); text-decoration: none;
+    transition: color var(--t) var(--e);
+  }
+  .topo-nav a::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px;
+    background: var(--acento); transform: scaleX(0); transform-origin: 0 50%;
+    transition: transform var(--t) var(--e);
+  }
+  .topo-nav a:hover { color: var(--tinta); }
+  .topo-nav a:hover::after { transform: scaleX(1); }
+
+  /* ---------- capa ---------- */
+  .capa {
+    position: relative;
+    padding: calc(var(--topo-h) + clamp(2.5rem, 6vh, 4.5rem)) clamp(1rem, 4vw, 2.6rem) clamp(4rem, 9vh, 6rem);
+    max-width: 1220px; margin: 0 auto;
+  }
+  .capa-grade { display: grid; gap: clamp(2.5rem, 5vw, 4rem); align-items: center; }
+  h1 em { font-style: normal; color: var(--acento); }
+  h1 .linha { display: block; }
+  .capa .lead { margin-top: 1.5rem; font-size: 1.08rem; max-width: 46ch; }
+  .capa-acoes { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2.1rem; }
+  .selos {
+    list-style: none; margin: 2.4rem 0 0; padding: 1.4rem 0 0;
+    border-top: 1px solid var(--linha);
+    display: grid; gap: 0.55rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--c60);
+  }
+  .selos li { display: flex; align-items: baseline; gap: 0.6rem; }
+  .selos li::before { content: '+'; color: var(--acento); font-weight: 700; }
+
+  .capa-lado { display: grid; gap: 1rem; }
+  .capa-desenho {
+    border: 1px solid var(--linha); border-radius: var(--raio);
+    padding: clamp(0.8rem, 2vw, 1.6rem); background: var(--papel);
+  }
+  .carimbo {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+    border: 1px solid var(--linha); border-radius: var(--raio); overflow: hidden;
+  }
+  .carimbo-l {
+    padding: 0.6rem 0.75rem; border-right: 1px solid var(--linha);
+    display: grid; gap: 0.2rem;
+  }
+  .carimbo-l:last-child { border-right: 0; }
+  .carimbo-l span {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40);
+  }
+  .carimbo-l b { font-size: 0.8rem; font-weight: 600; }
+
+  .rolar {
+    display: flex; align-items: center; gap: 0.7rem; margin-top: clamp(2.5rem, 6vh, 4rem);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--c40);
+  }
+  .rolar span { width: 3rem; height: 1px; background: linear-gradient(90deg, var(--acento), transparent); }
+
+  /* ---------- números ---------- */
+  .faixa { border-block: 1px solid var(--linha); background: var(--osso); }
+  .nums {
+    max-width: 1220px; margin: 0 auto;
+    padding: clamp(2.2rem, 4.5vw, 3.2rem) clamp(1rem, 4vw, 2.6rem);
+    display: grid; gap: clamp(1.4rem, 3vw, 2.4rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  }
+  .num dt {
+    display: flex; align-items: baseline; gap: 0.25rem;
+    font-size: clamp(2rem, 4vw, 2.9rem); font-weight: 800; letter-spacing: -0.04em;
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .num dt i {
+    font-style: normal; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.3em; font-weight: 500; color: var(--acento); letter-spacing: 0.04em;
+  }
+  .num dd { margin: 0.6rem 0 0; font-size: 0.86rem; color: var(--c60); max-width: 24ch; }
+
+  /* ---------- ficha e pilares ---------- */
+  .ficha {
+    margin: 0; border: 1px solid var(--linha); border-radius: var(--raio-g);
+    padding: clamp(1.2rem, 2.4vw, 1.8rem); background: var(--osso);
+  }
+  .ficha-t {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--acento);
+    margin-bottom: 1.1rem;
+  }
+  .ficha div {
+    display: grid; gap: 0.15rem; padding: 0.7rem 0; border-top: 1px solid var(--linha);
+  }
+  .ficha dt {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--c40);
+  }
+  .ficha dd { margin: 0; font-size: 0.88rem; }
+
+  .pilares {
+    list-style: none; margin: clamp(2.4rem, 4vw, 3.4rem) 0 0; padding: 0;
+    display: grid; gap: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+    border-top: 1px solid var(--linha);
+  }
+  .pilares li {
+    display: grid; gap: 0.4rem; align-content: start;
+    padding: 1.5rem clamp(0.9rem, 2vw, 1.5rem) 1.5rem 0;
+    border-right: 1px solid var(--linha);
+  }
+  .pilares li:last-child { border-right: 0; }
+  .pilar-n {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.14em; color: var(--acento);
+  }
+  .pilares b { font-size: 1rem; font-weight: 700; }
+  .pilar-d { font-size: 0.86rem; color: var(--c60); }
+
+  /* ---------- prancha escura ---------- */
+  .prancha {
+    position: relative;
+    background: var(--planta); color: #eaf3ff;
+    padding-block: clamp(3.6rem, 7.5vw, 6.5rem);
+    border-block: 1px solid var(--planta-2);
+  }
+  .prancha h2 { color: #eaf3ff; }
+  .prancha-cab { margin-bottom: clamp(2rem, 4vw, 3rem); max-width: 68ch; }
+  .prancha-cab h2 { margin-top: 0.2rem; }
+  .prancha-palco { position: relative; }
+
+  .camadas {
+    list-style: none; margin: 0 0 1.2rem; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    counter-reset: cam;
+  }
+  .camadas li {
+    padding: 0.3rem 0.7rem; border-radius: 999px;
+    border: 1px solid rgba(159, 198, 255, 0.24);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(234, 243, 255, 0.42);
+    transition: color var(--t) var(--e), border-color var(--t) var(--e), background var(--t) var(--e);
+  }
+  .camadas li::before {
+    counter-increment: cam; content: counter(cam) ' ';
+    color: rgba(159, 198, 255, 0.5);
+  }
+  .camadas li.ativa {
+    color: var(--planta); background: var(--ciano); border-color: var(--ciano);
+  }
+
+  .legenda {
+    list-style: none; margin: clamp(1.6rem, 3vw, 2.4rem) 0 0; padding: 0;
+    display: grid; gap: 0.6rem 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+    font-size: 0.84rem; color: rgba(234, 243, 255, 0.66);
+  }
+  .legenda b { color: #eaf3ff; font-weight: 600; }
+
+  /* ---------- acervo ---------- */
+  .grade-obras {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  }
+  .obra {
+    display: flex; flex-direction: column;
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    padding: clamp(1.1rem, 2.2vw, 1.5rem); background: var(--papel);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .obra:hover { border-color: var(--acento); box-shadow: 0 16px 40px -24px rgba(27, 79, 214, 0.4); }
+  .obra-cab { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; }
+  .obra-cod {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.12em; color: var(--acento);
+  }
+  .obra-status {
+    padding: 0.2rem 0.6rem; border-radius: 999px;
+    background: var(--osso); border: 1px solid var(--linha);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--c60);
+  }
+  .obra-status-a { background: rgba(27, 79, 214, 0.08); border-color: rgba(27, 79, 214, 0.3); color: var(--acento); }
+
+  .obra-massa { display: block; width: 100%; height: auto; margin: 1rem 0 0.4rem; }
+  .obra-massa rect { fill: rgba(27, 79, 214, 0.07); stroke: var(--acento); stroke-width: 1.2; }
+  .obra-agua { fill: none; stroke: var(--acento); stroke-width: 2; stroke-linejoin: round; }
+  .obra-solo { stroke: var(--tinta); stroke-width: 1.6; }
+  .obra-hachura { stroke: rgba(22, 24, 28, 0.28); stroke-width: 1; }
+
+  .obra h3 { margin-top: 0.7rem; }
+  .obra-tipo {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--c40);
+    margin-top: 0.3rem;
+  }
+  .obra-nota { margin-top: 0.8rem; font-size: 0.87rem; color: var(--c60); flex: 1; }
+  .obra-dados {
+    margin: 1.1rem 0 0; padding-top: 0.9rem; border-top: 1px solid var(--linha);
+    display: grid; gap: 0.45rem 1rem; grid-template-columns: 1fr 1fr;
+  }
+  .obra-dados div { display: grid; gap: 0.1rem; }
+  .obra-dados dt {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--c40);
+  }
+  .obra-dados dd { margin: 0; font-size: 0.82rem; font-weight: 500; }
+
+  /* ---------- serviços ---------- */
+  .grade-serv {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+    border-top: 1px solid var(--linha);
+  }
+  .serv {
+    padding: clamp(1.4rem, 2.6vw, 2rem) clamp(1rem, 2vw, 1.8rem) clamp(1.4rem, 2.6vw, 2rem) 0;
+    border-right: 1px solid var(--linha); border-bottom: 1px solid var(--linha);
+  }
+  .serv-cod {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.14em; color: var(--acento);
+  }
+  .serv h3 { margin: 0.7rem 0 0.6rem; }
+  .serv > p { font-size: 0.9rem; color: var(--c60); }
+  .serv-itens {
+    list-style: none; margin: 1.1rem 0 0; padding: 0; display: grid; gap: 0.4rem;
+    font-size: 0.82rem; color: var(--c60);
+  }
+  .serv-itens li { display: flex; align-items: baseline; gap: 0.55rem; }
+  .serv-itens li::before { content: ''; flex: none; width: 5px; height: 5px; background: var(--acento); rotate: 45deg; }
+
+  /* ---------- tabela de sistemas ---------- */
+  .tabela-rolo { overflow-x: auto; }
+  .tabela { width: 100%; min-width: 46rem; border-collapse: collapse; text-align: left; }
+  .tabela :is(th, td) { padding: 0.95rem 1rem; border-bottom: 1px solid var(--linha); vertical-align: top; }
+  .tabela thead th {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40);
+    border-bottom-color: var(--tinta);
+  }
+  .tabela tbody th { font-size: 0.95rem; font-weight: 700; width: 15rem; }
+  .tabela td { font-size: 0.87rem; color: var(--c60); }
+  .tabela .mono { font-size: 0.8rem; white-space: nowrap; }
+  .td-q { min-width: 20rem; }
+  .tabela tbody tr { transition: background var(--t) var(--e); }
+  .tabela tbody tr:hover { background: var(--osso); }
+  .prazo {
+    padding: 0.16rem 0.55rem; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.08em; white-space: nowrap;
+  }
+  .prazo-curto { background: rgba(27, 79, 214, 0.1); color: var(--acento); }
+  .prazo-médio { background: var(--osso); color: var(--c60); border: 1px solid var(--linha); }
+  .prazo-longo { background: rgba(22, 24, 28, 0.07); color: var(--tinta); }
+
+  /* ---------- fases ---------- */
+  .fases { list-style: none; margin: 0; padding: 0; }
+  .fase {
+    display: grid; gap: 0.3rem 1.4rem; align-items: baseline;
+    padding: clamp(1.1rem, 2.2vw, 1.6rem) 0;
+    border-top: 1px solid var(--linha);
+    grid-template-columns: auto 1fr;
+  }
+  .fase:last-child { border-bottom: 1px solid var(--linha); }
+  .fase-n {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 700;
+    color: var(--acento); letter-spacing: 0.06em;
+  }
+  .fase-txt h3 { margin-bottom: 0.4rem; }
+  .fase-txt p { font-size: 0.89rem; color: var(--c60); max-width: 74ch; }
+  .fase-p {
+    grid-column: 2; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--c40); margin-top: 0.5rem;
+  }
+
+  /* ---------- investimento ---------- */
+  .trio {
+    display: grid; gap: clamp(1rem, 2vw, 1.4rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  }
+  .padrao {
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    padding: clamp(1.2rem, 2.4vw, 1.7rem);
+  }
+  .padrao-t {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--acento);
+  }
+  .padrao-v { margin-top: 0.9rem; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; }
+  .padrao-v small {
+    display: block; margin-top: 0.25rem; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; font-weight: 400; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--c40);
+  }
+  .padrao-d { margin-top: 0.9rem; font-size: 0.85rem; color: var(--c60); }
+
+  .lista-preco { margin: 0; display: grid; }
+  .lista-preco div {
+    display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; justify-content: space-between;
+    padding: 0.8rem 0; border-top: 1px solid var(--linha);
+  }
+  .lista-preco dt { font-size: 0.89rem; }
+  .lista-preco dd { margin: 0; font-size: 0.83rem; color: var(--acento); white-space: nowrap; }
+
+  .aviso {
+    font-size: 0.88rem; color: var(--c60);
+    padding-left: 1rem; border-left: 2px solid var(--acento);
+  }
+  .fora {
+    list-style: none; margin: 1.3rem 0 0; padding: 0;
+    display: grid; gap: 0.45rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    font-size: 0.84rem; color: var(--c60);
+  }
+  .fora li { display: flex; align-items: baseline; gap: 0.55rem; }
+  .fora li::before { content: '×'; color: var(--acento); font-weight: 700; }
+
+  /* ---------- equipe ---------- */
+  .grade-equipe {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(0.9rem, 1.8vw, 1.3rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  }
+  .pessoa {
+    display: grid; gap: 0.3rem; align-content: start;
+    padding: clamp(1.1rem, 2.2vw, 1.5rem);
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    background: var(--papel);
+  }
+  .pessoa-ini {
+    width: 2.6rem; height: 2.6rem; display: grid; place-items: center;
+    margin-bottom: 0.7rem; border: 1px solid var(--acento);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; font-weight: 700;
+    color: var(--acento);
+  }
+  .pessoa b { font-size: 1rem; }
+  .pessoa-c { font-size: 0.82rem; color: var(--c60); }
+  .pessoa-r { font-size: 0.68rem; color: var(--acento); letter-spacing: 0.06em; }
+  .pessoa-f { margin-top: 0.4rem; font-size: 0.8rem; color: var(--c40); }
+
+  /* ---------- técnico ---------- */
+  .normas { list-style: none; margin: 0; padding: 0; }
+  .normas li {
+    display: grid; gap: 0.25rem; padding: 0.95rem 0;
+    border-top: 1px solid var(--linha);
+    grid-template-columns: 6.5rem 1fr;
+  }
+  .norma-n { font-size: 0.75rem; color: var(--acento); letter-spacing: 0.04em; grid-row: span 2; }
+  .normas b { font-size: 0.93rem; }
+  .norma-d { grid-column: 2; font-size: 0.84rem; color: var(--c60); }
+
+  .entrega-bloco {
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    padding: clamp(1.2rem, 2.4vw, 1.8rem); background: var(--osso);
+  }
+  .entrega-i { font-size: 0.86rem; color: var(--c60); }
+  .entregas {
+    list-style: none; margin: 1.3rem 0 0; padding: 0; display: grid; gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+  .entregas li { display: flex; align-items: baseline; gap: 0.6rem; }
+  .entregas li::before {
+    content: ''; flex: none; width: 12px; height: 1px; background: var(--acento);
+    transform: translateY(-0.35em);
+  }
+
+  /* ---------- depoimentos ---------- */
+  .secao-escura { background: var(--tinta); color: #f2f3f5; border-block: 1px solid #2a2d33; }
+  .secao-escura h2 { color: #f2f3f5; }
+  .depoimentos {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.6rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  }
+  .depoimentos li {
+    display: flex; flex-direction: column; gap: 1.2rem;
+    padding: clamp(1.2rem, 2.4vw, 1.8rem);
+    border: 1px solid #2a2d33; border-radius: var(--raio-g);
+  }
+  .depoimentos blockquote {
+    margin: 0; flex: 1; font-size: 0.96rem; line-height: 1.62;
+    color: rgba(242, 243, 245, 0.86);
+  }
+  .depoimentos blockquote::before { content: '“'; color: var(--ciano); font-size: 1.6em; line-height: 0; vertical-align: -0.35em; margin-right: 0.1em; }
+  .dep-a { display: grid; gap: 0.15rem; padding-top: 1rem; border-top: 1px solid #2a2d33; }
+  .dep-a b { font-size: 0.9rem; }
+  .dep-a span { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #8a8f98; letter-spacing: 0.06em; }
+
+  /* ---------- FAQ ---------- */
+  .faq { border-top: 1px solid var(--linha); }
+  .faq details { border-bottom: 1px solid var(--linha); }
+  .faq summary {
+    display: flex; align-items: flex-start; gap: 0.9rem; cursor: pointer;
+    padding: 1.15rem 0; font-size: 1rem; font-weight: 600;
+    list-style: none; transition: color var(--t) var(--e);
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::before {
+    content: '+'; flex: none; width: 1.2rem;
+    font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    color: var(--acento); transition: rotate var(--t) var(--e);
+  }
+  .faq details[open] summary::before { content: '−'; }
+  .faq summary:hover { color: var(--acento); }
+  .faq details p {
+    padding: 0 0 1.3rem 2.1rem; font-size: 0.9rem; color: var(--c60); max-width: 80ch;
+  }
+
+  /* ---------- contato ---------- */
+  .secao-cta { background: var(--osso); border-top: 1px solid var(--linha); }
+  .contato-dados { margin: 1.8rem 0 0; display: grid; }
+  .contato-dados div {
+    display: grid; gap: 0.15rem; padding: 0.75rem 0; border-top: 1px solid var(--linha);
+  }
+  .contato-dados dt {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40);
+  }
+  .contato-dados dd { margin: 0; font-size: 0.9rem; }
+  .contato-dados a { color: var(--acento); text-decoration: none; }
+  .contato-dados a:hover { text-decoration: underline; }
+
+  .form {
+    display: grid; gap: 0.85rem;
+    background: var(--papel); border: 1px solid var(--linha);
+    border-radius: var(--raio-g); padding: clamp(1.2rem, 2.6vw, 1.9rem);
+  }
+  .form label {
+    display: grid; gap: 0.32rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.63rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--c40);
+  }
+  .form-2 { display: grid; gap: 0.85rem; grid-template-columns: 1fr; }
+  .form :is(input, select, textarea) {
+    font-family: 'Archivo', sans-serif; font-size: 0.92rem; letter-spacing: 0;
+    text-transform: none; color: var(--tinta);
+    background: var(--papel); border: 1px solid var(--linha); border-radius: 9px;
+    padding: 0.65rem 0.75rem; width: 100%;
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .form :is(input, select, textarea):focus {
+    outline: none; border-color: var(--acento);
+    box-shadow: 0 0 0 3px rgba(27, 79, 214, 0.14);
+  }
+  .form textarea { resize: vertical; }
+  .form-nota {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+    color: var(--c40); text-align: center;
+  }
+
+  /* ---------- rodapé ---------- */
+  .rodape { background: var(--tinta); color: #a2a7b0; }
+  .rodape-grade { display: grid; gap: 2.4rem; padding-block: clamp(2.6rem, 6vw, 4rem) 1.6rem; }
+  .rodape-marca { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.02em; color: #fff; }
+  .rodape-marca small {
+    display: block; font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #7f858f; margin-top: 0.4rem;
+  }
+  .rodape-d { margin-top: 1rem; font-size: 0.86rem; max-width: 40ch; }
+  .rodape-reg { margin-top: 1rem; font-size: 0.68rem; color: #7f858f; line-height: 1.9; }
+  .rodape-t {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.63rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: #fff; margin-bottom: 1rem;
+  }
+  .rodape ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+  .rodape a { color: #a2a7b0; text-decoration: none; font-size: 0.86rem; transition: color var(--t) var(--e); }
+  .rodape a:hover { color: #fff; }
+  .rodape-mapa iframe {
+    width: 100%; height: 180px; border: 1px solid #2a2d33; border-radius: var(--raio);
+    display: block; filter: grayscale(0.5) contrast(1.05) brightness(0.92);
+  }
+  .rodape-link { display: inline-block; margin-top: 0.7rem; color: var(--ciano) !important; font-size: 0.8rem; }
+  .rodape-fim {
+    display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: space-between;
+    padding-block: 1.2rem 1.7rem; border-top: 1px solid #2a2d33;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #7f858f;
+  }
+
+  .pr :focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 6px; }
+  .prancha :focus-visible, .secao-escura :focus-visible, .rodape :focus-visible { outline-color: var(--ciano); }
+
+  /* o que o Motion revela nasce escondido — só com JS e com vontade de movimento */
+  :global(.anima-on) .pr [data-anima],
+  :global(.anima-on) .pr [data-linha] { opacity: 0; }
+
+  /* ---------- peças preservadas: elevação, planta e cena 3D ----------
+     Aparência copiada do arquivo antigo sem uma vírgula de mudança: está
+     casada com a geometria que casa-plano.ts gera. A maquinaria de
+     animação saiu daqui — quem sequencia agora é o Motion. */
+  .svg-elev { display: block; width: 100%; height: auto; }
+  .el-telha { fill: none; stroke: var(--acento); stroke-width: 7; stroke-linejoin: round; stroke-linecap: round; }
+  .el-laje { fill: rgba(27, 79, 214, 0.16); stroke: var(--acento); stroke-width: 2; }
+  .el-parede { fill: rgba(27, 79, 214, 0.05); stroke: var(--acento); stroke-width: 2.5; }
+  .el-vao { fill: rgba(255, 255, 255, 0.9); stroke: var(--acento); stroke-width: 2; }
+  .el-vao-c { stroke: rgba(27, 79, 214, 0.45); stroke-width: 1.5; }
+  .el-solo { stroke: var(--tinta); stroke-width: 3; }
+  .el-hachura { stroke: rgba(22, 24, 28, 0.32); stroke-width: 1.5; }
+  .el-cota line { stroke: rgba(27, 79, 214, 0.5); stroke-width: 1.5; }
+  .el-cota .el-ext { stroke: rgba(27, 79, 214, 0.26); }
+  .el-cota text, .el-nota text, .el-titulo {
+    fill: var(--acento); font-family: 'JetBrains Mono', monospace; font-size: 15px;
+  }
+  .el-cota text { text-anchor: middle; }
+  .el-nota line { stroke: rgba(27, 79, 214, 0.45); stroke-width: 1.2; }
+  .el-nota text { font-size: 13px; letter-spacing: 0.04em; }
+  .el-titulo { fill: var(--c40); font-size: 14px; letter-spacing: 0.16em; }
+  .folha {
+    margin: 0;
+    border: 1px solid rgba(159, 198, 255, 0.28);
+    border-radius: var(--raio);
+    padding: clamp(0.6rem, 2vw, 1.6rem);
+    background: rgba(6, 22, 42, 0.5);
+  }
+  .svg-planta { display: block; width: 100%; height: auto; }
+  .pl-piso rect { fill: rgba(255, 255, 255, 0.035); }
+  .pl-parede line { stroke: #eaf3ff; stroke-linecap: butt; }
+  .pl-jan-caixa { stroke: rgba(234, 243, 255, 0.22); stroke-linecap: butt; }
+  .pl-jan-vidro { stroke: var(--ciano); stroke-width: 3; }
+  .pl-folha { stroke: var(--ciano); stroke-width: 5; stroke-linecap: round; }
+  .pl-arco { fill: none; stroke: rgba(127, 211, 255, 0.55); stroke-width: 2; }
+  .pl-cota line { stroke: rgba(190, 216, 255, 0.55); stroke-width: 1.4; }
+  .pl-cota .pl-ext { stroke: rgba(190, 216, 255, 0.3); }
+  .pl-cota text {
+    fill: #9fc6ff; font-family: 'JetBrains Mono', monospace; font-size: 21px; text-anchor: middle;
+  }
+  .pl-nome-t {
+    fill: #eaf3ff; font-family: 'Archivo', sans-serif; font-size: 19px; font-weight: 500;
+    letter-spacing: 0.14em; text-anchor: middle;
+  }
+  .pl-nome-a {
+    fill: rgba(127, 211, 255, 0.9); font-family: 'JetBrains Mono', monospace; font-size: 17px; text-anchor: middle;
+  }
+  .pl-norte-c { fill: none; stroke: rgba(190, 216, 255, 0.5); }
+  .pl-norte-s { fill: var(--ciano); }
+  .pl-norte-t { fill: #9fc6ff; font-family: 'JetBrains Mono', monospace; font-size: 20px; text-anchor: middle; }
+  .pl-esc { stroke: rgba(190, 216, 255, 0.6); stroke-width: 1.6; }
+  .pl-esc-b { fill: rgba(190, 216, 255, 0.6); }
+  .pl-esc-t { fill: #9fc6ff; font-family: 'JetBrains Mono', monospace; font-size: 19px; }
+  .cena { position: relative; height: 460vh; scroll-margin-top: 0; }
+  .cena-fixa {
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
+    background: radial-gradient(118% 95% at 62% 12%, rgba(255, 255, 255, 0) 34%, rgba(126, 148, 184, 0.2) 100%);
+  }
+  .cena-canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+    opacity: 0; transition: opacity 0.9s var(--e);
+  }
+  .cena-canvas.pronto { opacity: 1; }
+  .cena-hud {
+    position: absolute; left: clamp(1rem, 4vw, 3rem); bottom: clamp(1rem, 4vw, 3rem);
+    width: min(27rem, calc(100% - 2rem));
+    background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(14px);
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    padding: clamp(1.1rem, 2.4vw, 1.7rem); box-shadow: var(--sombra-alta);
+  }
+  .cena-hud h2 { font-size: clamp(1.3rem, 2.2vw, 1.7rem); margin-bottom: 0.5rem; }
+  .cena-d { color: var(--c60); font-size: 0.93rem; }
+  .cena-det {
+    margin-top: 0.9rem; padding: 0.5rem 0.8rem; border-left: 3px solid var(--acento);
+    background: rgba(27, 79, 214, 0.07); border-radius: 0 8px 8px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--acento-esc);
+  }
+  .cena-nota {
+    position: absolute; right: clamp(1rem, 4vw, 3rem); top: clamp(5rem, 9vw, 7rem);
+    max-width: 15rem; text-align: right;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--c40);
+  }
+
+  /* ---------- do tablet para cima ---------- */
+  @media (min-width: 700px) {
+    .form-2 { grid-template-columns: 1fr 1fr; }
+    .rodape-grade { grid-template-columns: 1.3fr 1fr 1fr; }
+    .fase { grid-template-columns: 4rem 1fr 9rem; }
+    .fase-p { grid-column: 3; margin-top: 0; text-align: right; }
+    .obra-dados { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  @media (min-width: 980px) {
+    .pr { --topo-h: 4.4rem; }
+    .topo-nav { display: flex; }
+    .capa-grade { grid-template-columns: 1.05fr 0.95fr; }
+    .dupla { grid-template-columns: 1.15fr 0.85fr; }
+    #tecnico .dupla { grid-template-columns: 1fr 0.85fr; }
+    .obra-dados { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ---------- movimento reduzido ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .pr * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .cena { height: 120vh; }
+    .svg-planta [data-risca] { stroke-dashoffset: 0 !important; }
+  }
+</style>
+
+<script>
+  /*
+    Movimento pelo Motion One. Antes esta página usava `animation-timeline`
+    nativo: mais barato, mas só existe em navegador recente e não deixa
+    sequenciar a planta camada por camada como uma prancha de verdade.
+
+    Se o Motion não carregar, o `catch` devolve o conteúdo visível — desenho é
+    enfeite, texto é o produto.
+  */
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SAIDA = [0.22, 0.61, 0.36, 1] as const;
+  const raiz = document.documentElement;
+
+  /* ---------------- formulário ---------------- */
+
+  /* site estático não tem para onde postar, e cliente de obra responde no zap */
+  const form = document.querySelector<HTMLFormElement>('[data-form]');
+  form?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const d = new FormData(form);
+    const v = (k: string) => String(d.get(k) ?? '').trim();
+    const linhas = [
+      `Olá! Sou ${v('nome')} e quero um diagnóstico.`,
+      '',
+      `Preciso de: ${v('tipo')}`,
+      v('area') && `Área aproximada: ${v('area')} m²`,
+      `Terreno: ${v('terreno')}`,
+      `Começo previsto: ${v('prazo')}`,
+      v('msg') && `O que a obra precisa resolver: ${v('msg')}`,
+      '',
+      `Meu WhatsApp: ${v('fone')}`,
+    ].filter(Boolean);
+    window.open(
+      `https://wa.me/${form.dataset.zap}?text=${encodeURIComponent(linhas.join('\n'))}`,
+      '_blank',
+      'noopener',
+    );
+  });
+
+  /* cena 3D — só monta quando a seção entra na tela e nunca no meio da rolagem.
+     `reduz` vem declarado no topo deste script. */
+  type Etapa = { em: number; t: string; d: string; det: string };
+  const ilha = document.querySelector<HTMLElement>('[data-etapas]');
+  const ETAPAS: Etapa[] = ilha ? JSON.parse(ilha.textContent || '[]') : [];
+
+  /* a montagem termina antes do fim da seção: o resto do scroll segura o resultado */
+  const FIM = 0.82;
+
+  async function ligarCena() {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-canvas]');
+    const secao = document.querySelector<HTMLElement>('[data-cena]');
+    if (!canvas || !secao || !ETAPAS.length) return;
+
+    const tEl = document.querySelector<HTMLElement>('[data-etapa-t]');
+    const dEl = document.querySelector<HTMLElement>('[data-etapa-d]');
+    const detEl = document.querySelector<HTMLElement>('[data-etapa-det]');
+    const passos = [...document.querySelectorAll<HTMLElement>('[data-passo]')];
+
+    let etapa = -1;
+    const mostrar = (p: number) => {
+      let i = 0;
+      while (i + 1 < ETAPAS.length && ETAPAS[i + 1].em <= p) i++;
+      if (i === etapa) return;
+      etapa = i;
+      if (tEl) tEl.textContent = ETAPAS[i].t;
+      if (dEl) dEl.textContent = ETAPAS[i].d;
+      if (detEl) detEl.textContent = ETAPAS[i].det;
+      passos.forEach((el, n) => el.classList.toggle('ativo', n <= i));
+    };
+
+    const { criarCasa } = await import('../../../scripts/casa-3d');
+    const { scroll } = await import('motion');
+
+    let cena: ReturnType<typeof criarCasa> = null;
+    let alvo = 0;
+    let atual = 0;
+    let visivel = false;
+    let rodando = false;
+    let montando = false;
+
+    const laco = () => {
+      if (!visivel) { rodando = false; return; }
+      const dif = alvo - atual;
+      if (cena && Math.abs(dif) > 0.0004) {
+        atual += dif * 0.08;
+        const local = Math.min(1, atual / FIM);
+        cena.atualizar(local);
+        cena.render();
+        mostrar(local);
+      }
+      requestAnimationFrame(laco);
+    };
+
+    const montar = () => {
+      if (cena || montando) return;
+      montando = true;
+      const fazer = () => {
+        cena = criarCasa(canvas);
+        montando = false;
+        if (!cena) return;
+        canvas.classList.add('pronto');
+        addEventListener('resize', () => cena?.redimensionar());
+        if (reduz) {
+          cena.atualizar(1);
+          cena.render();
+          mostrar(1);
+        } else if (!rodando) {
+          rodando = true;
+          requestAnimationFrame(laco);
+        }
+      };
+      // criar contexto WebGL trava o quadro: nunca no meio de uma rolagem
+      if ('requestIdleCallback' in window) requestIdleCallback(fazer, { timeout: 600 });
+      else setTimeout(fazer, 0);
+    };
+
+    new IntersectionObserver(
+      ([e]) => {
+        visivel = e.isIntersecting;
+        if (!visivel) return;
+        montar();
+        if (cena && !reduz && !rodando) { rodando = true; requestAnimationFrame(laco); }
+      },
+      { rootMargin: '300px' },
+    ).observe(secao);
+
+    if (!reduz) scroll((p: number) => { alvo = p; }, { target: secao, offset: ['start start', 'end end'] });
+  }
+
+  if ('requestIdleCallback' in window) requestIdleCallback(() => ligarCena());
+  else setTimeout(ligarCena, 200);
+
+  if ('requestIdleCallback' in window) requestIdleCallback(() => ligarCena());
+  else setTimeout(ligarCena, 200);
+
+  /* ---------------- movimento ---------------- */
+
+  async function ligarMovimento() {
+    if (reduz) return;
+    const { animate, inView, scroll, stagger } = await import('motion');
+
+    /* inView re-dispara a cada reentrada; revelação é estreia */
+    const umaVez = (
+      el: Element,
+      efeito: () => void,
+      opcoes?: Parameters<typeof inView>[2],
+    ) => {
+      let parar = () => {};
+      parar = inView(el, () => { efeito(); parar(); }, opcoes);
+    };
+
+    /* 1. o fio de prumo desce com a página */
+    const prumo = document.querySelector<HTMLElement>('[data-prumo]');
+    if (prumo) scroll(animate(prumo, { scaleY: [0, 1] }, { ease: 'linear' }));
+
+    /* 2. capa: as linhas do título sobem escalonadas */
+    animate(
+      document.querySelectorAll('[data-linha]'),
+      { opacity: [0, 1], y: [24, 0] },
+      { duration: 0.8, delay: stagger(0.09), ease: SAIDA },
+    );
+    animate(
+      document.querySelectorAll('.capa [data-anima]'),
+      { opacity: [0, 1], y: [16, 0] },
+      { duration: 0.7, delay: stagger(0.09, { startDelay: 0.28 }), ease: SAIDA },
+    );
+
+    /*
+      3. a elevação lateral se desenha. Cada traço vira um tracejado do
+      comprimento do próprio traço, e o deslocamento vai a zero: é o desenho
+      saindo da caneta. `getTotalLength` só existe em geometria, então rect e
+      polyline entram por opacidade.
+    */
+    const desenho = document.querySelector<HTMLElement>('[data-desenha]');
+    if (desenho) {
+      const tracos = [...desenho.querySelectorAll<SVGGeometryElement>('line, polyline, path')];
+      for (const t of tracos) {
+        const c = t.getTotalLength?.();
+        if (!c) continue;
+        t.style.strokeDasharray = String(c);
+        t.style.strokeDashoffset = String(c);
+      }
+      const massas = desenho.querySelectorAll('rect, text');
+      (massas as NodeListOf<HTMLElement>).forEach((m) => (m.style.opacity = '0'));
+      umaVez(
+        desenho,
+        () => {
+          animate(tracos, { strokeDashoffset: 0 }, { duration: 1.4, delay: stagger(0.02), ease: SAIDA });
+          animate(massas, { opacity: [0, 1] }, { duration: 0.6, delay: stagger(0.03, { startDelay: 0.5 }), ease: SAIDA });
+        },
+        { amount: 0.3 },
+      );
+    }
+
+    /* 4. revelação em cascata, agrupada por pai para o stagger correr entre irmãos */
+    const grupos = new Map<Element, HTMLElement[]>();
+    for (const el of document.querySelectorAll<HTMLElement>('[data-anima]')) {
+      if (el.closest('.capa')) continue;
+      const pai = el.parentElement!;
+      grupos.set(pai, [...(grupos.get(pai) ?? []), el]);
+    }
+    for (const irmaos of grupos.values()) {
+      umaVez(
+        irmaos[0],
+        () =>
+          animate(
+            irmaos,
+            { opacity: [0, 1], y: [20, 0] },
+            { duration: 0.65, delay: stagger(0.07), ease: SAIDA },
+          ),
+        { amount: 0.1, margin: '0px 0px -8% 0px' },
+      );
+    }
+
+    /* 5. os números contam ao entrar na tela */
+    document.querySelectorAll<HTMLElement>('[data-conta-ate]').forEach((el) => {
+      const fim = Number(el.dataset.contaAte);
+      umaVez(
+        el,
+        () =>
+          animate(0, fim, {
+            duration: 1.2,
+            ease: SAIDA,
+            onUpdate: (n) => (el.textContent = String(Math.round(n))),
+          }),
+        { amount: 0.8 },
+      );
+    });
+
+    /* 6. as seções escuras se abrem de cima para baixo */
+    document.querySelectorAll<HTMLElement>('[data-escura]').forEach((s) => {
+      umaVez(
+        s,
+        () =>
+          animate(
+            s,
+            { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'] },
+            { duration: 0.8, ease: SAIDA },
+          ),
+        { amount: 0.04, margin: '0px 0px -12% 0px' },
+      );
+    });
+
+    /*
+      7. A PRANCHA. A planta se levanta na ordem em que um desenhista desenha,
+      e o painel de camadas acende junto. Cada `data-risca` já vem com
+      pathLength="1" do markup, então tracejado e deslocamento valem 1 e a
+      conta é a mesma para um traço de 30 cm e um de 10 m.
+    */
+    const palco = document.querySelector<HTMLElement>('.prancha-palco');
+    if (palco) {
+      const camadas = [...palco.querySelectorAll<HTMLElement>('[data-camada]')];
+      const g = (s: string) => palco.querySelectorAll(s);
+      const riscas = (s: string) => {
+        const els = [...palco.querySelectorAll<SVGGeometryElement>(s)];
+        els.forEach((e) => {
+          e.style.strokeDasharray = '1';
+          e.style.strokeDashoffset = '1';
+        });
+        return els;
+      };
+
+      const paredes = riscas('.pl-parede [data-risca]');
+      const esquadrias = riscas('.pl-janela [data-risca], .pl-porta [data-risca]');
+      const camadaFixa = [g('.pl-piso'), g('.pl-jan-caixa'), g('.pl-cota'), g('.pl-nome'), g('.pl-info')];
+      camadaFixa.forEach((lista) =>
+        (lista as NodeListOf<HTMLElement>).forEach((e) => (e.style.opacity = '0')),
+      );
+
+      const acende = (i: number) => camadas[i]?.classList.add('ativa');
+
+      umaVez(
+        palco,
+        async () => {
+          /* 1 · eixos e piso */
+          acende(0);
+          await animate(g('.pl-piso'), { opacity: [0, 1] }, { duration: 0.5, ease: SAIDA }).finished;
+          /* 2 · alvenaria, traço por traço */
+          acende(1);
+          await animate(paredes, { strokeDashoffset: 0 }, { duration: 0.9, delay: stagger(0.02), ease: SAIDA }).finished;
+          /* 3 · esquadrias: caixa da janela e depois o vidro e a folha */
+          acende(2);
+          animate(g('.pl-jan-caixa'), { opacity: [0, 1] }, { duration: 0.4, ease: SAIDA });
+          await animate(esquadrias, { strokeDashoffset: 0 }, { duration: 0.7, delay: stagger(0.03), ease: SAIDA }).finished;
+          /* 4 · cotas */
+          acende(3);
+          await animate(g('.pl-cota'), { opacity: [0, 1] }, { duration: 0.5, ease: SAIDA }).finished;
+          /* 5 · textos, áreas, norte e escala */
+          acende(4);
+          animate([...g('.pl-nome'), ...g('.pl-info')], { opacity: [0, 1] }, { duration: 0.6, delay: stagger(0.12), ease: SAIDA });
+        },
+        { amount: 0.25 },
+      );
+    }
+
+    /* 8. o carimbo de folha troca conforme a seção entra */
+    const cod = document.querySelector<HTMLElement>('[data-folha-cod]');
+    const nome = document.querySelector<HTMLElement>('[data-folha-nome]');
+    if (cod && nome) {
+      /* este inView tem que continuar disparando: é estado, não estreia */
+      document.querySelectorAll<HTMLElement>('[data-folha]').forEach((s) => {
+        inView(
+          s,
+          () => {
+            cod.textContent = s.dataset.folha!;
+            nome.textContent = s.dataset.folhaT!;
+            animate(
+              [cod, nome],
+              { opacity: [0, 1], y: [-4, 0] },
+              { duration: 0.3, ease: SAIDA },
+            );
+          },
+          { amount: 0.2 },
+        );
+      });
+    }
+  }
+
+  const revelarTudo = () => raiz.classList.remove('anima-on');
+  const socorro = setTimeout(revelarTudo, 3000);
+  ligarMovimento()
+    .catch(revelarTudo)
+    .finally(() => clearTimeout(socorro));
+  if (reduz) revelarTudo();
+</script>

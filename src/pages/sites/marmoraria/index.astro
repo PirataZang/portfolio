@@ -1,0 +1,1754 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  VETTA — marmoraria.
+
+  Layout de showroom: fundo osso, tipo grande, foto de pedra grande, e três
+  seções escuras que cortam o claro — a cena 3D da bancada, as bordas e o
+  fechamento. O contraste é a régua da página.
+
+  A cena 3D da bancada continua igual por dentro (criarBancada + scroll), só
+  que agora sobre fundo escuro, que é onde pedra polida aparece: no claro o
+  reflexo especular some contra o papel.
+
+  As 12 fotos de pedra são espécimes da GeoDIL, coleção de geologia em
+  domínio público (CC0). Não são chapas de showroom — são a rocha por dentro,
+  fotografada de perto. Combina com o argumento da casa, que é justamente
+  ensinar a diferença entre grão e veio antes de vender metro quadrado. O
+  crédito de cada uma está no rodapé.
+
+  Movimento pelo Motion One. Quem pede menos movimento não recebe nenhum, e
+  se o Motion falhar o conteúdo aparece inteiro.
+*/
+
+const NEGOCIO = {
+  nome: 'VETTA',
+  sub: 'Marmoraria',
+  fone: '+55 11 3000-0000',
+  foneLink: '+551130000000',
+  zap: '5511930000000',
+  zapFmt: '(11) 93000-0000',
+  email: 'projetos@vetta.com.br',
+  rua: 'Rua Carlos Weber, 1200',
+  bairro: 'Vila Leopoldina',
+  cidade: 'São Paulo',
+  uf: 'SP',
+  cep: '05303-000',
+  lat: -23.5305,
+  lon: -46.7382,
+  site: 'https://vetta.com.br',
+  desde: 1987,
+};
+
+const mapaQuery = encodeURIComponent(`${NEGOCIO.rua}, ${NEGOCIO.bairro}, ${NEGOCIO.cidade} - ${NEGOCIO.uf}`);
+
+const numeros = [
+  { v: 38, u: 'anos', l: 'de marmoraria em São Paulo' },
+  { v: 1400, u: 'm²', l: 'de showroom e estoque próprio' },
+  { v: 1, u: 'mm', l: 'de tolerância no corte CNC' },
+  { v: 24, u: 'h', l: 'para devolver o orçamento' },
+];
+
+const PEDRAS = [
+  {
+    arq: 'carrara', nome: 'Carrara', familia: 'Mármore',
+    mohs: '3 a 4 Mohs', poro: 'Alta', cor: 'Branco com veio cinza fino',
+    uso: 'Banheiro, lavabo, painel e mesa de apoio',
+    obs: 'O mármore mais copiado do mundo, e o teste é o veio: no Carrara ele é fino e cinza, nunca dourado nem grosso.',
+    alt: 'Chapa de Carrara: branco com veio cinza fino.',
+    autor: 'Crocodile Rocks Natural Stone Supplier', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/25969532@N08/25690337193',
+  },
+  {
+    arq: 'connemara', nome: 'Connemara', familia: 'Mármore',
+    mohs: '3 a 4 Mohs', poro: 'Alta', cor: 'Verde-musgo com veio branco',
+    uso: 'Painel, lavabo e peça de destaque',
+    obs: 'Serpentinito irlandês vendido como mármore. Verde vem do magnésio, e ácido tira o brilho na hora.',
+    alt: 'Chapa de Connemara: verde-musgo com veio branco.',
+    autor: 'Suzanne Mischyshyn', lic: 'CC BY-SA 2.0', pag: 'https://commons.wikimedia.org/w/index.php?curid=90287516',
+  },
+  {
+    arq: 'verde-guatemala', nome: 'Verde Guatemala', familia: 'Mármore',
+    mohs: '3 a 4 Mohs', poro: 'Alta', cor: 'Verde escuro com veio branco',
+    uso: 'Lavabo, painel e revestimento interno seco',
+    obs: 'Verde de mármore odeia água parada: em área molhada ele empena com o tempo. Selante e rejunte impecáveis, ou nem tente.',
+    alt: 'Chapa de Verde Guatemala: verde escuro com veio branco.',
+    autor: 'shaire productions', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/9822107@N08/6315046827',
+  },
+  {
+    arq: 'azul-macaubas', nome: 'Azul Macaúbas', familia: 'Quartzito',
+    mohs: '7 Mohs', poro: 'Média-baixa', cor: 'Azul com bandas onduladas',
+    uso: 'Cozinha de uso pesado com desenho marcante',
+    obs: 'Quartzito baiano, um dos mais caros do Brasil. Dureza de granito e desenho que nenhum mármore faz.',
+    alt: 'Chapa de Azul Macaúbas: azul com bandas onduladas.',
+    autor: 'Lysippos', lic: 'CC BY-SA 4.0', pag: 'https://commons.wikimedia.org/w/index.php?curid=152555957',
+  },
+  {
+    arq: 'ubatuba', nome: 'Verde Ubatuba', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Verde-escuro salpicado de dourado',
+    uso: 'Cozinha, ilha, churrasqueira e área externa',
+    obs: 'O cavalo de batalha da marmoraria brasileira. Barato, durão e perdoa quase tudo — inclusive dono desatento.',
+    alt: 'Chapa de Verde Ubatuba: verde-escuro salpicado de dourado.',
+    autor: 'granite-charlotte', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/46317749@N02/4254404416',
+  },
+  {
+    arq: 'santa-cecilia', nome: 'Santa Cecília', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Bege com grão marrom e granada',
+    uso: 'Cozinha, bancada e piso de alto tráfego',
+    obs: 'Esconde migalha e respingo melhor que qualquer claro. É por isso que aparece em nove de cada dez cozinhas.',
+    alt: 'Chapa de Santa Cecília: bege com grão marrom e granada.',
+    autor: 'granite-charlotte', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/46317749@N02/4253638201',
+  },
+  {
+    arq: 'verde-borboleta', nome: 'Verde Borboleta', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Verde com cristais claros grandes',
+    uso: 'Bancada de destaque, ilha e painel',
+    obs: 'Cristal grande significa bloco resfriado devagar. Bonito, e exige corte planejado para o desenho não brigar na emenda.',
+    alt: 'Chapa de Verde Borboleta: verde com cristais claros grandes.',
+    autor: 'granite-charlotte', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/46317749@N02/4254407778',
+  },
+  {
+    arq: 'star-beach', nome: 'Star Beach', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Bege claro de grão médio',
+    uso: 'Cozinha clara, banheiro e área social',
+    obs: 'Claro sem ser branco: aguenta uso de cozinha sem mostrar cada gota de café como o mármore mostra.',
+    alt: 'Chapa de Star Beach: bege claro de grão médio.',
+    autor: 'granite-charlotte', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/46317749@N02/4253641425',
+  },
+  {
+    arq: 'delicatus', nome: 'Delicatus', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Branco com grão preto e desenho aberto',
+    uso: 'Cozinha de padrão alto e ilha grande',
+    obs: 'Vendido como alternativa ao mármore branco. É granito: não mancha com limão, e o desenho é grão espalhado, não veio.',
+    alt: 'Chapa de Delicatus: branco com grão preto e desenho aberto.',
+    autor: 'James St. John', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/47445767@N05/34808741843',
+  },
+  {
+    arq: 'midnight-sun', nome: 'Midnight Sun', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Escuro com cristais reflexivos',
+    uso: 'Bancada, ilha e churrasqueira',
+    obs: 'Os pontos que brilham são feldspato refletindo. Em polido, a bancada inteira pisca conforme você anda em volta.',
+    alt: 'Chapa de Midnight Sun: escuro com cristais reflexivos.',
+    autor: 'James St. John', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/47445767@N05/35636075885',
+  },
+  {
+    arq: 'cinza-corumba', nome: 'Cinza Corumbá', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Cinza uniforme de grão fino',
+    uso: 'Bancada, soleira, rodapé e fachada',
+    obs: 'O mais neutro do acervo. Quando a marcenaria já tem desenho demais, é ele que não briga.',
+    alt: 'Chapa de Cinza Corumbá: cinza uniforme de grão fino.',
+    autor: 'devanstone Co.', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/143684181@N08/44148576701',
+  },
+  {
+    arq: 'preto-indiano', nome: 'Preto Indiano', familia: 'Granito',
+    mohs: '6 a 7 Mohs', poro: 'Baixa', cor: 'Preto quase liso, grão fechado',
+    uso: 'Cozinha, churrasqueira e escada',
+    obs: 'Preto de verdade não existe barato: quanto mais fechado o grão, mais caro o bloco. Mostra poeira como um espelho.',
+    alt: 'Chapa de Preto Indiano: preto quase liso, grão fechado.',
+    autor: 'devanstone Co.', lic: 'CC BY 2.0', pag: 'https://www.flickr.com/photos/143684181@N08/44148575291',
+  },
+];
+
+const FAMILIAS = [...new Set(PEDRAS.map((p) => p.familia))];
+
+/*
+  POR QUE DIAGRAMA E NÃO FOTO DE CHAPA.
+
+  Chapa comercial fotografada — Calacatta, Verde Ubatuba, Branco Itaúnas,
+  Preto São Gabriel — não existe em acervo de licença livre. Procurei o
+  Wikimedia Commons por categoria (Countertops, Kitchen worktops, Marble
+  slabs, Stone slabs, Granite slabs, Marble industry, Slabs of stone,
+  Marble products) e por texto em português, inglês, italiano, alemão e
+  espanhol: o acervo inteiro rendeu uma textura CC0 de bancada. O resto era
+  gravura do século XVIII e paisagem de pedreira.
+
+  A tentativa anterior usava espécimes de geologia em macro — rocha com
+  número de catálogo de museu escrito em cima. Pior que não ter foto: dizia
+  ao visitante que a chapa dele seria aquilo.
+
+  Então o card mostra o que eu POSSO afirmar: a cor de referência e o desenho
+  característico da família. Veio atravessa, grão salpica, banda lista. Tudo
+  gradiente CSS, zero bytes de imagem, e é a lição inteira do site em um
+  retângulo. Foto de chapa de verdade a página tem três — as do carrossel de
+  acabamentos e a do herói, que são Marquina do próprio acervo.
+
+  Para trocar por foto quando ela existir: `public/img/chapas/<arq>.webp`
+  (mais .jpg), e o <div class="pedra-diag"> vira um <picture>. Filtro,
+  cascata e hover da grade continuam funcionando iguais.
+*/
+
+const servicos = [
+  { t: 'Bancada de cozinha', d: 'Ilha, balcão e cooktop com recorte CNC, borda boleada e cuba embutida por baixo.', n: 'a partir de R$ 890/m²' },
+  { t: 'Bancada de banheiro', d: 'Lavabo e banheiro com frontão no mesmo veio, furo de torneira feito na fábrica.', n: 'a partir de R$ 740/m²' },
+  { t: 'Escada', d: 'Piso e espelho da mesma chapa, nariz boleado e antiderrapante fresado quando o projeto pede.', n: 'a partir de R$ 620/degrau' },
+  { t: 'Fachada e revestimento', d: 'Placas de 2 cm com fixação mecânica, para área externa e hall de entrada.', n: 'sob medida' },
+  { t: 'Churrasqueira', d: 'Bancada em granito flameado, resistente a calor e a intempérie.', n: 'a partir de R$ 810/m²' },
+  { t: 'Soleiras e rodapés', d: 'Peças de acabamento cortadas na medida da obra, em qualquer material do acervo.', n: 'a partir de R$ 120/peça' },
+];
+
+const comparativo = [
+  {
+    t: 'Mármore', sub: 'Elegante, mais sensível',
+    dureza: '3 a 4 Mohs', poro: 'Alta', preco: '$$$',
+    uso: 'Banheiro, lavabo, painel e área de pouco uso',
+    evitar: 'Cozinha com muito ácido (limão, vinagre) e selante fora de dia',
+  },
+  {
+    t: 'Granito', sub: 'Duro e prático',
+    dureza: '6 a 7 Mohs', poro: 'Baixa', preco: '$$',
+    uso: 'Cozinha, churrasqueira, área externa e alto tráfego',
+    evitar: 'Projeto que pede veio dramático — granito é grão, não veio',
+  },
+  {
+    t: 'Quartzito', sub: 'Cara de mármore, resistência de granito',
+    dureza: '7 Mohs', poro: 'Média-baixa', preco: '$$$$',
+    uso: 'Cozinha de uso pesado com desenho marcante',
+    evitar: 'Orçamento apertado — é o mais caro dos três',
+  },
+];
+
+/*
+  Perfis de borda em corte. Cada `d` desenha a seção transversal de uma chapa
+  de 3 cm vista de topo para baixo: o lado direito é a borda trabalhada.
+  Desenho vale mais que adjetivo aqui — "meia-cana" não diz nada sem a curva.
+*/
+const BORDAS = [
+  { t: 'Reta', d: 'M 0 0 H 74 V 34 H 0 Z', q: 'A mais barata e a mais dura de conviver: quina viva lasca com panela e machuca criança. Peça chanfro de 2 mm no mínimo.' },
+  { t: 'Boleada', d: 'M 0 0 H 57 A 17 17 0 0 1 57 34 H 0 Z', q: 'Meia-cana completa na espessura toda. Não lasca, não corta, e é a única que dispensa cuidado com a quina. Padrão em casa com criança.' },
+  { t: 'Meia-boleada', d: 'M 0 0 H 60 A 14 14 0 0 1 74 14 V 34 H 0 Z', q: 'Arredonda só a parte de cima. Mantém a leitura de espessura cheia de frente e tira o risco da quina superior.' },
+  { t: 'Bisotada', d: 'M 0 0 H 74 L 62 34 H 0 Z', q: 'Chanfro de 45°. Marca sombra na frente da bancada e deixa a peça com cara mais leve do que ela é.' },
+  { t: 'Meia-cana', d: 'M 0 0 H 74 V 34 H 0 Z M 74 8 A 12 12 0 0 0 74 26', q: 'Canal côncavo escavado na frente. É a borda que pede pedra sem trinca — o rebaixo revela qualquer fragilidade do bloco.' },
+  { t: 'Sanduíche', d: 'M 0 0 H 74 V 34 H 56 V 17 H 0 Z', q: 'Duas chapas coladas para simular 6 cm de espessura. Custa menos que talhar um bloco maciço e engana o olho a um metro.' },
+];
+
+const ESPESSURAS = [
+  { e: '2 cm', uso: 'Revestimento de parede, painel, soleira, rodapé e bancada de banheiro com apoio contínuo em toda a extensão.', naoUse: 'Ilha, cooktop e qualquer vão livre acima de 60 cm.' },
+  { e: '3 cm', uso: 'Bancada de cozinha, ilha, balcão, escada e tudo que recebe peso ou tem balanço. Permite borda robusta sem colagem.', naoUse: 'Revestimento vertical extenso, onde o peso vira problema de fixação.' },
+];
+
+/* cuidado por família — a pergunta que chega depois da instalação */
+const CUIDADOS = [
+  { m: 'Mármore', dia: 'Pano úmido e sabão neutro, secando em seguida.', nunca: 'Limão, vinagre, vinho, desinfetante ácido, esponja abrasiva, cloro.', selante: 'A cada 12 a 18 meses', mancha: 'Mancha de ácido é corrosão, não sujeira: a superfície perde brilho e só volta com repolimento.' },
+  { m: 'Granito', dia: 'Pano úmido e detergente neutro. Aceita uso pesado.', nunca: 'Produto à base de cloro em uso contínuo e ferramenta de corte direto na pedra.', selante: 'A cada 2 a 3 anos', mancha: 'Óleo penetra em granito claro e sai com pasta de bicarbonato aplicada por 24 h.' },
+  { m: 'Quartzito', dia: 'Igual ao granito: neutro e pano seco no fim.', nunca: 'Ácido concentrado — alguns quartzitos têm carbonato na matriz e reagem.', selante: 'A cada 18 a 24 meses', mancha: 'Antes de comprar, peça o teste da gota de limão em um retalho da própria chapa.' },
+  { m: 'Ardósia', dia: 'Água e sabão neutro. Fosca por natureza, não mostra risco.', nunca: 'Cera com brilho, que cria película e descasca em área molhada.', selante: 'Hidrorrepelente a cada 2 anos', mancha: 'Óleo de linhaça realça o preto, mas escurece de vez: teste num canto antes.' },
+];
+
+const processo = [
+  { n: '01', t: 'Orçamento em 24 h', d: 'Você manda a planta ou as medidas pelo WhatsApp. Devolvemos material, acabamento e prazo em até um dia útil.' },
+  { n: '02', t: 'Medição a laser', d: 'Com a marcenaria instalada, nossa equipe mede o ambiente com medidor a laser. O desenho técnico sai no mesmo dia.' },
+  { n: '03', t: 'Escolha da chapa', d: 'Você marca a chapa no showroom. Fotografamos a peça inteira: o que você escolhe é o que é instalado.' },
+  { n: '04', t: 'Corte CNC', d: 'Recorte de cuba, furo de torneira e acabamento de borda no mesmo ciclo, com 1 mm de tolerância.' },
+  { n: '05', t: 'Instalação', d: 'Equipe própria, vedação e polimento de junta no local. A obra fica limpa no fim do dia.' },
+];
+
+/* o vocabulário do balcão, que o cliente ouve e não pergunta o que é */
+const GLOSSARIO = [
+  { t: 'Chapa', d: 'A peça inteira serrada do bloco, em geral 2,75 × 1,35 m. É a unidade que você escolhe e a que define quanta emenda a bancada vai ter.' },
+  { t: 'Veio', d: 'A faixa de cor que atravessa a pedra. Existe em mármore e quartzito; granito tem grão, não veio.' },
+  { t: 'Chapas irmãs', d: 'Peças cortadas lado a lado do mesmo bloco, com o desenho em continuidade. É o que faz a junta quase sumir.' },
+  { t: 'Rodabanca', d: 'A faixa vertical entre a bancada e a parede. Cortada da mesma chapa e na mesma altura de veio, o desenho continua sem quebra.' },
+  { t: 'Cuba de embutir', d: 'Fixada por baixo do tampo, com a pedra sobrando por cima do recorte. Não acumula sujeira na quina, ao contrário da cuba de sobrepor.' },
+  { t: 'Flameado', d: 'Maçarico passa na superfície e estoura o grão, deixando relevo antiderrapante. Só funciona em granito — mármore trinca.' },
+  { t: 'Selante', d: 'Impermeabilizante que penetra no poro. Não é verniz: não forma película e não muda o brilho.' },
+  { t: 'Boleado', d: 'Borda arredondada. Meia-boleada arredonda só o topo; boleada completa faz a meia-cana na espessura toda.' },
+];
+
+const regioes = [
+  'Pinheiros', 'Vila Madalena', 'Alto de Pinheiros', 'Perdizes', 'Jardins', 'Itaim Bibi',
+  'Moema', 'Vila Nova Conceição', 'Brooklin', 'Vila Leopoldina', 'Lapa', 'Butantã',
+  'Osasco', 'Barueri e Alphaville', 'Santo André', 'São Bernardo do Campo', 'Guarulhos', 'Cotia',
+];
+
+const faq = [
+  { p: 'Quanto custa uma bancada de mármore em São Paulo?', r: 'Bancada de mármore instalada em São Paulo fica entre R$ 740 e R$ 1.900 por metro quadrado, dependendo do material. Carrara e Branco Itaúnas ficam na faixa mais baixa; Calacatta e quartzitos importados, na mais alta. O valor já inclui medição a laser, corte CNC, recorte de cuba e instalação por equipe própria.' },
+  { p: 'Qual a diferença entre mármore, granito e quartzito?', r: 'Mármore tem dureza de 3 a 4 na escala Mohs e é poroso: risca e mancha com mais facilidade, mas tem o veio mais bonito. Granito tem 6 a 7 Mohs e baixa porosidade, sendo a escolha prática para cozinha e área externa. Quartzito chega a 7 Mohs com aparência de mármore: resistência de granito e desenho de mármore, ao preço mais alto dos três.' },
+  { p: 'Mármore mancha? Como cuidar?', r: 'Sim, mármore mancha em contato com ácido: limão, vinagre, vinho e produtos de limpeza ácidos. A proteção é o selante impermeabilizante, aplicado na instalação e renovado a cada 12 a 18 meses. No dia a dia, limpe com pano úmido e sabão neutro e seque em seguida. Evite esponja abrasiva e produtos com cloro.' },
+  { p: 'Quanto tempo leva do orçamento à instalação?', r: 'O orçamento sai em até 24 horas úteis. Depois da aprovação e da medição a laser, o prazo padrão é de 7 a 10 dias úteis até a instalação. Peças com recorte especial ou material sob encomenda podem levar até 15 dias úteis.' },
+  { p: 'Devo escolher espessura de 2 cm ou 3 cm?', r: 'Use 3 cm em bancada de cozinha, ilha e qualquer superfície que receba peso ou tenha vão livre maior que 60 cm. Use 2 cm em revestimento de parede, painel, soleira e bancada de banheiro com apoio contínuo. A espessura de 3 cm também permite borda mais robusta sem colagem.' },
+  { p: 'Qual perfil de borda escolher?', r: 'Boleada completa é a mais segura em casa com criança: não lasca e não corta. Meia-boleada mantém a leitura de espessura cheia e tira o risco da quina de cima. Reta é a mais barata, mas exige pelo menos um chanfro de 2 mm para não lascar com panela. Meia-cana e sanduíche são decisões de desenho, e a sanduíche é a única que simula 6 cm de espessura sem talhar bloco maciço.' },
+  { p: 'Vocês fazem a medição no local?', r: 'Sim. A medição é feita por equipe própria com medidor a laser, sem custo em São Paulo capital e Grande São Paulo, depois da aprovação do orçamento. A marcenaria precisa estar instalada e nivelada no dia da medição.' },
+  { p: 'Quais regiões vocês atendem?', r: 'Atendemos São Paulo capital inteira e a Grande São Paulo, incluindo Osasco, Barueri, Alphaville, Santo André, São Bernardo do Campo, São Caetano do Sul, Guarulhos e Cotia. O showroom fica na Vila Leopoldina, zona oeste de São Paulo.' },
+  { p: 'Dá para emendar bancada grande sem a junta aparecer?', r: 'A junta nunca some por completo, mas fica quase imperceptível quando as chapas são irmãs, cortadas lado a lado do mesmo bloco, com o veio em continuidade. Usamos massa epóxi tingida na cor da pedra e polimos a junta no local.' },
+  { p: 'Granito serve para churrasqueira?', r: 'Serve, e é o material indicado — desde que com acabamento flameado, não polido. O maçarico estoura o grão da superfície e cria relevo antiderrapante que resiste a calor e a intempérie. Mármore não pode: trinca com choque térmico. Ardósia é a outra opção, naturalmente fosca e antiderrapante sem tratamento.' },
+];
+
+/* Fonte única das etapas da cena 3D — renderizada aqui e lida pelo script */
+const CENAS: Record<string, { tag: string; etapas: { t: string; d: string; det: string }[] }> = {
+  bancada: {
+    tag: 'Como sua bancada é feita',
+    etapas: [
+      { t: 'Chapa bruta', d: 'A chapa chega inteira, 2,75 × 1,35 m. Antes de qualquer corte ela vai para a mesa de luz e o veio é conferido contra o projeto. Se o desenho não casa com o aprovado, a peça não desce para o corte.', det: '2,75 × 1,35 m · conferência em mesa de luz' },
+      { t: 'Recorte da cuba', d: 'O furo sai no centro CNC com o raio de canto exato que a cuba pede. A fresa entra pelo avesso para não lascar a face vista, e a borda já sai boleada no mesmo ciclo.', det: 'Tolerância de 1 mm · sem retrabalho na obra' },
+      { t: 'Encaixe da cuba', d: 'Cuba de embutir fixada por baixo do tampo, com massa epóxi tingida na cor da pedra. Nada de silicone aparente: a junta some ao toque e não acumula sujeira na quina.', det: 'Fixação por baixo · epóxi na cor da pedra' },
+      { t: 'Rodabanca', d: 'Cortada da mesma chapa e na mesma altura de veio, para o desenho continuar da bancada para a parede sem quebra.', det: 'Altura padrão 10 cm · veio contínuo' },
+    ],
+  },
+};
+
+/*
+  Os três acabamentos, em foto da mesma chapa de Marquina preto. Não é a
+  mesma imagem tratada: são três fotos do mesmo material, porque a diferença
+  entre polido e escovado está no relevo real da superfície, e isso filtro
+  de CSS não inventa.
+*/
+const ACABAMENTOS = [
+  {
+    img: 'polido', t: 'Polido',
+    d: 'Lixado em granas crescentes até virar espelho. Fecha o poro, escurece o fundo e faz o veio branco saltar. Reflete o ambiente inteiro — e é o que mais mostra poeira, digital e risco.',
+    det: 'Brilho 85–95 GU · cozinha, banheiro e área interna coberta',
+  },
+  {
+    img: 'semi-polido', t: 'Semi-polido',
+    d: 'Também chamado de levigado. O polimento para antes do espelho: o brilho vira difuso, o preto abre um tom e marca de água, digital e risco fino somem no dia a dia.',
+    det: 'Brilho 30–45 GU · piso interno, hall e uso pesado',
+  },
+  {
+    img: 'escovado', t: 'Escovado',
+    d: 'Escovas de aço abrem o poro em vez de fechá-lo. O reflexo acaba e entra relevo: a mão sente o veio, o pé não escorrega molhado e o preto puxa para grafite.',
+    det: 'Brilho abaixo de 10 GU · piscina, escada externa e churrasqueira',
+  },
+];
+
+const titulo = 'Marmoraria em São Paulo | Bancada de Mármore, Granito e Quartzito — VETTA';
+const descricao =
+  'Marmoraria na Vila Leopoldina, São Paulo. Bancada de mármore, granito e quartzito com medição a laser, corte CNC de 1 mm e instalação própria. Acervo, perfis de borda e guia de cuidados. Orçamento em 24 h.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['LocalBusiness', 'HomeAndConstructionBusiness'],
+      '@id': `${NEGOCIO.site}/#negocio`,
+      name: `${NEGOCIO.nome} ${NEGOCIO.sub}`,
+      description: descricao,
+      url: NEGOCIO.site,
+      telephone: NEGOCIO.fone,
+      email: NEGOCIO.email,
+      priceRange: 'R$$',
+      foundingDate: String(NEGOCIO.desde),
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: NEGOCIO.rua,
+        addressLocality: NEGOCIO.cidade,
+        addressRegion: NEGOCIO.uf,
+        postalCode: NEGOCIO.cep,
+        addressCountry: 'BR',
+      },
+      geo: { '@type': 'GeoCoordinates', latitude: NEGOCIO.lat, longitude: NEGOCIO.lon },
+      areaServed: regioes.map((r) => ({ '@type': 'Place', name: r })),
+      openingHoursSpecification: [
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '08:00', closes: '18:00' },
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Saturday', opens: '09:00', closes: '13:00' },
+      ],
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Serviços',
+        itemListElement: servicos.map((s) => ({
+          '@type': 'Offer',
+          itemOffered: { '@type': 'Service', name: s.t, description: s.d },
+        })),
+      },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${NEGOCIO.site}/#faq`,
+      mainEntity: faq.map((f) => ({
+        '@type': 'Question',
+        name: f.p,
+        acceptedAnswer: { '@type': 'Answer', text: f.r },
+      })),
+    },
+  ],
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <link rel="canonical" href={NEGOCIO.site} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="geo.region" content="BR-SP" />
+    <meta name="geo.placename" content="São Paulo" />
+    <meta name="geo.position" content={`${NEGOCIO.lat};${NEGOCIO.lon}`} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content={NEGOCIO.nome} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:url" content={NEGOCIO.site} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0f1113" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <link rel="preload" as="image" href="/img/chapas/estoque.webp" type="image/webp" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="vt">
+    <script type="application/json" data-cenas set:html={JSON.stringify(CENAS)}></script>
+
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="topo">
+      <div class="topo-barra" data-progresso aria-hidden="true"></div>
+      <a class="marca" href="/">{NEGOCIO.nome}<span>{NEGOCIO.sub}</span></a>
+      <nav class="topo-nav" aria-label="Seções">
+        <a href="#acervo">Acervo</a>
+        <a href="#bancada">A bancada</a>
+        <a href="#bordas">Bordas</a>
+        <a href="#cuidados">Cuidados</a>
+        <a href="#duvidas">Dúvidas</a>
+      </nav>
+      <a class="btn btn-primario btn-min" href="#orcamento">Pedir orçamento</a>
+    </header>
+
+    <main id="conteudo">
+      {/* ═════════ HERÓI ═════════ */}
+      <section class="hero">
+        <div class="hero-grade">
+          <div class="hero-txt">
+            <p class="olho" data-anima>{NEGOCIO.bairro} · {NEGOCIO.cidade} · desde {NEGOCIO.desde}</p>
+            <h1>
+              <span class="linha" data-linha>A pedra certa</span>
+              <span class="linha" data-linha>começa por <em>entender</em></span>
+              <span class="linha" data-linha>a pedra.</span>
+            </h1>
+            <p class="lead" data-anima>
+              Mármore risca, granito não tem veio e quartzito custa o dobro por um
+              motivo. Antes de te vender metro quadrado, a gente mostra por que.
+              Medição a laser, corte CNC de 1 mm e instalação por equipe própria.
+            </p>
+            <div class="hero-acoes" data-anima>
+              <a class="btn btn-primario btn-g" href="#orcamento">Orçamento em 24 h</a>
+              <a class="btn btn-vazado btn-g" href="#acervo">Ver o acervo</a>
+            </div>
+            <ul class="hero-fatos" data-anima>
+              <li><b>{PEDRAS.length}</b> materiais no acervo</li>
+              <li><b>{BORDAS.length}</b> perfis de borda</li>
+              <li><b>3</b> acabamentos de superfície</li>
+            </ul>
+          </div>
+
+          <figure class="hero-foto" data-anima>
+            <div class="moldura" data-parallax>
+              <picture>
+                <source srcset="/img/chapas/estoque.webp" type="image/webp" />
+                <img src="/img/chapas/estoque.jpg"
+                     alt="Chapas de granito em pé, apoiadas lado a lado num depósito, esperando corte."
+                     width="900" height="600" fetchpriority="high" decoding="async" />
+              </picture>
+            </div>
+            <figcaption>Chapas em estoque, esperando corte · foto de Tomwsulcer, CC0</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      {/* ═════════ NÚMEROS ═════════ */}
+      <section class="faixa" aria-label="Números da empresa">
+        <dl class="nums">
+          {numeros.map((n) => (
+            <div class="num" data-anima>
+              <dt><span data-conta-ate={n.v}>{n.v.toLocaleString('pt-BR')}</span><i>{n.u}</i></dt>
+              <dd>{n.l}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* ═════════ ACERVO ═════════ */}
+      <section class="secao" id="acervo">
+        <div class="caixa">
+          <header class="cab cab-larga" data-anima>
+            <div>
+              <p class="olho">O acervo, por dentro</p>
+              <h2>Doze rochas fotografadas de perto, e o que cada uma aguenta</h2>
+              <p class="lead">
+                Cada material com dureza, porosidade e o que ele aguenta de verdade.
+                É essa diferença que decide se a peça vai para a cozinha ou para o lavabo.
+              </p>
+            </div>
+            <div class="filtro" role="group" aria-label="Filtrar por família">
+              <button class="chip" type="button" data-fam="tudo" aria-pressed="true">Tudo</button>
+              {FAMILIAS.map((f) => (
+                <button class="chip" type="button" data-fam={f} aria-pressed="false">{f}</button>
+              ))}
+            </div>
+          </header>
+
+          {/*
+            Descritivo do que a foto é. Fica aqui, à vista, e não só no crédito
+            do rodapé: quem olha uma marmoraria espera chapa de showroom, e
+            estas são amostras de rocha em macro. Dizer isso na cara evita que
+            o visitante ache que a chapa dele vai ser deste tamanho.
+          */}
+          <p class="nota-foto" data-anima>
+            <b>Sobre estas fotos</b>
+            São chapas e bancadas instaladas de verdade, de fotógrafos que
+            publicaram sob licença Creative Commons — crédito e link em cada
+            card. Servem para você reconhecer o material pelo nome. A chapa que
+            vai na sua casa é marcada por você no showroom, e a gente fotografa
+            a peça inteira antes de cortar: bloco nenhum repete desenho.
+          </p>
+
+          <ul class="grade-pedras" data-grade>
+            {PEDRAS.map((p) => (
+              <li class="pedra" data-fam={p.familia}>
+                <div class="pedra-foto">
+                  <picture>
+                    <source srcset={`/img/chapas/${p.arq}.webp`} type="image/webp" />
+                    <img src={`/img/chapas/${p.arq}.jpg`} alt={p.alt}
+                         width="900" height="600" loading="lazy" decoding="async" />
+                  </picture>
+                  <span class="pedra-fam">{p.familia}</span>
+                </div>
+                <h3>{p.nome}</h3>
+                <p class="pedra-cor">{p.cor}</p>
+                <p class="pedra-obs">{p.obs}</p>
+                <dl class="pedra-dados">
+                  <div><dt>Dureza</dt><dd>{p.mohs}</dd></div>
+                  <div><dt>Porosidade</dt><dd>{p.poro}</dd></div>
+                </dl>
+                <p class="pedra-uso"><b>Indicado para</b> {p.uso}</p>
+                <p class="pedra-ficha">
+                  Foto: <a href={p.pag} rel="noopener">{p.autor}</a> · {p.lic}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ A BANCADA — cena 3D preservada, agora no escuro ═════════ */}
+      <section class="cena cena-escura" id="bancada" data-cena-sec data-escura>
+        <div class="cena-fixa">
+          <canvas class="cena-canvas" data-cena="bancada"></canvas>
+          <div class="cena-card">
+            <p class="olho">{CENAS.bancada.tag}</p>
+            <h2 data-etapa-t="bancada">{CENAS.bancada.etapas[0].t}</h2>
+            <p class="cena-d" data-etapa-d="bancada">{CENAS.bancada.etapas[0].d}</p>
+            <p class="cena-det" data-etapa-det="bancada">{CENAS.bancada.etapas[0].det}</p>
+            <div class="passos">{CENAS.bancada.etapas.map(() => <span data-passo="bancada"></span>)}</div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ ACABAMENTOS — carrossel preservado ═════════ */}
+      <section class="acab" id="acabamentos" data-carrossel>
+        <div class="acab-palco">
+          <header class="cab acab-cab">
+            <p class="olho">Os três acabamentos</p>
+            <h2>A mesma pedra, três acabamentos</h2>
+            <p class="lead">
+              Marquina preto, a mesma chapa nas três fotos. Muda só quanto
+              de luz a superfície devolve — e é isso que decide onde ela pode ir.
+            </p>
+          </header>
+
+          <div class="acab-pilha">
+            {ACABAMENTOS.map((a, i) => (
+              <article class="acab-item">
+                <figure class="acab-pedra">
+                  <picture>
+                    <source srcset={`/img/acabamentos/${a.img}.webp`} type="image/webp" />
+                    <img src={`/img/acabamentos/${a.img}.jpg`} alt={a.alt} width="1536" height="1024" loading="lazy" decoding="async" />
+                  </picture>
+                </figure>
+                <div class="cena-card cena-card-escuro">
+                  <h3>{a.t}</h3>
+                  <p class="cena-d">{a.d}</p>
+                  <p class="cena-det">{a.det}</p>
+                  <div class="passos">
+                    {ACABAMENTOS.map((_, n) => <span class={n <= i ? 'ativo' : ''}></span>)}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ COMPARATIVO ═════════ */}
+      <section class="secao" id="materiais">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Mármore, granito ou quartzito</p>
+            <h2>Três famílias, e a escolha quase sempre é de uso, não de gosto</h2>
+            <p class="lead">
+              A pergunta certa não é qual é a mais bonita. É quanto ácido, quanto
+              peso e quanto sol aquela superfície vai receber por dia.
+            </p>
+          </header>
+          <div class="trio">
+            {comparativo.map((m) => (
+              <article class="mat" data-anima>
+                <h3>{m.t}</h3>
+                <p class="mat-sub">{m.sub}</p>
+                <dl class="mat-dados">
+                  <div><dt>Dureza</dt><dd>{m.dureza}</dd></div>
+                  <div><dt>Porosidade</dt><dd>{m.poro}</dd></div>
+                  <div><dt>Faixa de preço</dt><dd>{m.preco}</dd></div>
+                </dl>
+                <p class="mat-l"><b>Use em</b> {m.uso}</p>
+                <p class="mat-l mat-evitar"><b>Evite</b> {m.evitar}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ BORDAS E ESPESSURA — seção escura ═════════ */}
+      <section class="secao secao-escura" id="bordas" data-escura>
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho olho-claro">Perfil de borda</p>
+            <h2>Seis cortes de borda, em seção transversal</h2>
+            <p class="lead-claro">
+              Cada desenho é a chapa de 3 cm vista de lado, com a borda trabalhada à
+              direita. “Meia-cana” não diz nada sem a curva — por isso está desenhada.
+            </p>
+          </header>
+
+          <ul class="grade-bordas">
+            {BORDAS.map((b) => (
+              <li class="borda" data-anima>
+                <svg class="borda-svg" viewBox="-14 -6 92 46" aria-hidden="true">
+                  <path class="borda-p" d={b.d} data-perfil pathLength="1" />
+                  <line class="borda-cota" x1="-2" y1="0" x2="-2" y2="34" />
+                  <text class="borda-t" x="-6" y="20" transform="rotate(-90 -6 20)">3 cm</text>
+                </svg>
+                <h3>{b.t}</h3>
+                <p>{b.q}</p>
+              </li>
+            ))}
+          </ul>
+
+          <div class="espessuras">
+            {ESPESSURAS.map((e) => (
+              <article class="esp" data-anima>
+                <p class="esp-n">{e.e}</p>
+                <p class="esp-l"><b>Use em</b> {e.uso}</p>
+                <p class="esp-l esp-nao"><b>Não use em</b> {e.naoUse}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ CUIDADOS ═════════ */}
+      <section class="secao" id="cuidados">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Depois da instalação</p>
+            <h2>Como cuidar de cada família, sem achismo de internet</h2>
+            <p class="lead">
+              A maior parte do estrago em pedra natural vem de produto errado, não de
+              uso pesado. Esta tabela é o que entregamos impresso junto com a nota.
+            </p>
+          </header>
+
+          <div class="tabela-rolo no-bar">
+            <table class="tabela" data-anima>
+              <caption class="sr">Cuidados por família de pedra</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Material</th>
+                  <th scope="col">No dia a dia</th>
+                  <th scope="col">Nunca</th>
+                  <th scope="col">Selante</th>
+                  <th scope="col">Sobre mancha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CUIDADOS.map((c) => (
+                  <tr>
+                    <th scope="row">{c.m}</th>
+                    <td>{c.dia}</td>
+                    <td class="td-nao">{c.nunca}</td>
+                    <td class="mono">{c.selante}</td>
+                    <td>{c.mancha}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ SERVIÇOS ═════════ */}
+      <section class="secao secao-osso" id="servicos">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Serviços</p>
+            <h2>O que sai da fábrica</h2>
+          </header>
+          <ul class="grade-serv">
+            {servicos.map((s) => (
+              <li class="serv" data-anima>
+                <h3>{s.t}</h3>
+                <p>{s.d}</p>
+                <p class="serv-n">{s.n}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ PROCESSO ═════════ */}
+      <section class="secao" id="processo">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Como funciona</p>
+            <h2>Do WhatsApp à bancada instalada, em cinco passos</h2>
+          </header>
+          <ol class="passos-n">
+            {processo.map((p) => (
+              <li data-anima>
+                <span class="passo-n">{p.n}</span>
+                <h3>{p.t}</h3>
+                <p>{p.d}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ═════════ GLOSSÁRIO ═════════ */}
+      <section class="secao secao-osso" id="glossario">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Vocabulário</p>
+            <h2>As oito palavras que você vai ouvir no balcão</h2>
+            <p class="lead">
+              Ninguém deveria assinar um orçamento com um termo que não entendeu.
+            </p>
+          </header>
+          <dl class="glossario">
+            {GLOSSARIO.map((g) => (
+              <div data-anima><dt>{g.t}</dt><dd>{g.d}</dd></div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ═════════ REGIÕES ═════════ */}
+      <section class="secao" id="regioes">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Onde atendemos</p>
+            <h2>São Paulo capital e Grande São Paulo</h2>
+            <p class="lead">Medição sem custo em toda a área abaixo, depois da aprovação do orçamento.</p>
+          </header>
+          <ul class="regioes" data-anima>
+            {regioes.map((r) => <li>{r}</li>)}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════ DÚVIDAS ═════════ */}
+      <section class="secao secao-osso" id="duvidas">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Dúvidas frequentes</p>
+            <h2>As dez perguntas que chegam toda semana</h2>
+          </header>
+          <div class="faq">
+            {faq.map((f) => (
+              <details data-anima>
+                <summary>{f.p}</summary>
+                <p>{f.r}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ ORÇAMENTO — seção escura ═════════ */}
+      <section class="secao secao-escura secao-cta" id="orcamento" data-escura>
+        <div class="caixa">
+          <div class="dupla">
+            <div data-anima>
+              <p class="olho olho-claro">Orçamento</p>
+              <h2>Manda a medida que a gente devolve o preço em 24 h</h2>
+              <p class="lead-claro">
+                Planta, croqui no guardanapo ou só as medidas no WhatsApp: qualquer
+                um dos três serve para o primeiro número. A medição a laser vem
+                depois, e é ela que fecha o valor.
+              </p>
+              <dl class="contato-dados">
+                <div><dt>WhatsApp</dt><dd><a href={`https://wa.me/${NEGOCIO.zap}`} rel="noopener">{NEGOCIO.zapFmt}</a></dd></div>
+                <div><dt>Telefone</dt><dd><a href={`tel:${NEGOCIO.foneLink}`}>{NEGOCIO.fone}</a></dd></div>
+                <div><dt>E-mail</dt><dd><a href={`mailto:${NEGOCIO.email}`}>{NEGOCIO.email}</a></dd></div>
+                <div><dt>Showroom</dt><dd>{NEGOCIO.rua}<br />{NEGOCIO.bairro} · {NEGOCIO.cidade}/{NEGOCIO.uf}</dd></div>
+                <div><dt>Horário</dt><dd>Seg a sex, 8h às 18h · Sáb, 9h às 13h</dd></div>
+              </dl>
+            </div>
+
+            <form class="form" data-form data-zap={NEGOCIO.zap} data-anima>
+              <div class="form-2">
+                <label>
+                  Nome
+                  <input name="nome" type="text" required autocomplete="name" placeholder="Como te chamamos" />
+                </label>
+                <label>
+                  WhatsApp
+                  <input name="fone" type="tel" required autocomplete="tel" placeholder="(11) 90000-0000" />
+                </label>
+              </div>
+              <div class="form-2">
+                <label>
+                  Peça
+                  <select name="peca">
+                    {servicos.map((s) => <option>{s.t}</option>)}
+                    <option>Outra coisa</option>
+                  </select>
+                </label>
+                <label>
+                  Material pretendido
+                  <select name="material">
+                    <option>Ainda não sei</option>
+                    {FAMILIAS.map((f) => <option>{f}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div class="form-2">
+                <label>
+                  Medidas aproximadas
+                  <input name="medidas" type="text" placeholder="2,40 × 0,60 m, por exemplo" />
+                </label>
+                <label>
+                  Marcenaria instalada?
+                  <select name="marcenaria">
+                    <option>Ainda não</option>
+                    <option>Sim, pronta para medir</option>
+                    <option>É reforma, já tem bancada</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                Detalhes
+                <textarea name="msg" rows="3" placeholder="Cuba de embutir, cooktop, rodabanca de 10 cm…"></textarea>
+              </label>
+              <button class="btn btn-primario btn-cheio btn-g" type="submit">Enviar pelo WhatsApp</button>
+              <p class="form-nota">Abre a conversa com tudo preenchido. Nada fica gravado neste site.</p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <div class="caixa rodape-grade">
+        <div>
+          <p class="rodape-marca">{NEGOCIO.nome}<small>{NEGOCIO.sub} · {NEGOCIO.bairro}</small></p>
+          <p class="rodape-d">
+            Marmoraria em {NEGOCIO.cidade} desde {NEGOCIO.desde}. Mármore, granito e
+            quartzito com medição a laser, corte CNC e instalação por equipe própria.
+          </p>
+        </div>
+        <nav aria-label="Rodapé">
+          <p class="rodape-t">Navegar</p>
+          <ul>
+            <li><a href="#acervo">O acervo</a></li>
+            <li><a href="#bancada">Como a bancada é feita</a></li>
+            <li><a href="#bordas">Perfis de borda</a></li>
+            <li><a href="#cuidados">Cuidados</a></li>
+            <li><a href="#glossario">Vocabulário</a></li>
+          </ul>
+        </nav>
+        <div class="rodape-mapa">
+          <p class="rodape-t">Showroom</p>
+          <iframe
+            title={`Mapa — ${NEGOCIO.rua}`}
+            src={`https://www.google.com/maps?q=${mapaQuery}&z=16&output=embed`}
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+          <a class="rodape-link" href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+            Abrir no Google Maps →
+          </a>
+        </div>
+      </div>
+
+      <p class="caixa rodape-fim">
+        <span>© 2026 {NEGOCIO.nome} {NEGOCIO.sub} · {NEGOCIO.cidade}/{NEGOCIO.uf}</span>
+        <a href="/">← Voltar ao portfolio</a>
+      </p>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .vt {
+    --branco: #fff;
+    --osso: #f5f4f1;
+    --linha: #e3e1dc;
+    --tinta: #16181a;
+    --c60: #5b5f66;
+    --c40: #94989f;
+
+    --escuro: #0f1113;
+    --escuro-2: #17191c;
+    --borda-esc: #2a2d31;
+    --claro: #f2f1ee;
+    --claro-60: #a8aab0;
+    --claro-40: #74777d;
+
+    --acento: #b4823c;
+    --acento-2: #d3a45c;
+    --acento-esc: #8d6329;
+
+    --raio: 12px;
+    --raio-g: 20px;
+    --t: 0.4s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --topo-h: 4rem;
+    --sombra: 0 1px 2px rgba(22, 24, 26, 0.04), 0 10px 26px -14px rgba(22, 24, 26, 0.16);
+    --sombra-alta: 0 2px 6px rgba(22, 24, 26, 0.06), 0 24px 50px -22px rgba(22, 24, 26, 0.26);
+
+    position: relative;
+    background: var(--branco);
+    color: var(--tinta);
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.62;
+  }
+  :global(body) { background: #fff; color: #16181a; }
+  :global(::selection) { background: #b4823c; color: #fff; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--tinta); color: #fff; padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0;
+  }
+  .pular:focus { left: 0; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.03em; line-height: 1.14; margin: 0; text-wrap: balance; }
+  h1 { font-size: clamp(2.4rem, 5.6vw, 4.4rem); font-weight: 800; line-height: 1.03; letter-spacing: -0.04em; }
+  h2 { font-size: clamp(1.65rem, 3.2vw, 2.6rem); }
+  h3 { font-size: 1.14rem; }
+  p { margin: 0; text-wrap: pretty; }
+  .lead { font-size: 1.02rem; color: var(--c60); max-width: 58ch; }
+  .lead-claro { font-size: 1.02rem; color: var(--claro-60); max-width: 60ch; }
+
+  .olho {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--acento);
+    margin: 0 0 1rem;
+  }
+  .olho::before { content: ''; width: 24px; height: 1px; flex: none; background: currentColor; }
+  .olho-claro { color: var(--acento-2); }
+
+  .caixa { max-width: 1240px; margin: 0 auto; padding-inline: clamp(1rem, 4vw, 2.6rem); }
+  .secao { position: relative; padding-block: clamp(3.6rem, 7.5vw, 6.5rem); }
+  .secao-osso { background: var(--osso); border-block: 1px solid var(--linha); }
+  .secao-escura { background: var(--escuro); color: var(--claro); }
+  .secao-escura h2, .secao-escura h3 { color: var(--claro); }
+  .cab { margin-bottom: clamp(2.2rem, 4vw, 3.2rem); max-width: 62ch; }
+  .cab .lead, .cab .lead-claro { margin-top: 0.9rem; }
+  .cab-larga { max-width: none; display: flex; flex-wrap: wrap; gap: 1.6rem 2.5rem; align-items: flex-end; justify-content: space-between; }
+  .cab-larga > div { max-width: 60ch; }
+  .dupla { display: grid; gap: clamp(2rem, 4vw, 3.4rem); align-items: start; }
+  .vt section[id] { scroll-margin-top: calc(var(--topo-h) + 0.6rem); }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.76rem 1.4rem; border-radius: 999px;
+    font-family: inherit; font-size: 0.92rem; font-weight: 600; text-decoration: none;
+    border: 1px solid transparent; white-space: nowrap; cursor: pointer;
+    transition: background var(--t) var(--e), color var(--t) var(--e),
+      border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .btn-g { padding: 0.94rem 1.7rem; font-size: 0.98rem; }
+  .btn-min { padding: 0.52rem 1.05rem; font-size: 0.84rem; }
+  .btn-cheio { width: 100%; }
+  .btn-primario { background: var(--tinta); color: #fff; }
+  .btn-primario:hover { background: var(--acento-esc); box-shadow: 0 10px 26px -14px rgba(141, 99, 41, 0.9); }
+  .secao-escura .btn-primario { background: var(--acento); }
+  .secao-escura .btn-primario:hover { background: var(--acento-2); color: var(--escuro); }
+  .btn-vazado { background: transparent; color: var(--tinta); border-color: var(--linha); }
+  .btn-vazado:hover { border-color: var(--acento); color: var(--acento); }
+
+  /* ---------- topo ---------- */
+  .topo {
+    position: fixed; inset: 0 0 auto; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem clamp(1rem, 4vw, 2.6rem);
+    background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--linha);
+  }
+  .topo-barra {
+    position: absolute; inset: auto 0 -1px; height: 2px;
+    background: linear-gradient(90deg, var(--acento), var(--acento-2));
+    transform: scaleX(0); transform-origin: 0 50%;
+  }
+  .marca { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.06em; color: var(--tinta); text-decoration: none; line-height: 1.1; }
+  .marca span {
+    display: block; font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    font-size: 0.55rem; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--c40); margin-top: 0.3rem;
+  }
+  .topo-nav { display: none; gap: 1.5rem; }
+  .topo-nav a { position: relative; font-size: 0.88rem; font-weight: 500; color: var(--c60); text-decoration: none; transition: color var(--t) var(--e); }
+  .topo-nav a::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px;
+    background: var(--acento); transform: scaleX(0); transform-origin: 0 50%;
+    transition: transform var(--t) var(--e);
+  }
+  .topo-nav a:hover { color: var(--tinta); }
+  .topo-nav a:hover::after { transform: scaleX(1); }
+
+  /* ---------- herói ---------- */
+  .hero {
+    max-width: 1240px; margin: 0 auto;
+    padding: calc(var(--topo-h) + clamp(2.5rem, 6vh, 4.5rem)) clamp(1rem, 4vw, 2.6rem) clamp(3.5rem, 8vh, 5.5rem);
+  }
+  .hero-grade { display: grid; gap: clamp(2.5rem, 5vw, 4rem); align-items: center; }
+  h1 em { font-style: normal; color: var(--acento); }
+  h1 .linha { display: block; }
+  .hero .lead { margin-top: 1.5rem; font-size: 1.06rem; max-width: 48ch; }
+  .hero-acoes { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2.1rem; }
+  .hero-fatos {
+    list-style: none; margin: 2.4rem 0 0; padding: 1.4rem 0 0;
+    border-top: 1px solid var(--linha);
+    display: flex; flex-wrap: wrap; gap: 0.7rem 2.2rem;
+    font-size: 0.86rem; color: var(--c60);
+  }
+  .hero-fatos b { font-size: 1.15rem; font-weight: 800; color: var(--tinta); margin-right: 0.3rem; }
+
+  .hero-foto { margin: 0; }
+  .moldura {
+    overflow: hidden; border-radius: var(--raio-g);
+    box-shadow: var(--sombra-alta); aspect-ratio: 3 / 2;
+  }
+  .moldura img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .hero-foto figcaption {
+    margin-top: 0.9rem; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--c40); letter-spacing: 0.06em; text-align: center;
+  }
+
+  /* ---------- números ---------- */
+  .faixa { background: var(--osso); border-block: 1px solid var(--linha); }
+  .nums {
+    max-width: 1240px; margin: 0 auto;
+    padding: clamp(2.2rem, 4.5vw, 3.2rem) clamp(1rem, 4vw, 2.6rem);
+    display: grid; gap: clamp(1.4rem, 3vw, 2.4rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  }
+  .num dt {
+    display: flex; align-items: baseline; gap: 0.25rem;
+    font-size: clamp(2rem, 4vw, 2.9rem); font-weight: 800; letter-spacing: -0.04em;
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .num dt i { font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 0.3em; color: var(--acento); }
+  .num dd { margin: 0.6rem 0 0; font-size: 0.86rem; color: var(--c60); max-width: 24ch; }
+
+  /* ---------- acervo ---------- */
+  .filtro { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .chip {
+    font: inherit; font-size: 0.83rem; font-weight: 600; cursor: pointer;
+    padding: 0.45rem 0.95rem; border-radius: 999px;
+    background: transparent; color: var(--c60); border: 1px solid var(--linha);
+    transition: background var(--t) var(--e), color var(--t) var(--e), border-color var(--t) var(--e);
+  }
+  .chip:hover { border-color: var(--acento); color: var(--acento); }
+  .chip[aria-pressed='true'] { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+
+  .grade-pedras {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.6rem);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 275px), 1fr));
+  }
+  .grade-pedras [hidden] { display: none; }
+  .pedra {
+    display: flex; flex-direction: column;
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    overflow: hidden; background: var(--branco);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .pedra:hover { border-color: var(--acento); box-shadow: var(--sombra-alta); }
+  .pedra-foto { position: relative; aspect-ratio: 3 / 2; overflow: hidden; }
+  .pedra-foto img { display: block; width: 100%; height: 100%; object-fit: cover; transition: scale 0.6s var(--e); }
+  .pedra:hover .pedra-foto img { scale: 1.05; }
+  .pedra-fam {
+    position: absolute; left: 0.7rem; top: 0.7rem; z-index: 2;
+    padding: 0.2rem 0.6rem; border-radius: 999px;
+    background: rgba(15, 17, 19, 0.78); backdrop-filter: blur(6px); color: #fff;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .pedra h3 { margin: 1.1rem clamp(0.9rem, 2vw, 1.2rem) 0; }
+  .pedra-cor {
+    margin: 0.25rem clamp(0.9rem, 2vw, 1.2rem) 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    color: var(--c40); letter-spacing: 0.04em;
+  }
+  .pedra-obs { margin: 0.8rem clamp(0.9rem, 2vw, 1.2rem) 0; font-size: 0.85rem; color: var(--c60); flex: 1; }
+  .pedra-dados {
+    margin: 1rem clamp(0.9rem, 2vw, 1.2rem) 0; padding-top: 0.85rem;
+    border-top: 1px solid var(--linha);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+  }
+  .pedra-dados div { display: grid; gap: 0.1rem; }
+  .pedra-dados dt {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.57rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--c40);
+  }
+  .pedra-dados dd { margin: 0; font-size: 0.82rem; font-weight: 600; }
+  .pedra-uso {
+    margin: 0.9rem 0 0; padding: 0.8rem clamp(0.9rem, 2vw, 1.2rem);
+    background: var(--osso); border-top: 1px solid var(--linha);
+    font-size: 0.8rem; color: var(--c60);
+  }
+  .pedra-uso b { color: var(--tinta); }
+
+  .nota-foto {
+    margin-bottom: clamp(1.6rem, 3vw, 2.2rem);
+    padding: 1rem 1.2rem;
+    border-left: 3px solid var(--acento);
+    background: var(--osso);
+    border-radius: 0 var(--raio) var(--raio) 0;
+    font-size: 0.87rem; color: var(--c60); max-width: 78ch; line-height: 1.65;
+  }
+  .nota-foto b { color: var(--tinta); }
+  .nota-foto > b:first-child {
+    display: block; margin-bottom: 0.3rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.66rem;
+    font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--acento);
+  }
+  .nota-foto a { color: var(--acento); }
+
+  .pedra-ficha {
+    margin: 0; padding: 0.6rem clamp(0.9rem, 2vw, 1.2rem) 0.8rem;
+    background: var(--osso);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.04em; color: var(--c40);
+  }
+  .pedra-ficha a { color: var(--c40); }
+  .pedra-ficha a:hover { color: var(--acento); }
+  /* a faixa de uso perde o arredondamento de baixo: a ficha fecha o card */
+  .pedra-uso { border-radius: 0; }
+
+  /* ---------- comparativo ---------- */
+  .trio { display: grid; gap: clamp(1rem, 2vw, 1.5rem); grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+  .mat { border: 1px solid var(--linha); border-radius: var(--raio-g); padding: clamp(1.3rem, 2.5vw, 1.9rem); }
+  .mat-sub { margin-top: 0.3rem; font-size: 0.85rem; color: var(--acento); }
+  .mat-dados { margin: 1.2rem 0; display: grid; }
+  .mat-dados div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.55rem 0; border-top: 1px solid var(--linha); }
+  .mat-dados dt { font-size: 0.8rem; color: var(--c40); }
+  .mat-dados dd { margin: 0; font-size: 0.84rem; font-weight: 600; }
+  .mat-l { font-size: 0.85rem; color: var(--c60); margin-top: 0.7rem; }
+  .mat-l b { color: var(--tinta); }
+  .mat-evitar b { color: var(--acento-esc); }
+
+  /* ---------- bordas ---------- */
+  .grade-bordas {
+    list-style: none; margin: 0 0 clamp(2.4rem, 4vw, 3.4rem); padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.6rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  }
+  .borda { padding: clamp(1.2rem, 2.4vw, 1.7rem); border: 1px solid var(--borda-esc); border-radius: var(--raio-g); }
+  .borda-svg { display: block; width: 100%; max-width: 13rem; height: auto; margin-bottom: 1.1rem; }
+  .borda-p { fill: rgba(180, 130, 60, 0.14); stroke: var(--acento-2); stroke-width: 1.6; stroke-linejoin: round; }
+  /* pathLength="1" no markup: o traço vale 1 independente do comprimento real,
+     então o mesmo tracejado serve para a borda reta e para a meia-cana */
+  :global(.anima-on) .vt [data-perfil] { stroke-dasharray: 1; }
+  .borda-cota { stroke: var(--claro-40); stroke-width: 0.8; }
+  .borda-t { fill: var(--claro-40); font-family: 'JetBrains Mono', monospace; font-size: 5px; text-anchor: middle; }
+  .borda p { margin-top: 0.5rem; font-size: 0.86rem; color: var(--claro-60); }
+
+  .espessuras { display: grid; gap: clamp(1rem, 2vw, 1.5rem); grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+  .esp { padding: clamp(1.2rem, 2.4vw, 1.7rem); border: 1px solid var(--borda-esc); border-radius: var(--raio-g); background: var(--escuro-2); }
+  .esp-n { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.04em; color: var(--acento-2); }
+  .esp-l { margin-top: 0.9rem; font-size: 0.86rem; color: var(--claro-60); }
+  .esp-l b { color: var(--claro); }
+  .esp-nao b { color: var(--acento-2); }
+
+  /* ---------- tabela ---------- */
+  .tabela-rolo { overflow-x: auto; }
+  .tabela { width: 100%; min-width: 48rem; border-collapse: collapse; text-align: left; }
+  .tabela :is(th, td) { padding: 0.95rem 1rem; border-bottom: 1px solid var(--linha); vertical-align: top; }
+  .tabela thead th {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40);
+    border-bottom-color: var(--tinta);
+  }
+  .tabela tbody th { font-size: 0.95rem; font-weight: 700; width: 9rem; }
+  .tabela td { font-size: 0.85rem; color: var(--c60); }
+  .tabela .mono { font-size: 0.78rem; white-space: nowrap; }
+  .td-nao { color: var(--acento-esc); }
+  .tabela tbody tr { transition: background var(--t) var(--e); }
+  .tabela tbody tr:hover { background: var(--osso); }
+
+  /* ---------- serviços, processo, glossário, regiões ---------- */
+  .grade-serv {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  }
+  .serv { background: var(--branco); border: 1px solid var(--linha); border-radius: var(--raio-g); padding: clamp(1.3rem, 2.4vw, 1.8rem); }
+  .serv p { margin-top: 0.6rem; font-size: 0.88rem; color: var(--c60); }
+  .serv-n {
+    margin-top: 1.1rem !important; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem !important; color: var(--acento) !important;
+  }
+
+  .passos-n {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  }
+  .passos-n li { padding-top: 1.2rem; border-top: 2px solid var(--tinta); }
+  .passo-n { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--acento); }
+  .passos-n h3 { margin: 0.6rem 0 0.5rem; }
+  .passos-n p { font-size: 0.86rem; color: var(--c60); }
+
+  .glossario { margin: 0; display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .glossario div { padding: 1.1rem 1.4rem 1.1rem 0; border-top: 1px solid var(--linha); }
+  .glossario dt { font-size: 0.98rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .glossario dd { margin: 0; font-size: 0.86rem; color: var(--c60); }
+
+  .regioes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .regioes li {
+    padding: 0.45rem 0.9rem; border-radius: 999px;
+    border: 1px solid var(--linha); background: var(--branco);
+    font-size: 0.85rem; color: var(--c60);
+  }
+
+  /* ---------- FAQ ---------- */
+  .faq { border-top: 1px solid var(--linha); }
+  .faq details { border-bottom: 1px solid var(--linha); }
+  .faq summary {
+    display: flex; align-items: flex-start; gap: 0.9rem; cursor: pointer;
+    padding: 1.15rem 0; font-size: 1rem; font-weight: 600; list-style: none;
+    transition: color var(--t) var(--e);
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::before { content: '+'; flex: none; width: 1.2rem; font-family: 'JetBrains Mono', monospace; font-weight: 400; color: var(--acento); }
+  .faq details[open] summary::before { content: '−'; }
+  .faq summary:hover { color: var(--acento); }
+  .faq details p { padding: 0 0 1.3rem 2.1rem; font-size: 0.9rem; color: var(--c60); max-width: 80ch; }
+
+  /* ---------- contato ---------- */
+  .contato-dados { margin: 1.8rem 0 0; display: grid; }
+  .contato-dados div { display: grid; gap: 0.15rem; padding: 0.75rem 0; border-top: 1px solid var(--borda-esc); }
+  .contato-dados dt {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--claro-40);
+  }
+  .contato-dados dd { margin: 0; font-size: 0.9rem; color: var(--claro); }
+  .contato-dados a { color: var(--acento-2); text-decoration: none; }
+  .contato-dados a:hover { text-decoration: underline; }
+
+  .form {
+    display: grid; gap: 0.85rem;
+    background: var(--escuro-2); border: 1px solid var(--borda-esc);
+    border-radius: var(--raio-g); padding: clamp(1.2rem, 2.6vw, 1.9rem);
+  }
+  .form label {
+    display: grid; gap: 0.32rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--claro-40);
+  }
+  .form-2 { display: grid; gap: 0.85rem; grid-template-columns: 1fr; }
+  .form :is(input, select, textarea) {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.92rem; letter-spacing: 0;
+    text-transform: none; color: var(--claro);
+    background: var(--escuro); border: 1px solid var(--borda-esc); border-radius: 9px;
+    padding: 0.65rem 0.75rem; width: 100%;
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .form :is(input, select, textarea):focus {
+    outline: none; border-color: var(--acento);
+    box-shadow: 0 0 0 3px rgba(180, 130, 60, 0.2);
+  }
+  .form option { background: var(--escuro-2); color: var(--claro); }
+  .form textarea { resize: vertical; }
+  .form-nota { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--claro-40); text-align: center; }
+
+  /* ---------- rodapé ---------- */
+  .rodape { background: var(--escuro); color: var(--claro-60); border-top: 1px solid var(--borda-esc); }
+  .rodape-grade { display: grid; gap: 2.4rem; padding-block: clamp(2.6rem, 6vw, 4rem) 1.6rem; }
+  .rodape-marca { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.06em; color: var(--claro); }
+  .rodape-marca small {
+    display: block; font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    font-size: 0.57rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--acento-2); margin-top: 0.4rem;
+  }
+  .rodape-d { margin-top: 1rem; font-size: 0.86rem; max-width: 42ch; }
+  .rodape-t {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--claro); margin-bottom: 1rem;
+  }
+  .rodape ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+  .rodape a { color: var(--claro-60); text-decoration: none; font-size: 0.86rem; transition: color var(--t) var(--e); }
+  .rodape a:hover { color: var(--claro); }
+  .rodape-mapa iframe {
+    width: 100%; height: 180px; border: 1px solid var(--borda-esc); border-radius: var(--raio);
+    display: block; filter: grayscale(0.55) contrast(1.05) brightness(0.9);
+  }
+  .rodape-link { display: inline-block; margin-top: 0.7rem; color: var(--acento-2) !important; font-size: 0.8rem; }
+
+  .creditos { font-size: 0.78rem; color: var(--claro-40); padding-block: 0.6rem 1.2rem; }
+  .creditos summary { cursor: pointer; padding: 0.4rem 0; color: var(--claro-60); }
+  .creditos-i { margin: 0.7rem 0; max-width: 70ch; line-height: 1.7; }
+  .creditos ul { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; gap: 0.3rem; line-height: 1.7; }
+  .creditos a { color: var(--claro-60); text-decoration: underline; }
+
+  .rodape-fim {
+    display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: space-between;
+    padding-block: 1.2rem 1.7rem; border-top: 1px solid var(--borda-esc);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--claro-40);
+  }
+
+  .vt :focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 6px; }
+  .secao-escura :focus-visible, .rodape :focus-visible { outline-color: var(--acento-2); }
+
+  :global(.anima-on) .vt [data-anima],
+  :global(.anima-on) .vt [data-linha] { opacity: 0; }
+
+  /* ---------- preservado: cena 3D e carrossel de acabamentos ----------
+     Aparência do arquivo antigo, sem mudança: está casada com a geometria
+     que marmoraria-3d.ts gera e com o carrossel preso ao scroll. */
+      :is(.grade, .passos-lista, .faq) > .revela:nth-child(3n + 2) { animation-range: entry 8% cover 32%; }
+      :is(.grade, .passos-lista, .faq) > .revela:nth-child(3n) { animation-range: entry 12% cover 38%; }
+  .vt section[id]:not(.cena):not(.acab) { scroll-margin-top: 4.8rem; }
+  .olho { font-size: 0.78rem; font-weight: 500; color: var(--acento); margin: 0 0 0.7rem; }
+  .passos-lista {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(0.9rem, 1.6vw, 1.3rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  }
+  .cena { position: relative; height: 320vh; }
+  .cena-fixa { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  .cena-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 0.8s var(--e); }
+  .cena-canvas.pronto { opacity: 1; }
+  .cena-escura { background: var(--escuro); }
+  .cena-card {
+    position: absolute; z-index: 2;
+    right: clamp(1rem, 4vw, 2.6rem); bottom: clamp(1.5rem, 5vh, 3rem);
+    width: min(calc(100% - 2rem), 29rem);
+    background: color-mix(in srgb, var(--branco) 92%, transparent);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    padding: clamp(1.2rem, 2vw, 1.7rem); box-shadow: var(--sombra-alta);
+  }
+  .cena-card :is(h2, h3) { font-size: clamp(1.35rem, 2.2vw, 1.8rem); margin-bottom: 0.5rem; }
+  .cena-d { color: var(--c60); font-size: 0.95rem; }
+  .cena-det {
+    margin-top: 0.9rem; padding: 0.6rem 0.8rem; border-radius: 10px;
+    font-size: 0.82rem; font-weight: 500;
+    background: color-mix(in srgb, var(--acento) 9%, transparent);
+    border-left: 3px solid var(--acento);
+  }
+  .passos { display: flex; gap: 0.3rem; margin-top: 1rem; }
+  .passos span { height: 3px; flex: 1; border-radius: 2px; background: var(--linha); transition: background var(--t) var(--e); }
+  .passos span.ativo { background: var(--acento); }
+  .cena-card-escuro { background: color-mix(in srgb, #232125 90%, transparent); border-color: #35323a; }
+  .cena-card-escuro :is(h2, h3) { color: #fff; }
+  .cena-card-escuro .cena-d { color: #b3b0ac; }
+  .cena-card-escuro .olho { color: var(--acento-claro); }
+  .cena-card-escuro .cena-det { color: #fff; background: color-mix(in srgb, var(--acento-claro) 16%, transparent); border-left-color: var(--acento-claro); }
+  .cena-card-escuro .passos span { background: #3d3a42; }
+  .cena-card-escuro .passos span.ativo { background: var(--acento-claro); }
+  .acab { background: var(--escuro); }
+  .acab-palco {
+    max-width: 1240px; margin: 0 auto;
+    padding: clamp(3.5rem, 7vw, 6rem) clamp(1rem, 4vw, 2.6rem);
+  }
+  .acab-cab { max-width: 58ch; }
+  .acab-cab h2 { color: #fff; }
+  .acab-cab .olho { color: var(--acento-claro); }
+  .acab-cab .lead { color: #b3b0ac; margin-top: 0.8rem; }
+  .acab-pilha {
+    display: grid; gap: clamp(0.9rem, 1.6vw, 1.3rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  }
+  .acab-item { display: grid; grid-template-rows: auto 1fr; gap: 1rem; }
+  .acab-item .cena-card { position: static; width: auto; backdrop-filter: none; }
+  .acab-pedra {
+    position: relative; margin: 0; overflow: hidden;
+    border-radius: var(--raio-g); aspect-ratio: 4 / 3; background: #101014;
+    box-shadow:
+      0 26px 60px -28px rgba(0, 0, 0, 0.9),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  }
+  .acab-pedra img {
+    position: absolute; inset: 0;
+    display: block; width: 100%; height: 100%; object-fit: cover;
+  }
+  .acab.carrossel { height: 320vh; }
+  .carrossel .acab-palco {
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
+    max-width: none; padding: 0;
+  }
+  .carrossel .acab-cab {
+    position: absolute; z-index: 3; margin: 0;
+    top: clamp(4.5rem, 11vh, 6.5rem); left: clamp(1rem, 4vw, 2.6rem);
+    /* 62ch deixa o h2 numa linha só no desktop; no celular manda a tela */
+    max-width: min(62ch, calc(100% - 2rem));
+  }
+  .carrossel .acab-cab .lead { max-width: 48ch; margin-top: 0.5rem; }
+  .carrossel .acab-pilha { display: block; }
+  .carrossel .acab-item {
+    position: absolute; inset: 0; display: block;
+    opacity: 0; transition: opacity 0.65s var(--e);
+  }
+  .carrossel .acab-item.ativo { opacity: 1; }
+  .carrossel .acab-pedra {
+    position: absolute; inset: 0; aspect-ratio: auto;
+    border-radius: 0; box-shadow: none;
+  }
+  .carrossel .acab-pedra::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(12, 12, 14, 0.8) 0%,
+      rgba(12, 12, 14, 0.32) 28%,
+      rgba(12, 12, 14, 0.42) 58%,
+      rgba(12, 12, 14, 0.88) 100%
+    );
+  }
+  .carrossel .acab-item .cena-card {
+    position: absolute; z-index: 2;
+    left: 50%; transform: translateX(-50%);
+    bottom: clamp(1.5rem, 5vh, 3.5rem);
+    width: min(calc(100% - 2rem), 34rem);
+    min-height: 15.5rem;
+    backdrop-filter: blur(14px);
+  }
+
+  /* ---------- do tablet para cima ---------- */
+  @media (min-width: 700px) {
+    .form-2 { grid-template-columns: 1fr 1fr; }
+    .rodape-grade { grid-template-columns: 1.3fr 1fr 1fr; }
+  }
+  @media (min-width: 980px) {
+    .vt { --topo-h: 4.4rem; }
+    /*
+      auto-fit resolve pela largura e não pela contagem: com 6 cards ele dava
+      4+2 e com 5 dava 4+1, que deixa a última fileira órfã. Três colunas fixas
+      fecham 3+3 e 3+2, que é o que o olho espera.
+    */
+    .grade-bordas, .grade-serv, .passos-n { grid-template-columns: repeat(3, 1fr); }
+    .topo-nav { display: flex; }
+    .hero-grade { grid-template-columns: 1.05fr 0.95fr; }
+    .dupla { grid-template-columns: 1fr 1.05fr; }
+  }
+
+  /* ---------- movimento reduzido ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .vt * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    .cena { height: 120vh; }
+    .pedra:hover .pedra-foto img { scale: 1; }
+  }
+</style>
+
+<script>
+  /*
+    Movimento pelo Motion One. A cena 3D e o carrossel de acabamentos continuam
+    com a mecânica original — só o entorno mudou.
+  */
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SAIDA = [0.22, 0.61, 0.36, 1] as const;
+  const raiz = document.documentElement;
+
+  type Etapa = { t: string; d: string; det: string };
+  const ilha = document.querySelector<HTMLElement>('[data-cenas]');
+  const CENAS: Record<string, { tag: string; etapas: Etapa[] }> =
+    ilha ? JSON.parse(ilha.textContent || '{}') : {};
+
+  /* A animação termina antes do fim da seção; o resto segura o resultado. */
+  const FIM = 0.72;
+
+  async function ligarCenas() {
+    const canvases = [...document.querySelectorAll<HTMLCanvasElement>('[data-cena]')];
+    if (!canvases.length) return;
+
+    const mod = await import('../../../scripts/marmoraria-3d');
+    const { scroll } = await import('motion');
+
+    const fabricas: Record<string, (c: HTMLCanvasElement) => any> = {
+      bancada: mod.criarBancada,
+    };
+
+    for (const canvas of canvases) {
+      const nome = canvas.dataset.cena!;
+      const secao = canvas.closest<HTMLElement>('[data-cena-sec]');
+      const fabrica = fabricas[nome];
+      if (!secao || !fabrica) continue;
+
+      const textos = CENAS[nome]?.etapas ?? [];
+      const tEl = document.querySelector<HTMLElement>(`[data-etapa-t="${nome}"]`);
+      const dEl = document.querySelector<HTMLElement>(`[data-etapa-d="${nome}"]`);
+      const detEl = document.querySelector<HTMLElement>(`[data-etapa-det="${nome}"]`);
+      const passos = [...document.querySelectorAll<HTMLElement>(`[data-passo="${nome}"]`)];
+
+      let etapa = -1;
+      const mostrar = (i: number) => {
+        if (i === etapa || !tEl || !dEl || !textos[i]) return;
+        etapa = i;
+        tEl.textContent = textos[i].t;
+        dEl.textContent = textos[i].d;
+        if (detEl) detEl.textContent = textos[i].det;
+        passos.forEach((p, n) => p.classList.toggle('ativo', n <= i));
+      };
+
+      let cena: any = null;
+      let alvo = 0;
+      let atual = 0;
+      let visivel = false;
+      let rodando = false;
+      let montando = false;
+
+      const laco = () => {
+        if (!visivel) { rodando = false; return; }
+        const d = alvo - atual;
+        if (cena && Math.abs(d) > 0.0004) {
+          atual += d * 0.075;
+          const local = Math.min(1, atual / FIM);
+          cena.atualizar(local);
+          cena.render();
+          mostrar(Math.min(textos.length - 1, Math.floor(local * textos.length * 0.999)));
+        }
+        requestAnimationFrame(laco);
+      };
+
+      const montar = () => {
+        if (cena || montando) return;
+        montando = true;
+        const fazer = () => {
+          cena = fabrica(canvas);
+          montando = false;
+          if (!cena) return;
+          canvas.classList.add('pronto');
+          addEventListener('resize', () => cena.redimensionar());
+          if (reduz) {
+            cena.atualizar(1);
+            cena.render();
+            mostrar(textos.length - 1);
+          } else if (!rodando) {
+            rodando = true;
+            requestAnimationFrame(laco);
+          }
+        };
+        // criar contexto WebGL trava o quadro: nunca no meio de uma rolagem
+        if ('requestIdleCallback' in window) requestIdleCallback(fazer, { timeout: 600 });
+        else setTimeout(fazer, 0);
+      };
+
+      new IntersectionObserver(
+        ([e]) => {
+          visivel = e.isIntersecting;
+          if (!visivel) return;
+          montar();
+          if (cena && !reduz && !rodando) { rodando = true; requestAnimationFrame(laco); }
+        },
+        { rootMargin: '250px' },
+      ).observe(secao);
+
+      if (!reduz) scroll((p: number) => { alvo = p; }, { target: secao, offset: ['start start', 'end end'] });
+    }
+  }
+
+  async function ligarCarrossel() {
+    const sec = document.querySelector<HTMLElement>('[data-carrossel]');
+    const itens = sec ? [...sec.querySelectorAll<HTMLElement>('.acab-item')] : [];
+    if (!sec || itens.length < 2) return;
+
+    // sem JS a seção continua sendo a grade estática; a classe é o upgrade
+    sec.classList.add('carrossel');
+    itens[0].classList.add('ativo');
+
+    const { scroll } = await import('motion');
+    let atual = 0;
+    scroll(
+      (p: number) => {
+        const i = Math.min(itens.length - 1, Math.floor(p * itens.length * 0.999));
+        if (i === atual) return;
+        itens[atual].classList.remove('ativo');
+        itens[i].classList.add('ativo');
+        atual = i;
+      },
+      { target: sec, offset: ['start start', 'end end'] },
+    );
+  }
+
+  ligarCarrossel();
+
+  if ('requestIdleCallback' in window) requestIdleCallback(() => ligarCenas());
+  else setTimeout(ligarCenas, 200);
+
+  /* ---------------- formulário ---------------- */
+
+  const form = document.querySelector<HTMLFormElement>('[data-form]');
+  form?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const d = new FormData(form);
+    const v = (k: string) => String(d.get(k) ?? '').trim();
+    const linhas = [
+      `Olá! Sou ${v('nome')} e quero um orçamento.`,
+      '',
+      `Peça: ${v('peca')}`,
+      `Material: ${v('material')}`,
+      v('medidas') && `Medidas: ${v('medidas')}`,
+      `Marcenaria: ${v('marcenaria')}`,
+      v('msg') && `Detalhes: ${v('msg')}`,
+      '',
+      `Meu WhatsApp: ${v('fone')}`,
+    ].filter(Boolean);
+    window.open(
+      `https://wa.me/${form.dataset.zap}?text=${encodeURIComponent(linhas.join('\n'))}`,
+      '_blank',
+      'noopener',
+    );
+  });
+
+  /* ---------------- filtro do acervo ---------------- */
+
+  const cards = [...document.querySelectorAll<HTMLElement>('.pedra')];
+  const chips = [...document.querySelectorAll<HTMLButtonElement>('.filtro .chip')];
+
+  /* versão sem animação: vale até o Motion chegar, e para sempre em movimento reduzido */
+  let filtrar = (fam: string) => {
+    cards.forEach((c) => (c.hidden = fam !== 'tudo' && c.dataset.fam !== fam));
+  };
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+      filtrar(chip.dataset.fam!);
+    });
+  });
+
+  /* ---------------- movimento ---------------- */
+
+  async function ligarMovimento() {
+    if (reduz) return;
+    const { animate, inView, scroll, stagger } = await import('motion');
+
+    const umaVez = (
+      el: Element,
+      efeito: () => void,
+      opcoes?: Parameters<typeof inView>[2],
+    ) => {
+      let parar = () => {};
+      parar = inView(el, () => { efeito(); parar(); }, opcoes);
+    };
+
+    /* 1. barra de progresso do topo */
+    const barra = document.querySelector<HTMLElement>('[data-progresso]');
+    if (barra) scroll(animate(barra, { scaleX: [0, 1] }, { ease: 'linear' }));
+
+    /* 2. herói */
+    animate(
+      document.querySelectorAll('[data-linha]'),
+      { opacity: [0, 1], y: [24, 0] },
+      { duration: 0.8, delay: stagger(0.09), ease: SAIDA },
+    );
+    animate(
+      document.querySelectorAll('.hero [data-anima]'),
+      { opacity: [0, 1], y: [16, 0] },
+      { duration: 0.7, delay: stagger(0.09, { startDelay: 0.28 }), ease: SAIDA },
+    );
+
+    /* 3. revelação em cascata, agrupada por pai */
+    const grupos = new Map<Element, HTMLElement[]>();
+    for (const el of document.querySelectorAll<HTMLElement>('[data-anima]')) {
+      if (el.closest('.hero')) continue;
+      const pai = el.parentElement!;
+      grupos.set(pai, [...(grupos.get(pai) ?? []), el]);
+    }
+    for (const irmaos of grupos.values()) {
+      umaVez(
+        irmaos[0],
+        () => animate(irmaos, { opacity: [0, 1], y: [20, 0] }, { duration: 0.65, delay: stagger(0.07), ease: SAIDA }),
+        { amount: 0.1, margin: '0px 0px -8% 0px' },
+      );
+    }
+
+    /* 4. contadores */
+    document.querySelectorAll<HTMLElement>('[data-conta-ate]').forEach((el) => {
+      const fim = Number(el.dataset.contaAte);
+      umaVez(
+        el,
+        () =>
+          animate(0, fim, {
+            duration: 1.2,
+            ease: SAIDA,
+            onUpdate: (n) => (el.textContent = Math.round(n).toLocaleString('pt-BR')),
+          }),
+        { amount: 0.8 },
+      );
+    });
+
+    /* 5. as seções escuras se abrem de cima para baixo */
+    document.querySelectorAll<HTMLElement>('[data-escura]').forEach((s) => {
+      umaVez(
+        s,
+        () => animate(s, { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'] }, { duration: 0.8, ease: SAIDA }),
+        { amount: 0.04, margin: '0px 0px -12% 0px' },
+      );
+    });
+
+    /*
+      6. Os perfis de borda se desenham — que é o único jeito de ler uma seção.
+
+      O quadro inicial vai DENTRO do animate, como `[1, 0]`, e não num
+      `style.strokeDashoffset = '1'` antes. Escondendo por fora, qualquer falha
+      no meio do caminho deixava o desenho preso invisível — foi o que
+      aconteceu. Assim o estado visível é o padrão e a animação é o enfeite.
+    */
+    const perfis = [...document.querySelectorAll<SVGGeometryElement>('[data-perfil]')];
+    const bordas = document.querySelector('.grade-bordas');
+    if (bordas && perfis.length) {
+      umaVez(
+        bordas,
+        () => {
+          animate(
+            perfis,
+            { strokeDashoffset: [1, 0], fillOpacity: [0, 1] },
+            { duration: 0.9, delay: stagger(0.08), ease: SAIDA },
+          );
+        },
+        { amount: 0.2 },
+      );
+    }
+
+    /* 7. parallax discreto na foto do herói */
+    const par = document.querySelector<HTMLElement>('[data-parallax]');
+    if (par) {
+      scroll(animate(par, { y: [0, -40] }, { ease: 'linear' }), {
+        target: par.closest('.hero')!,
+        offset: ['start start', 'end start'],
+      });
+    }
+
+    /* 8. filtro: a grade sai junta e volta em cascata */
+    filtrar = async (fam) => {
+      const visiveis = cards.filter((c) => !c.hidden);
+      if (visiveis.length) {
+        await animate(visiveis, { opacity: 0, y: -8 }, { duration: 0.16, ease: 'easeIn' }).finished;
+      }
+      const ficam = cards.filter((c) => fam === 'tudo' || c.dataset.fam === fam);
+      cards.forEach((c) => (c.hidden = !ficam.includes(c)));
+      animate(ficam, { opacity: [0, 1], y: [14, 0] }, { duration: 0.45, delay: stagger(0.04), ease: SAIDA });
+    };
+  }
+
+  const revelarTudo = () => raiz.classList.remove('anima-on');
+  const socorro = setTimeout(revelarTudo, 3000);
+  ligarMovimento()
+    .catch(revelarTudo)
+    .finally(() => clearTimeout(socorro));
+  if (reduz) revelarTudo();
+</script>
