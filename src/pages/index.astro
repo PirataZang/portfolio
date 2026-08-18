@@ -627,10 +627,47 @@ const jsonLd = {
         <a href="#demos">Demos</a>
         <a href="#processo">Como funciona</a>
       </nav>
-      <a class="btn btn-p btn-min" href="#contato">
+      <a class="btn btn-p btn-min menu-cta" href="#contato">
         <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Pedir orçamento
       </a>
+      {/* só existe abaixo de 920 px — acima disso o nav completo já está à mostra */}
+      <button
+        class="menu-alterna"
+        type="button"
+        aria-expanded="false"
+        aria-controls="menu-movel"
+        data-menu-abre
+      >
+        <span class="menu-icone" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="sr-only">Abrir menu</span>
+      </button>
     </header>
+
+    {/* cortina + painel: nascem fechados no CSS, e abrirMenu()/fecharMenu() no JS troca a classe */}
+    <div class="menu-cortina" data-menu-cortina aria-hidden="true"></div>
+    <div class="menu-movel" id="menu-movel" data-menu-movel>
+      <nav aria-label="Seções">
+        <a href="#servicos">Serviços</a>
+        <a href="#projetos">Projetos</a>
+        <a href="#demos">Demos</a>
+        <a href="#processo">Como funciona</a>
+      </nav>
+      <a class="btn btn-p btn-g btn-cheio" href="#contato">
+        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Pedir orçamento
+      </a>
+      <ul class="menu-movel-contato">
+        <li>
+          <a href={`https://wa.me/${EU.zap}`} rel="noopener">
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> {EU.zapFmt}
+          </a>
+        </li>
+        <li>
+          <a href={`mailto:${EU.email}`}>
+            <i class="fa-solid fa-envelope" aria-hidden="true"></i> {EU.email}
+          </a>
+        </li>
+      </ul>
+    </div>
 
     <main id="conteudo">
       {/* ================= HERÓI ================= */}
@@ -828,7 +865,7 @@ const jsonLd = {
             <p class="lead">
               Puxado da API pública do GitHub na hora do build. Nada de
               mockup: é o repositório, com a linguagem e a data reais. Passe o
-              ponteiro para a esteira parar.
+              ponteiro para a esteira parar, ou arraste para o lado.
             </p>
           </header>
         </div>
@@ -839,55 +876,64 @@ const jsonLd = {
           decoração: `aria-hidden` e `inert` para não duplicar link nem parada
           de tabulação para quem navega por teclado ou leitor de tela.
         */}
-        <div class="trilha no-bar" data-trilha data-anima>
-          <div class="esteira">
-            {
-              [0, 1].map((copia) => (
-                <ul class={`fila${copia ? ' fila-clone' : ''}`} aria-hidden={copia ? 'true' : null} inert={copia === 1}>
-                  {
-                    projetos.map((p) => (
-                <li class="proj" data-brilho>
-                  <div class="serv-luz" aria-hidden="true"></div>
-                  <div class="proj-cab">
-                    <span class="proj-tipo">{p.tipo}</span>
-                    {p.estrelas > 0 && (
-                      <span class="proj-estrela">
-                        <i class="fa-solid fa-star" aria-hidden="true"></i> {p.estrelas}
-                      </span>
-                    )}
-                  </div>
-                  <h3><span class="cerquilha">/</span>{p.nome}</h3>
-                  <p class="proj-d">{p.resumo}</p>
-                  <p class="proj-pe">
-                    {p.lang && (
-                      <span class="proj-lang">
-                        <i style={`--cor:${CORES[p.lang] ?? '#8b93b5'}`} aria-hidden="true"></i>
-                        {p.lang}
-                      </span>
-                    )}
-                    {p.empurrado && (
-                      <span class="proj-data">
-                        {new Date(p.empurrado).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
-                      </span>
-                    )}
-                  </p>
-                  <div class="proj-links">
-                    <a href={p.url} rel="noopener">
-                      <i class="fa-brands fa-github" aria-hidden="true"></i> Código
-                    </a>
-                    {p.aoVivo && (
-                      <a href={p.aoVivo} rel="noopener" class="proj-vivo">
-                        <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> Ver no ar
+        <div class="trilha-envolve">
+          <div class="trilha no-bar" data-trilha data-anima>
+            <div class="esteira">
+              {
+                [0, 1].map((copia) => (
+                  <ul class={`fila${copia ? ' fila-clone' : ''}`} aria-hidden={copia ? 'true' : null} inert={copia === 1}>
+                    {
+                      projetos.map((p) => (
+                  <li class="proj" data-brilho>
+                    <div class="serv-luz" aria-hidden="true"></div>
+                    <div class="proj-cab">
+                      <span class="proj-tipo">{p.tipo}</span>
+                      {p.estrelas > 0 && (
+                        <span class="proj-estrela">
+                          <i class="fa-solid fa-star" aria-hidden="true"></i> {p.estrelas}
+                        </span>
+                      )}
+                    </div>
+                    <h3><span class="cerquilha">/</span>{p.nome}</h3>
+                    <p class="proj-d">{p.resumo}</p>
+                    <p class="proj-pe">
+                      {p.lang && (
+                        <span class="proj-lang">
+                          <i style={`--cor:${CORES[p.lang] ?? '#8b93b5'}`} aria-hidden="true"></i>
+                          {p.lang}
+                        </span>
+                      )}
+                      {p.empurrado && (
+                        <span class="proj-data">
+                          {new Date(p.empurrado).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                        </span>
+                      )}
+                    </p>
+                    <div class="proj-links">
+                      <a href={p.url} rel="noopener">
+                        <i class="fa-brands fa-github" aria-hidden="true"></i> Código
                       </a>
-                    )}
-                  </div>
-                </li>
-                    ))
-                  }
-                </ul>
-              ))
-            }
+                      {p.aoVivo && (
+                        <a href={p.aoVivo} rel="noopener" class="proj-vivo">
+                          <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> Ver no ar
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                      ))
+                    }
+                  </ul>
+                ))
+              }
+            </div>
           </div>
+          {/* só existem onde tem mouse de verdade — no toque, o próprio arraste já navega */}
+          <button class="trilha-seta trilha-seta-e" type="button" data-trilha-seta="-1" aria-label="Projeto anterior">
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <button class="trilha-seta trilha-seta-d" type="button" data-trilha-seta="1" aria-label="Próximo projeto">
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
         </div>
 
         <div class="caixa">
@@ -1159,6 +1205,8 @@ const jsonLd = {
 
   :global(body) { background: #07080f; color: #eaeefc; }
   :global(::selection) { background: #5b2ec4; color: #fff; }
+  /* trava o fundo enquanto o menu móvel está aberto, senão a página rola por baixo dele */
+  :global(body.menu-travado) { overflow: hidden; }
 
   .formas-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
@@ -1491,30 +1539,61 @@ const jsonLd = {
   .projetos { background: var(--noite); }
 
   /*
-    Esteira infinita.
+    Esteira infinita — rolagem nativa, não `transform`.
 
-    O movimento é do Motion, não de @keyframes. A volta tem que ser a largura
-    exata de uma fila, e isso só se sabe medindo — mas `var()` dentro de
-    keyframe é resolvido quando a animação é aplicada, e escrever a medida
-    depois não atualiza a volta de forma confiável. Duas tentativas morreram
-    aí. Movendo pelo JS, a distância é um número em pixel e acabou a discussão.
+    `trilha.scrollLeft` anda sozinho via rAF, e some (`-= período`) sempre que
+    passa de uma fila inteira; como a segunda fila é clone pixel a pixel da
+    primeira, o salto não aparece. A diferença de fundo para a versão antiga
+    (que animava `transform` com o Motion): `overflow-x` continua `auto` o
+    tempo inteiro, então o dedo/mouse pode arrastar por cima do piloto
+    automático a qualquer momento — não existe um modo "travado" à parte.
 
-    Estado base, sem JS: rolagem horizontal manual e o clone escondido, que
-    seria lista duplicada para leitor de tela e para o dedo.
+    Estado sem JS (ou com `prefers-reduced-motion`): rolagem horizontal
+    manual comum e o clone escondido, que seria lista duplicada para leitor
+    de tela e para quem navega por teclado.
   */
   .trilha {
     --vao: clamp(1.7rem, 3.2vw, 3rem);
     position: relative; z-index: 2;
     overflow-x: auto; overflow-y: hidden;
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
     padding-block: 0.5rem;
     mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
   }
+  /*
+    Sem scroll-snap de propósito: testado, e ele briga com o passo contínuo do
+    JS (avança 1px, o navegador puxa de volta pro ponto de encaixe mais perto)
+    — o piloto automático nunca sai do lugar. O respiro entre os cartões já diz
+    visualmente que dá pra rolar; não precisa travar em cada um.
+  */
   .trilha:not(.ligada) .fila-clone { display: none; }
-  /* com o Motion no comando a rolagem manual sai de cena */
-  .trilha.ligada { overflow: hidden; }
-  .esteira { display: flex; width: max-content; will-change: transform; }
+  .esteira { display: flex; width: max-content; }
   .fila { list-style: none; margin: 0; padding: 0; display: flex; }
   .proj { flex: 0 0 clamp(16.5rem, 25vw, 20.5rem); margin-right: var(--vao); }
+
+  /* setas de navegação — flutuam sobre as bordas, só onde tem mouse de verdade */
+  .trilha-envolve { position: relative; }
+  .trilha-seta {
+    display: none; position: absolute; top: 50%; z-index: 3;
+    translate: 0 -50%;
+    width: 2.75rem; height: 2.75rem; align-items: center; justify-content: center;
+    border-radius: 999px; border: 1px solid var(--borda-viva);
+    background: rgba(10, 12, 23, 0.82); backdrop-filter: blur(8px);
+    color: var(--gelo); cursor: pointer; opacity: 0;
+    transition: opacity var(--t) var(--e), border-color var(--t) var(--e), background var(--t) var(--e);
+  }
+  .trilha-envolve:hover .trilha-seta, .trilha-seta:focus-visible { opacity: 1; }
+  .trilha-seta:hover { border-color: var(--roxo-luz); background: rgba(162, 89, 247, 0.16); }
+  .trilha-seta-e { left: -0.4rem; }
+  .trilha-seta-d { right: -0.4rem; }
+  @media (min-width: 1300px) {
+    .trilha-seta-e { left: -1.4rem; }
+    .trilha-seta-d { right: -1.4rem; }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .trilha-seta { display: flex; }
+  }
 
   .proj-cab { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 1.1rem; }
   .proj-tipo {
@@ -1816,6 +1895,78 @@ const jsonLd = {
   .topo-nav a:hover { color: var(--gelo); }
   .topo-nav a:hover::after { transform: scaleX(1); }
 
+  /* abaixo de 920 px o nav completo some (regra acima) e este botão assume */
+  .menu-cta { display: none; }
+  .menu-alterna {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 2.75rem; height: 2.75rem; border-radius: 10px;
+    border: 1px solid var(--borda-viva); background: rgba(234, 238, 252, 0.04);
+    color: var(--gelo); cursor: pointer;
+    transition: background var(--t) var(--e), border-color var(--t) var(--e);
+  }
+  .menu-alterna:hover { border-color: var(--roxo-luz); }
+  .menu-icone { position: relative; width: 1.15rem; height: 0.8rem; display: block; }
+  .menu-icone span {
+    position: absolute; left: 0; right: 0; height: 2px; border-radius: 2px;
+    background: currentColor;
+    transition: top var(--t) var(--e), transform var(--t) var(--e), opacity var(--t) var(--e);
+  }
+  .menu-icone span:nth-child(1) { top: 0; }
+  .menu-icone span:nth-child(2) { top: 50%; translate: 0 -50%; }
+  .menu-icone span:nth-child(3) { bottom: 0; }
+  /* três traços viram X: o do meio some, os de fora giram para o centro */
+  .menu-alterna[aria-expanded='true'] .menu-icone span:nth-child(1) {
+    top: 50%; transform: translateY(-50%) rotate(45deg);
+  }
+  .menu-alterna[aria-expanded='true'] .menu-icone span:nth-child(2) { opacity: 0; }
+  .menu-alterna[aria-expanded='true'] .menu-icone span:nth-child(3) {
+    top: 50%; transform: translateY(-50%) rotate(-45deg);
+  }
+
+  /* cortina: escurece o resto da página e fecha o menu ao toque fora dele */
+  .menu-cortina {
+    position: fixed; inset: var(--topo-h) 0 0; z-index: 58;
+    background: rgba(3, 4, 10, 0.6);
+    opacity: 0; visibility: hidden;
+    transition: opacity var(--t) var(--e), visibility 0s var(--t);
+  }
+  .menu-cortina.aberto {
+    opacity: 1; visibility: visible;
+    transition: opacity var(--t) var(--e);
+  }
+
+  /* painel: dropdown preso no topo, não off-canvas — mais rápido de alcançar com o polegar */
+  .menu-movel {
+    position: fixed; inset: var(--topo-h) 0 auto; z-index: 59;
+    max-height: calc(100svh - var(--topo-h)); overflow-y: auto;
+    display: grid; gap: 1.3rem;
+    padding: 1.3rem clamp(1rem, 4vw, 2.6rem) 1.7rem;
+    background: rgba(10, 12, 23, 0.98);
+    backdrop-filter: blur(16px) saturate(1.4);
+    border-bottom: 1px solid var(--borda);
+    box-shadow: 0 24px 50px -20px rgba(3, 4, 10, 0.7);
+    transform: translateY(-10px); opacity: 0; visibility: hidden;
+    transition: transform var(--t) var(--e), opacity var(--t) var(--e), visibility 0s var(--t);
+  }
+  .menu-movel.aberto {
+    transform: translateY(0); opacity: 1; visibility: visible;
+    transition: transform var(--t) var(--e), opacity var(--t) var(--e);
+  }
+  .menu-movel nav { display: grid; }
+  .menu-movel nav a {
+    display: flex; align-items: center; min-height: 2.9rem;
+    font-size: 1.05rem; font-weight: 600; color: var(--gelo); text-decoration: none;
+    border-bottom: 1px solid var(--borda);
+  }
+  .menu-movel nav a:last-child { border-bottom: none; }
+  .menu-movel nav a:active { color: var(--roxo-luz); }
+  .menu-movel-contato { list-style: none; margin: 0; padding-top: 0.2rem; display: grid; gap: 0.2rem; }
+  .menu-movel-contato a {
+    display: flex; align-items: center; gap: 0.6rem; min-height: 2.6rem;
+    font-size: 0.9rem; color: var(--gelo-60); text-decoration: none;
+  }
+  .menu-movel-contato i { color: var(--roxo-luz); width: 1.1rem; }
+
   .pf section[id] { scroll-margin-top: calc(var(--topo-h) + 0.8rem); }
 
   /* ---------- rodapé ---------- */
@@ -1861,6 +2012,22 @@ const jsonLd = {
     .pf { --topo-h: 4.4rem; }
     .topo-nav { display: flex; }
     .contato-grade { grid-template-columns: 1fr 1.05fr; }
+    .menu-cta { display: inline-flex; }
+    .menu-alterna, .menu-cortina, .menu-movel { display: none; }
+  }
+
+  /* ---------- só celular: toque maior, menos peso de GPU, rolagem mais curta ---------- */
+  @media (max-width: 640px) {
+    /* dois números por linha fica mais denso que um por linha */
+    .nums { grid-template-columns: repeat(2, 1fr); }
+    /* blur pesa em GPU de aparelho médio; metade do raio já basta para a luz */
+    .halo { filter: blur(50px); }
+    /* 5 etapas × 88vh vira quase 4,5 telas de rolagem — no dedo isso cansa */
+    .caminho.presa { height: calc(var(--etapas, 5) * 62vh); }
+    /* cartão de projeto e link de contato ganham mais altura de toque, sem
+       mudar o card em telas maiores onde o mouse já tem precisão de sobra */
+    .proj-links a { padding-block: 0.65rem; }
+    .contato-links a { padding-block: 0.4rem; }
   }
 
   /* ---------- movimento reduzido ---------- */
@@ -1870,8 +2037,6 @@ const jsonLd = {
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
-    .trilha, .trilha.ligada { overflow-x: auto; }
-    .esteira { will-change: auto; }
     .fila-clone { display: none; }
   }
 </style>
@@ -1884,6 +2049,123 @@ const jsonLd = {
   const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const SAIDA = [0.22, 0.61, 0.36, 1] as const;
   const raiz = document.documentElement;
+
+  /* ---------------- menu móvel ---------------- */
+  /* fica fora do ligarMovimento(): tem que funcionar mesmo se o Motion falhar em carregar */
+  const menuBotao = document.querySelector<HTMLButtonElement>('[data-menu-abre]');
+  const menuPainel = document.querySelector<HTMLElement>('[data-menu-movel]');
+  const menuCortina = document.querySelector<HTMLElement>('[data-menu-cortina]');
+
+  const fecharMenu = () => {
+    menuBotao?.setAttribute('aria-expanded', 'false');
+    menuPainel?.classList.remove('aberto');
+    menuCortina?.classList.remove('aberto');
+    document.body.classList.remove('menu-travado');
+  };
+  const abrirMenu = () => {
+    menuBotao?.setAttribute('aria-expanded', 'true');
+    menuPainel?.classList.add('aberto');
+    menuCortina?.classList.add('aberto');
+    document.body.classList.add('menu-travado');
+  };
+  menuBotao?.addEventListener('click', () => {
+    if (menuBotao.getAttribute('aria-expanded') === 'true') fecharMenu();
+    else abrirMenu();
+  });
+  menuCortina?.addEventListener('click', fecharMenu);
+  menuPainel?.querySelectorAll('a').forEach((a) => a.addEventListener('click', fecharMenu));
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharMenu();
+  });
+  /* girar a tela para desktop com o menu aberto deixaria a cortina/travamento presos */
+  matchMedia('(min-width: 920px)').addEventListener('change', (e) => {
+    if (e.matches) fecharMenu();
+  });
+
+  /* ---------------- esteira de projetos ---------------- */
+  /*
+    Rolagem nativa (`scrollLeft` por `requestAnimationFrame`), não `transform`
+    pelo Motion. Dois motivos pra tirar isso do ligarMovimento():
+
+    1. Lá, a esteira só ligava depois do `import('motion')` resolver — se
+       aquele import falhasse ou demorasse (rede, bloqueador), a esteira
+       inteira nunca ativava e sobrava uma lista comum, que termina seca no
+       último card. Era exatamente o "não é infinita, quebra no fim".
+    2. Uma vez ligada, `.trilha.ligada{overflow:hidden}` desligava a rolagem
+       nativa de vez — no toque, o dedo não arrastava mais nada.
+
+    Aqui `overflow-x` continua `auto` o tempo inteiro: o piloto automático e
+    o dedo escrevem no mesmo `scrollLeft`, então dá pra arrastar por cima do
+    piloto a qualquer momento, em qualquer aparelho.
+  */
+  const trilha = document.querySelector<HTMLElement>('[data-trilha]');
+  const filaUm = trilha?.querySelector<HTMLElement>('.fila');
+  if (trilha && filaUm && !reduz) {
+    const PX_POR_S = 58;
+    const FOLGA_MS = 2200; // pausa depois que o usuário mexe, antes do piloto retomar sozinho
+    let periodo = 0;
+    let emPausa = false; // ponteiro ou foco em cima: pausa enquanto durar
+    let livreEm = 0; // toque/roda/arraste: pausa temporária, com retomada sozinha
+    let ultimoT = 0;
+    let ultimoScroll = trilha.scrollLeft;
+
+    const medir = () => { periodo = filaUm.getBoundingClientRect().width; };
+    medir();
+    trilha.classList.add('ligada');
+
+    const passo = (agora: number) => {
+      if (periodo > 1) {
+        if (!(emPausa || agora < livreEm) && ultimoT) {
+          trilha.scrollLeft += (PX_POR_S * (agora - ultimoT)) / 1000;
+        }
+        /* a emenda: passou de uma fila inteira, volta um período. Como a
+           segunda fila é clone pixel a pixel da primeira, o salto não
+           aparece — e roda sempre, tanto faz se foi o piloto ou o dedo. */
+        if (trilha.scrollLeft >= periodo) trilha.scrollLeft -= periodo;
+        else if (trilha.scrollLeft < 0) trilha.scrollLeft += periodo;
+      }
+      ultimoT = agora;
+      ultimoScroll = trilha.scrollLeft;
+      requestAnimationFrame(passo);
+    };
+    requestAnimationFrame(passo);
+
+    /* fonte que chega atrasada muda a largura do cartão, e com ela o período */
+    document.fonts?.ready.then(medir);
+    let redim: number | undefined;
+    addEventListener('resize', () => {
+      clearTimeout(redim);
+      redim = setTimeout(medir, 200) as unknown as number;
+    });
+
+    /* mouse: pausa enquanto o ponteiro (ou o foco do teclado) estiver em cima */
+    trilha.addEventListener('pointerenter', () => { emPausa = true; });
+    trilha.addEventListener('pointerleave', () => { emPausa = false; });
+    trilha.addEventListener('focusin', () => { emPausa = true; });
+    trilha.addEventListener('focusout', () => { emPausa = false; });
+
+    /* toque, trackpad, roda do mouse, barra de rolagem: o navegador já rola de
+       verdade — só detecta que foi o usuário e dá uma folga antes de o piloto
+       automático retomar */
+    trilha.addEventListener(
+      'scroll',
+      () => {
+        if (Math.abs(trilha.scrollLeft - ultimoScroll) > 1.2) livreEm = performance.now() + FOLGA_MS;
+      },
+      { passive: true },
+    );
+
+    /* setas: mesmo passo de um cartão, com a folga de sempre */
+    document.querySelectorAll<HTMLButtonElement>('[data-trilha-seta]').forEach((botao) => {
+      botao.addEventListener('click', () => {
+        const cartao = filaUm.querySelector<HTMLElement>('.proj');
+        if (!cartao) return;
+        const passoPx = cartao.getBoundingClientRect().width + parseFloat(getComputedStyle(cartao).marginRight || '0');
+        trilha.scrollBy({ left: passoPx * Number(botao.dataset.trilhaSeta), behavior: 'smooth' });
+        livreEm = performance.now() + FOLGA_MS;
+      });
+    });
+  }
 
   /* ---------------- formulário ---------------- */
 
@@ -2017,7 +2299,7 @@ const jsonLd = {
     });
 
     /*
-      6a. O CAMINHO. A seção prende no topo e o scroll dela vira progresso:
+      6. O CAMINHO. A seção prende no topo e o scroll dela vira progresso:
       a barra avança contínua, a caixa troca em degrau. Mesma mecânica das
       cenas 3D dos outros sites do portfolio — `scroll()` com offset
       start/start a end/end cobre exatamente o trecho em que o sticky está
@@ -2063,52 +2345,6 @@ const jsonLd = {
         },
         { target: caminho, offset: ['start start', 'end end'] },
       );
-    }
-
-    /*
-      6b. A ESTEIRA. Uma fila tem largura exata de um período — `.fila` é flex
-      e a largura dela já inclui a margem direita de cada cartão, então quando
-      a faixa anda essa distância o clone cai no lugar da original e a emenda
-      não existe. `repeat: Infinity` reinicia em 0, que é visualmente o mesmo
-      ponto.
-
-      Velocidade constante em px/s: assim uma esteira de 5 cartões e outra de
-      30 andam no mesmo ritmo, e não em durações iguais.
-    */
-    const trilha = document.querySelector<HTMLElement>('[data-trilha]');
-    const esteira = trilha?.querySelector<HTMLElement>('.esteira');
-    const filaUm = trilha?.querySelector<HTMLElement>('.fila');
-    if (trilha && esteira && filaUm) {
-      const PX_POR_S = 58;
-      let laco: ReturnType<typeof animate> | null = null;
-
-      const ligar = () => {
-        const periodo = filaUm.getBoundingClientRect().width;
-        if (periodo < 1) return;               // ainda sem layout: tenta depois
-        trilha.classList.add('ligada');
-        laco?.stop();
-        laco = animate(
-          esteira,
-          { x: [0, -periodo] },
-          { duration: periodo / PX_POR_S, ease: 'linear', repeat: Infinity },
-        );
-      };
-      ligar();
-      /* fonte que chega atrasada muda a largura do cartão e, com ela, a volta */
-      document.fonts?.ready.then(ligar);
-      let t: number | undefined;
-      addEventListener('resize', () => {
-        clearTimeout(t);
-        t = setTimeout(ligar, 200) as unknown as number;
-      });
-
-      /* quem quer ler ou clicar precisa que pare */
-      const pausar = () => laco?.pause();
-      const seguir = () => laco?.play();
-      trilha.addEventListener('pointerenter', pausar);
-      trilha.addEventListener('pointerleave', seguir);
-      trilha.addEventListener('focusin', pausar);
-      trilha.addEventListener('focusout', seguir);
     }
 
     /* 7. tato: tudo que se clica afunda um fio */
