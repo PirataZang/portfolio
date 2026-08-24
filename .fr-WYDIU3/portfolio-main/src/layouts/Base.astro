@@ -1,0 +1,37 @@
+---
+/*
+  O CSS do Font Awesome entra por aqui, e não por um @import dentro do
+  <style is:global> lá embaixo: aninhado, o Vite não reescreve os url() das
+  webfonts nem as emite, e todo ícone do portfolio virava caixinha.
+*/
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Portfolio Sites',
+  description = 'Coleção de sites de portfólio.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <slot name="head" />
+  </head>
+  <body class="min-h-dvh font-sans antialiased">
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  @import '../styles/global.css';
+</style>

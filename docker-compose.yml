@@ -1,6 +1,5 @@
 services:
   dev:
-    profiles: [dev]
     build:
       context: .
       target: dev

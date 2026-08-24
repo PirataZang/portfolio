@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!--
+    Trama de linho. Vai de background-image por cima das cores das seções,
+    em opacidade baixa: é a toalha de mesa da cantina, não um assunto.
+    Fio marrom em vez de preto para não acinzentar o creme.
+  -->
+  <g stroke="#8a6a45" fill="none" stroke-linecap="square">
+    <g stroke-width="1" opacity="0.55">
+      <path d="M0 4h24M0 12h24M0 20h24" />
+      <path d="M4 0v24M12 0v24M20 0v24" />
+    </g>
+    <g stroke-width="0.5" opacity="0.3">
+      <path d="M0 0h24M0 8h24M0 16h24" />
+      <path d="M0 0v24M8 0v24M16 0v24" />
+    </g>
+  </g>
+</svg>
