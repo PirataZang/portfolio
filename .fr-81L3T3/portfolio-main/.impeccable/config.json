@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-08-25T18:04:08.162Z",
+        "reason": "Claude: já é a face de corpo da demo marmoraria neste mesmo repo (src/pages/sites/marmoraria/index.astro linha 388) — manter é consistência da família de demos, não default"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/pages/sites/pulse/index.astro"
+        ],
+        "createdAt": "2026-08-25T18:41:20.333Z",
+        "reason": "Claude: os 3 casos são o logotipo PULSE (topo, h1 do herói e rodapé), não texto corrido nem métrica — gradiente é a marca do festival nesta demo, e nenhum texto de leitura usa o efeito"
+      }
+    ]
+  }
+}

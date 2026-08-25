@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    container_name: portfolio
+    restart: unless-stopped
+    ports:
+      # na VPS troque para "80:80"; 80 e 8080 já estão ocupadas nesta máquina
+      - "4323:80"

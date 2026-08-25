@@ -8,11 +8,3 @@ services:
     volumes:
       - .:/app
       - /app/node_modules # keep the image's node_modules, not the host's
-
-  prod:
-    profiles: [prod]
-    build:
-      context: .
-      target: prod
-    ports:
-      - "8080:80"
