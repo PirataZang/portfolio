@@ -1,0 +1,2334 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  PULSE — festival de música eletrônica, com venda de ingresso simulada.
+
+  A página é uma bilheteria inteira do lado do cliente: carrinho, meia-entrada,
+  taxa de serviço, checkout em três passos e ingresso com código. Nada sai do
+  navegador — o "banco de dados" é o localStorage, e a tela de confirmação diz
+  isso em voz alta. É demonstração de fluxo, não de gateway.
+
+  O tema é o próprio show: fundo breu, luz de neon em ciano e magenta, tipo
+  condensado de cartaz e um equalizador em canvas batendo a 128 BPM no herói.
+  Luz é o único elemento decorativo que se repete — a mesma cor que acende o
+  botão acende a borda do card e o rastro do laser.
+
+  <dialog> nativo para o carrinho: foco preso, Esc fecha e backdrop de graça.
+  Fotos do Pixabay (licença livre), creditadas no rodapé.
+*/
+
+const EVENTO = {
+  nome: 'PULSE',
+  edicao: '2026',
+  chamada: 'Terceira edição',
+  dataISO: '2026-11-14T23:00:00-03:00',
+  dataFmt: 'Sábado, 14 de novembro de 2026',
+  portoes: '22h00',
+  primeiro: '23h00',
+  fim: '06h00',
+  local: 'Usina Hangar',
+  rua: 'Av. Marquês de São Vicente, 1200',
+  bairro: 'Barra Funda',
+  cidade: 'São Paulo',
+  uf: 'SP',
+  cep: '01139-003',
+  idade: '18 anos',
+  capacidade: 6000,
+  palcos: 2,
+  site: 'https://pulse.fest',
+  email: 'contato@pulse.fest',
+  fone: '+55 11 4000-2026',
+  foneLink: '+551140002026',
+  zap: '5511940002026',
+  zapFmt: '(11) 94000-2026',
+  insta: 'pulsefest',
+  tiktok: 'pulsefest',
+  spotify: 'playlist/pulse2026',
+  youtube: '@pulsefest',
+  taxa: 0.1,
+};
+
+const mapaQuery = encodeURIComponent(
+  `${EVENTO.local}, ${EVENTO.rua}, ${EVENTO.bairro}, ${EVENTO.cidade} - ${EVENTO.uf}`,
+);
+
+/* line-up na ordem em que sobe no palco */
+const LINEUP = [
+  {
+    id: 'kai',
+    nome: 'KAI SUBLIME',
+    origem: 'Lisboa, PT',
+    genero: 'Drum and bass',
+    hora: '00h00',
+    palco: 'Palco Túnel',
+    set: '90 min',
+    sobre: 'Abre a noite puxando o BPM de 172 para cima sem pedir licença. Trouxe o álbum Half Light inteiro no cartão.',
+    alt: 'Retrato de KAI SUBLIME, DJ, de perfil sob luz âmbar.',
+    principal: false,
+  },
+  {
+    id: 'lara',
+    nome: 'LARA VOSS',
+    origem: 'Berlim, DE',
+    genero: 'House progressivo',
+    hora: '01h30',
+    palco: 'Palco Principal',
+    set: '90 min',
+    sobre: 'Set longo, construção lenta e um drop por vez. É dela a residência de quinta no Sisyphos há quatro anos.',
+    alt: 'Retrato de LARA VOSS, DJ, com fones de ouvido.',
+    principal: false,
+  },
+  {
+    id: 'noktvrno',
+    nome: 'NOKTVRNO',
+    origem: 'São Paulo, BR',
+    genero: 'Techno melódico',
+    hora: '03h00',
+    palco: 'Palco Principal',
+    set: '120 min',
+    sobre: 'Headliner. Duas horas de set fechado, sem convidado e sem intervalo — o mesmo formato que fechou o Dekmantel no ano passado.',
+    alt: 'Retrato de NOKTVRNO, DJ, com fones de ouvido sobre fundo escuro.',
+    principal: true,
+  },
+  {
+    id: 'mira',
+    nome: 'MIRA DUNES',
+    origem: 'Cidade do México, MX',
+    genero: 'Techno industrial',
+    hora: '04h30',
+    palco: 'Palco Túnel',
+    set: '90 min',
+    sobre: 'Fecha o Túnel no sunrise. Hardware ao vivo, sem laptop: dois grooveboxes, um sampler e nada de playlist.',
+    alt: 'Retrato de MIRA DUNES, DJ, tocando sob luz vermelha e azul.',
+    principal: false,
+  },
+];
+
+/*
+  Setores. `esgotado` existe para o card mostrar o estado, e não para sumir da
+  página: lote esgotado que continua visível é o que faz o lote atual parecer
+  barato.
+*/
+const SETORES = [
+  {
+    id: 'pista',
+    nome: 'Pista',
+    lote: '2º lote',
+    preco: 180,
+    anterior: 150,
+    restam: 12,
+    esgotado: false,
+    destaque: false,
+    inclui: [
+      'Acesso à pista dos dois palcos',
+      'Guarda-volumes com fila própria',
+      'Bar e praça de alimentação',
+    ],
+  },
+  {
+    id: 'premium',
+    nome: 'Pista Premium',
+    lote: '2º lote',
+    preco: 320,
+    anterior: 270,
+    restam: 34,
+    esgotado: false,
+    destaque: true,
+    inclui: [
+      'Setor elevado, visão direta do palco',
+      'Banheiro e bar exclusivos',
+      'Entrada por portaria separada',
+      'Guarda-volumes incluso',
+    ],
+  },
+  {
+    id: 'front',
+    nome: 'Front Stage',
+    lote: 'lote único',
+    preco: 480,
+    anterior: null,
+    restam: 6,
+    esgotado: false,
+    destaque: false,
+    inclui: [
+      'Grade do Palco Principal',
+      'Entrada antecipada, 21h30',
+      'Copo oficial da edição',
+      'Guarda-volumes incluso',
+    ],
+  },
+  {
+    id: 'camarote',
+    nome: 'Camarote Pulse',
+    lote: 'lote único',
+    preco: 890,
+    anterior: null,
+    restam: 0,
+    esgotado: true,
+    destaque: false,
+    inclui: [
+      'Mezanino com vista dos dois palcos',
+      'Open bar das 22h às 05h',
+      'Meet and greet com o line-up',
+      'Estacionamento e guarda-volumes',
+    ],
+  },
+];
+
+const DETALHES = [
+  { i: 'fa-solid fa-calendar-day', t: 'Data', d: EVENTO.dataFmt },
+  { i: 'fa-solid fa-door-open', t: 'Portões', d: `Abrem às ${EVENTO.portoes}` },
+  { i: 'fa-solid fa-play', t: 'Primeiro set', d: `${EVENTO.primeiro}, no Palco Túnel` },
+  { i: 'fa-solid fa-sun', t: 'Encerramento', d: `${EVENTO.fim}, no sunrise` },
+  { i: 'fa-solid fa-id-card', t: 'Idade mínima', d: `${EVENTO.idade}, com documento com foto` },
+  { i: 'fa-solid fa-users', t: 'Capacidade', d: `${EVENTO.capacidade.toLocaleString('pt-BR')} pessoas, ${EVENTO.palcos} palcos` },
+  { i: 'fa-solid fa-umbrella', t: 'Chuva', d: 'Galpão coberto — acontece com chuva' },
+  { i: 'fa-solid fa-wheelchair', t: 'Acessibilidade', d: 'Piso plano, plataforma PCD e banheiro adaptado' },
+];
+
+const LEVAR = {
+  pode: ['Documento com foto', 'Cartão e celular', 'Protetor auricular', 'Garrafa vazia de plástico mole'],
+  naoPode: ['Bebida e comida de fora', 'Guarda-chuva e objeto pontiagudo', 'Câmera profissional sem credencial', 'Qualquer coisa de vidro'],
+};
+
+const GALERIA = [
+  { a: 'g1', alt: 'Chuva de confete azul sobre a pista lotada no encerramento.' },
+  { a: 'g2', alt: 'Silhueta de pessoa de braços abertos diante do palco iluminado de laranja.' },
+  { a: 'g3', alt: 'Público em contraluz com a estrutura de luz acesa ao fundo.' },
+  { a: 'g4', alt: 'Palco visto de trás do público, com refletores brancos abertos.' },
+  { a: 'g5', alt: 'Leque de feixes de luz sobre a multidão, em preto e branco.' },
+  { a: 'g6', alt: 'Laser verde cortando a fumaça sobre a pista.' },
+];
+
+const DUVIDAS = [
+  {
+    p: 'Como eu recebo o ingresso?',
+    r: 'Na hora, por e-mail, e ele também fica no seu painel aqui no site. Cada ingresso tem um QR único e nominal, gerado no seu nome e CPF — é ele que a portaria lê. Não existe ingresso impresso na bilheteria física.',
+  },
+  {
+    p: 'Quem tem direito a meia-entrada?',
+    r: 'Estudante com carteirinha válida, pessoa de 18 a 20 anos, pessoa com deficiência mais um acompanhante, professor da rede pública e doador regular de sangue. O documento é conferido na portaria: sem comprovação, a diferença é cobrada na hora ou a entrada é negada.',
+  },
+  {
+    p: 'Posso transferir o ingresso para outra pessoa?',
+    r: 'Pode, até 48 horas antes do evento, pelo painel. A transferência é gratuita, gera um QR novo no nome de quem recebeu e invalida o anterior na mesma hora. Depois desse prazo o nome fica travado.',
+  },
+  {
+    p: 'Perdi o QR code. E agora?',
+    r: 'Entra no painel com o CPF da compra e reemite. O QR antigo é invalidado automaticamente, então não existe risco de alguém entrar com a versão perdida.',
+  },
+  {
+    p: 'Dá para cancelar e receber o dinheiro de volta?',
+    r: 'Dá, dentro de sete dias da compra e desde que falte mais de 48 horas para o evento — é o direito de arrependimento do Código de Defesa do Consumidor. O estorno cai no mesmo meio de pagamento em até dois ciclos de fatura. Se o evento for cancelado por nós, o reembolso é integral e automático, taxa inclusa.',
+  },
+  {
+    p: 'Tem estacionamento?',
+    r: 'O galpão tem 400 vagas conveniadas por R$ 45 a diária, que só dá para garantir comprando junto com o ingresso. Também tem ponto oficial de aplicativo na Rua Vitorino Carmilo, sinalizado, com equipe até as 07h.',
+  },
+  {
+    p: 'O que não pode entrar?',
+    r: 'Nada de vidro, bebida ou comida de fora, guarda-chuva, objeto pontiagudo, spray e câmera profissional sem credencial. Garrafa de plástico mole e vazia entra. Protetor auricular não só entra como é distribuído de graça no guarda-volumes.',
+  },
+  {
+    p: 'Menor de 18 entra acompanhado?',
+    r: 'Não entra de jeito nenhum, nem com os pais, nem com alvará. É evento com venda de bebida alcoólica e classificação etária de 18 anos definida em portaria — a portaria confere documento com foto de todo mundo.',
+  },
+];
+
+const titulo = `${EVENTO.nome} ${EVENTO.edicao} — ${EVENTO.dataFmt.toLowerCase()}, ${EVENTO.local}, ${EVENTO.cidade}`;
+const descricao =
+  'PULSE 2026: uma noite de música eletrônica na Usina Hangar, São Paulo. NOKTVRNO, LARA VOSS, KAI SUBLIME e MIRA DUNES em dois palcos, das 22h às 6h. Ingressos a partir de R$ 180.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'MusicEvent',
+      '@id': `${EVENTO.site}/#evento`,
+      name: `${EVENTO.nome} ${EVENTO.edicao}`,
+      description: descricao,
+      startDate: EVENTO.dataISO,
+      endDate: '2026-11-15T06:00:00-03:00',
+      eventStatus: 'https://schema.org/EventScheduled',
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+      typicalAgeRange: '18-',
+      maximumAttendeeCapacity: EVENTO.capacidade,
+      url: EVENTO.site,
+      location: {
+        '@type': 'MusicVenue',
+        name: EVENTO.local,
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: EVENTO.rua,
+          addressLocality: EVENTO.cidade,
+          addressRegion: EVENTO.uf,
+          postalCode: EVENTO.cep,
+          addressCountry: 'BR',
+        },
+      },
+      performer: LINEUP.map((a) => ({ '@type': 'MusicGroup', name: a.nome })),
+      offers: SETORES.map((s) => ({
+        '@type': 'Offer',
+        name: `${s.nome} — ${s.lote}`,
+        price: s.preco,
+        priceCurrency: 'BRL',
+        availability: s.esgotado ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+        url: `${EVENTO.site}/#ingressos`,
+      })),
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: DUVIDAS.map((d) => ({
+        '@type': 'Question',
+        name: d.p,
+        acceptedAnswer: { '@type': 'Answer', text: d.r },
+      })),
+    },
+  ],
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:url" content={EVENTO.site} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#05030a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Bai+Jamjuree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+    />
+    <link rel="preload" as="image" href="/img/pulse/palco.webp" type="image/webp" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="pl">
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="topo" data-topo>
+      <div class="topo-barra" data-progresso aria-hidden="true"></div>
+      <a class="marca" href="/">
+        <span class="marca-txt">{EVENTO.nome}</span>
+        <span class="marca-ed">{EVENTO.edicao}</span>
+      </a>
+      <nav class="topo-nav" aria-label="Seções">
+        <a href="#lineup">Line-up</a>
+        <a href="#show">O show</a>
+        <a href="#ingressos">Ingressos</a>
+        <a href="#conta">Minha conta</a>
+        <a href="#duvidas">Dúvidas</a>
+      </nav>
+      <button type="button" class="btn btn-carrinho" data-abrir-carrinho aria-haspopup="dialog">
+        <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+        <span class="sr">Abrir carrinho</span>
+        <span class="carrinho-n" data-carrinho-n hidden>0</span>
+      </button>
+
+      {/* deslogado mostra "Entrar"; logado troca pelo e-mail com um menu curto */}
+      <button type="button" class="btn btn-vaz btn-min entrar" data-abrir-login>
+        <i class="fa-regular fa-user" aria-hidden="true"></i> Entrar
+      </button>
+      <details class="usuario" data-usuario hidden>
+        <summary aria-label="Menu da conta">
+          <span class="usuario-ini" data-u-ini aria-hidden="true">—</span>
+          <span class="usuario-mail" data-u-mail>—</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="usuario-menu">
+          <a href="#conta">Minha conta</a>
+          <button type="button" data-sair-topo>Sair</button>
+        </div>
+      </details>
+    </header>
+
+    <main id="conteudo">
+      {/* ═══════════════════ HERÓI ═══════════════════ */}
+      <section class="heroi" id="inicio">
+        <div class="heroi-fundo" aria-hidden="true">
+          <picture>
+            <source srcset="/img/pulse/local.webp" type="image/webp" />
+            <img src="/img/pulse/local.jpg" alt="" width="1200" height="675" />
+          </picture>
+        </div>
+        <div class="heroi-veu" aria-hidden="true"></div>
+
+        <div class="caixa heroi-grade">
+          <div class="heroi-txt">
+            <p class="fita" data-anima>
+              <span class="bolinha" aria-hidden="true"></span>
+              Vendas abertas · {EVENTO.chamada}
+            </p>
+
+            <h1 data-anima>{EVENTO.nome} <span>{EVENTO.edicao}</span></h1>
+
+            <p class="heroi-sub" data-anima>
+              Techno melódico, house progressivo e drum and bass em dois palcos,
+              das {EVENTO.portoes} às {EVENTO.fim}.
+            </p>
+
+            <dl class="heroi-info" data-anima>
+              <div>
+                <dt><i class="fa-regular fa-calendar" aria-hidden="true" /> Data</dt>
+                <dd>{EVENTO.dataFmt}</dd>
+              </div>
+              <div>
+                <dt><i class="fa-regular fa-clock" aria-hidden="true" /> Horário</dt>
+                <dd>Portões às {EVENTO.portoes} · encerra {EVENTO.fim}</dd>
+              </div>
+              <div>
+                <dt><i class="fa-solid fa-location-dot" aria-hidden="true" /> Local</dt>
+                <dd>{EVENTO.local} · {EVENTO.bairro}, {EVENTO.cidade}/{EVENTO.uf}</dd>
+              </div>
+              <div>
+                <dt><i class="fa-regular fa-id-card" aria-hidden="true" /> Classificação</dt>
+                <dd>{EVENTO.idade} · documento com foto</dd>
+              </div>
+            </dl>
+
+            <div class="heroi-compra" data-anima>
+              <p class="heroi-preco">
+                <small>Ingressos a partir de</small>
+                <b>R$ {SETORES[0].preco}</b>
+                <span>+ taxa de {Math.round(EVENTO.taxa * 100)}%</span>
+              </p>
+              <a class="btn btn-neon btn-g" href="#ingressos">
+                <i class="fa-solid fa-ticket" aria-hidden="true" /> Comprar ingressos
+              </a>
+            </div>
+
+            <p class="heroi-conta mono" data-relogio data-alvo={EVENTO.dataISO} data-anima>
+              Faltam <b data-r="d">—</b> dias, <b data-r="h">—</b>h
+              <b data-r="m">—</b>min e <b data-r="s">—</b>s
+            </p>
+          </div>
+
+          <figure class="cartaz" data-anima>
+            <picture>
+              <source srcset="/img/pulse/palco.webp" type="image/webp" />
+              <img
+                src="/img/pulse/palco.jpg"
+                alt="Feixes de laser abertos sobre a pista em uma edição anterior do PULSE."
+                width="1600"
+                height="900"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </picture>
+            <figcaption>
+              <span class="cartaz-n">{LINEUP.length} artistas</span>
+              <span class="cartaz-n">{EVENTO.palcos} palcos</span>
+              <span class="cartaz-n">7 h de festa</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      {/* ═══════════════════ LINE-UP ═══════════════════ */}
+      <section class="secao lineup" id="lineup">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Line-up</p>
+            <h2>Quatro sets, nenhum convidado surpresa</h2>
+            <p class="lead">
+              A grade sai fechada e não muda: você compra sabendo quem toca, a que
+              horas e por quanto tempo. Cada artista tem o palco inteiro no
+              horário dele.
+            </p>
+          </header>
+
+          <div class="grade-art">
+            {
+              LINEUP.map((a) => (
+                <article class:list={['art', a.principal && 'art-head']} data-art data-anima>
+                  <div class="art-foto">
+                    <picture>
+                      <source srcset={`/img/pulse/art-${a.id}.webp`} type="image/webp" />
+                      <img
+                        src={`/img/pulse/art-${a.id}.jpg`}
+                        alt={a.alt}
+                        width="760"
+                        height="950"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </picture>
+                    <span class="art-hora mono">{a.hora}</span>
+                    {a.principal && <span class="art-selo">Headliner</span>}
+                  </div>
+                  <div class="art-corpo">
+                    <h3>{a.nome}</h3>
+                    <p class="art-meta">
+                      <span>{a.genero}</span>
+                      <span class="ponto" aria-hidden="true">·</span>
+                      <span>{a.origem}</span>
+                    </p>
+                    <p class="art-sobre">{a.sobre}</p>
+                    <p class="art-palco mono">
+                      <i class="fa-solid fa-location-arrow" aria-hidden="true" />
+                      {a.palco} · set de {a.set}
+                    </p>
+                  </div>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ GALERIA EM TRILHO ═══════════════════ */}
+      <section class="galeria" aria-labelledby="galeria-t">
+        <div class="caixa">
+          <p class="olho" data-anima>Edições anteriores</p>
+          <h2 id="galeria-t" data-anima>Como foi em 2024 e 2025</h2>
+        </div>
+        {/* duas fileiras correndo em sentidos opostos conforme a página desce */}
+        <div class="trilho-caixa">
+          <div class="trilho" data-trilho="1">
+            {
+              [...GALERIA, ...GALERIA].map((g, i) => (
+                <figure class="trilho-i" aria-hidden={i >= GALERIA.length ? 'true' : undefined}>
+                  <picture>
+                    <source srcset={`/img/pulse/${g.a}.webp`} type="image/webp" />
+                    <img src={`/img/pulse/${g.a}.jpg`} alt={i < GALERIA.length ? g.alt : ''} width="1000" height="666" loading="lazy" decoding="async" />
+                  </picture>
+                </figure>
+              ))
+            }
+          </div>
+          <div class="trilho trilho-volta" data-trilho="-1" aria-hidden="true">
+            {
+              [...GALERIA].reverse().concat([...GALERIA].reverse()).map((g) => (
+                <figure class="trilho-i">
+                  <picture>
+                    <source srcset={`/img/pulse/${g.a}.webp`} type="image/webp" />
+                    <img src={`/img/pulse/${g.a}.jpg`} alt="" width="1000" height="666" loading="lazy" decoding="async" />
+                  </picture>
+                </figure>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ O SHOW ═══════════════════ */}
+      <section class="secao show" id="show">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">O show</p>
+            <h2>Tudo que você precisa saber antes de sair de casa</h2>
+          </header>
+
+          <ul class="grade-det">
+            {
+              DETALHES.map((d) => (
+                <li class="det" data-anima>
+                  <span class="det-i" aria-hidden="true"><i class={d.i} /></span>
+                  <div>
+                    <p class="det-t">{d.t}</p>
+                    <p class="det-d">{d.d}</p>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+
+          <div class="show-dupla">
+            <figure class="show-foto" data-anima>
+              <picture>
+                <source srcset="/img/pulse/local.webp" type="image/webp" />
+                <img
+                  src="/img/pulse/local.jpg"
+                  alt="Interior da Usina Hangar durante um show, com estrutura de luz no teto."
+                  width="1200"
+                  height="675"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </picture>
+              <figcaption>
+                <b>{EVENTO.local}</b>
+                <span>{EVENTO.rua} · {EVENTO.bairro}, {EVENTO.cidade}/{EVENTO.uf}</span>
+              </figcaption>
+            </figure>
+
+            <div class="levar" data-anima>
+              <div class="levar-col">
+                <p class="levar-t levar-sim"><i class="fa-solid fa-circle-check" aria-hidden="true" /> Pode entrar</p>
+                <ul>{LEVAR.pode.map((i) => <li>{i}</li>)}</ul>
+              </div>
+              <div class="levar-col">
+                <p class="levar-t levar-nao"><i class="fa-solid fa-circle-xmark" aria-hidden="true" /> Não entra</p>
+                <ul>{LEVAR.naoPode.map((i) => <li>{i}</li>)}</ul>
+              </div>
+              <a
+                class="btn btn-vaz btn-cheio"
+                href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`}
+                rel="noopener">
+                <i class="fa-solid fa-map-location-dot" aria-hidden="true" /> Como chegar
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ INGRESSOS ═══════════════════ */}
+      <section class="secao ingressos" id="ingressos">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Ingressos</p>
+            <h2>Escolha o setor, escolha o tipo, jogue no carrinho</h2>
+            <p class="lead">
+              O preço mostrado é por ingresso, sem a taxa de serviço de
+              {' '}{Math.round(EVENTO.taxa * 100)}% — ela aparece somada no carrinho, antes de
+              você decidir qualquer coisa. Meia-entrada custa metade e é conferida
+              na portaria.
+            </p>
+          </header>
+
+          <div class="grade-ing">
+            {
+              SETORES.map((s) => (
+                <article
+                  class:list={['ing', s.destaque && 'ing-destaque', s.esgotado && 'ing-fora']}
+                  data-setor={s.id}
+                  data-preco={s.preco}
+                  data-nome={s.nome}
+                  data-anima>
+                  {s.destaque && !s.esgotado && <p class="ing-fita">Mais vendido</p>}
+                  {s.esgotado && <p class="ing-fita ing-fita-fora">Esgotado</p>}
+
+                  <p class="ing-lote mono">{s.lote}</p>
+                  <h3>{s.nome}</h3>
+
+                  <p class="ing-preco">
+                    {s.anterior && <s class="ing-de">R$ {s.anterior}</s>}
+                    <span class="ing-valor"><small>R$</small><b data-valor>{s.preco}</b></span>
+                    <span class="ing-meia" data-legenda>
+                      {s.esgotado ? `meia: R$ ${s.preco / 2}` : 'inteira · meia sai por R$ ' + s.preco / 2}
+                    </span>
+                  </p>
+
+                  <ul class="ing-inclui">
+                    {s.inclui.map((i) => (
+                      <li><i class="fa-solid fa-check" aria-hidden="true" />{i}</li>
+                    ))}
+                  </ul>
+
+                  {s.esgotado ? (
+                    <p class="ing-aviso">
+                      Vendido no primeiro dia. Se abrir devolução, avisamos por e-mail
+                      para quem tiver conta.
+                    </p>
+                  ) : (
+                    <>
+                      {s.restam <= 15 && (
+                        <p class="ing-restam">
+                          <i class="fa-solid fa-fire" aria-hidden="true" /> Restam {s.restam}% deste lote
+                        </p>
+                      )}
+                      <div class="ing-tipo" role="group" aria-label={`Tipo de ingresso — ${s.nome}`}>
+                        <button type="button" class="ativo" data-tipo="inteira">Inteira</button>
+                        <button type="button" data-tipo="meia">Meia</button>
+                      </div>
+                      <div class="ing-passo">
+                        <button type="button" data-menos aria-label={`Menos um ingresso ${s.nome}`}>−</button>
+                        <output data-qtd aria-live="polite">1</output>
+                        <button type="button" data-mais aria-label={`Mais um ingresso ${s.nome}`}>+</button>
+                      </div>
+                      <button class="btn btn-neon btn-cheio" type="button" data-add>
+                        Adicionar ao carrinho
+                      </button>
+                    </>
+                  )}
+                </article>
+              ))
+            }
+          </div>
+
+          <p class="ing-nota" data-anima>
+            <i class="fa-solid fa-circle-info" aria-hidden="true" />
+            Esta é uma <b>demonstração</b>: nada é cobrado, nenhum dado sai do seu
+            navegador e nenhum ingresso é emitido de verdade.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════════════ CONTA ═══════════════════ */}
+      <section class="secao conta" id="conta">
+        <div class="caixa conta-grade">
+          <div data-anima>
+            <p class="olho">Minha conta</p>
+            <h2>Crie sua conta PULSE</h2>
+            <p class="lead">
+              A conta guarda seus ingressos, permite reemitir o QR e transferir para
+              outra pessoa. Aqui na demo ela vive só no seu navegador — nada é
+              enviado a lugar nenhum, e apagar os dados do site apaga a conta junto.
+            </p>
+            <ul class="conta-lista">
+              <li><i class="fa-solid fa-qrcode" aria-hidden="true" /> Reemissão do QR a qualquer hora</li>
+              <li><i class="fa-solid fa-right-left" aria-hidden="true" /> Transferência nominal até 48 h antes</li>
+              <li><i class="fa-solid fa-bell" aria-hidden="true" /> Aviso de lote novo e de devolução</li>
+              <li><i class="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Histórico das edições anteriores</li>
+            </ul>
+          </div>
+
+          <div class="conta-caixa" data-anima>
+            <form class="form" data-cadastro>
+              <p class="form-t">Cadastro</p>
+              <label>
+                Nome completo
+                <input name="nome" type="text" required autocomplete="name" placeholder="Como está no documento" />
+              </label>
+              <div class="form-2">
+                <label>
+                  E-mail
+                  <input name="email" type="email" required autocomplete="email" placeholder="voce@email.com" />
+                </label>
+                <label>
+                  Nascimento
+                  <input name="nasc" type="date" required autocomplete="bday" />
+                </label>
+              </div>
+              <label>
+                Estilo que você mais escuta
+                <select name="estilo">
+                  <option>Techno melódico</option>
+                  <option>House progressivo</option>
+                  <option>Drum and bass</option>
+                  <option>Techno industrial</option>
+                  <option>Escuto tudo</option>
+                </select>
+              </label>
+              <label class="marca-caixa">
+                <input name="avisos" type="checkbox" checked />
+                <span>Quero aviso de lote novo e de devolução de ingresso</span>
+              </label>
+              <button class="btn btn-neon btn-cheio btn-g" type="submit">Criar conta</button>
+              <p class="form-nota">
+                <i class="fa-solid fa-lock" aria-hidden="true" />
+                Salvo apenas no seu navegador (localStorage). Nada trafega pela rede.
+              </p>
+            </form>
+
+            {/* o cartão só existe depois do cadastro; o JS troca um pelo outro */}
+            <div class="cartao" data-cartao hidden>
+              <div class="cartao-topo">
+                <p class="cartao-marca">{EVENTO.nome}<span>membro</span></p>
+                <span class="cartao-chip" aria-hidden="true"></span>
+              </div>
+              <p class="cartao-nome" data-c-nome>—</p>
+              <dl class="cartao-dados">
+                <div><dt>E-mail</dt><dd data-c-email>—</dd></div>
+                <div><dt>Estilo</dt><dd data-c-estilo>—</dd></div>
+                <div><dt>Membro desde</dt><dd data-c-desde class="mono">—</dd></div>
+                <div><dt>ID</dt><dd data-c-id class="mono">—</dd></div>
+              </dl>
+              <div class="cartao-acoes">
+                <a class="btn btn-neon btn-cheio" href="#ingressos">Comprar ingresso</a>
+                <button class="btn btn-vaz btn-cheio" type="button" data-sair>Sair e apagar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ DÚVIDAS ═══════════════════ */}
+      <section class="secao duvidas" id="duvidas">
+        <div class="caixa duvidas-grade">
+          <header class="cab" data-anima>
+            <p class="olho">Dúvidas</p>
+            <h2>O que sempre perguntam na véspera</h2>
+            <p class="lead">
+              Se a sua não estiver aqui, o direct do Instagram responde em minutos
+              até a noite do evento.
+            </p>
+            <a class="btn btn-vaz" href={`https://instagram.com/${EVENTO.insta}`} rel="noopener">
+              <i class="fa-brands fa-instagram" aria-hidden="true" /> Perguntar no direct
+            </a>
+          </header>
+
+          <div class="fq" data-anima>
+            {
+              DUVIDAS.map((d) => (
+                <details name="duvidas-pulse">
+                  <summary>
+                    <span>{d.p}</span>
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                  </summary>
+                  <p>{d.r}</p>
+                </details>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+    </main>
+
+    {/* ═══════════════════ CARRINHO (dialog nativo) ═══════════════════ */}
+    <dialog class="gaveta" data-carrinho aria-label="Carrinho de ingressos">
+      <div class="gaveta-cab">
+        <p class="gaveta-t">Seu carrinho</p>
+        <button type="button" class="gaveta-x" data-fechar aria-label="Fechar carrinho">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      {/* passo 1 — itens */}
+      <div class="gaveta-corpo" data-passo="itens">
+        <ul class="cesta" data-cesta></ul>
+        <p class="cesta-vazia" data-vazia>
+          <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+          Nenhum ingresso ainda. Escolha um setor para começar.
+        </p>
+        <dl class="soma" data-soma hidden>
+          <div><dt>Subtotal</dt><dd data-subtotal>R$ 0</dd></div>
+          <div><dt>Taxa de serviço ({Math.round(EVENTO.taxa * 100)}%)</dt><dd data-taxa>R$ 0</dd></div>
+          <div class="soma-total"><dt>Total</dt><dd data-total>R$ 0</dd></div>
+        </dl>
+        <p class="cesta-login" data-precisa-login hidden>
+          <i class="fa-regular fa-user" aria-hidden="true"></i>
+          Você precisa entrar na conta para finalizar. É rápido.
+        </p>
+        <button class="btn btn-neon btn-cheio btn-g" type="button" data-ir-dados disabled>
+          Continuar
+        </button>
+      </div>
+
+      {/* passo 2 — dados */}
+      <div class="gaveta-corpo" data-passo="dados" hidden>
+        <ol class="trilha-passo" aria-hidden="true"><li class="feito">Itens</li><li class="agora">Dados</li><li>Pagamento</li></ol>
+        <form class="form" data-form-dados>
+          <label>
+            Nome completo
+            <input name="nome" type="text" required autocomplete="name" placeholder="Como está no documento" />
+          </label>
+          <label>
+            E-mail
+            <input name="email" type="email" required autocomplete="email" placeholder="voce@email.com" readonly data-email-conta />
+          </label>
+          <label>
+            CPF
+            <input name="cpf" type="text" required inputmode="numeric" placeholder="000.000.000-00" data-cpf />
+          </label>
+          <p class="form-nota">O ingresso é nominal e o CPF é conferido na portaria.</p>
+          <button class="btn btn-neon btn-cheio btn-g" type="submit">Ir para o pagamento</button>
+          <button class="btn btn-vaz btn-cheio" type="button" data-voltar-itens>Voltar ao carrinho</button>
+        </form>
+      </div>
+
+      {/* passo 3 — pagamento */}
+      <div class="gaveta-corpo" data-passo="pagamento" hidden>
+        <ol class="trilha-passo" aria-hidden="true"><li class="feito">Itens</li><li class="feito">Dados</li><li class="agora">Pagamento</li></ol>
+        <div class="pag-opcoes" role="group" aria-label="Forma de pagamento">
+          <button type="button" class="ativo" data-pag="pix">
+            <i class="fa-solid fa-bolt" aria-hidden="true"></i> Pix
+            <small>Aprovação na hora</small>
+          </button>
+          <button type="button" data-pag="cartao">
+            <i class="fa-regular fa-credit-card" aria-hidden="true"></i> Cartão
+            <small>Em até 6× sem juros</small>
+          </button>
+        </div>
+        <p class="pag-resumo">Total a pagar <b data-total-pag>R$ 0</b></p>
+        <p class="pag-nota" data-pag-nota>
+          O código Pix vale por 15 minutos e o ingresso é emitido assim que o
+          pagamento cai.
+        </p>
+        <button class="btn btn-neon btn-cheio btn-g" type="button" data-pagar>
+          <i class="fa-solid fa-lock" aria-hidden="true"></i> Finalizar compra
+        </button>
+        <button class="btn btn-vaz btn-cheio" type="button" data-voltar-dados>Voltar</button>
+        <p class="form-nota aviso-demo">
+          Demonstração: nenhum pagamento é processado e nenhum dado é enviado.
+        </p>
+      </div>
+
+      {/* passo 4 — ingresso emitido */}
+      <div class="gaveta-corpo" data-passo="pronto" hidden>
+        <div class="pronto-topo">
+          <span class="pronto-ok" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+          <p class="pronto-t">Compra confirmada</p>
+          <p class="pronto-d">Enviamos para <b data-pronto-email>—</b>. O QR abaixo é o seu acesso.</p>
+        </div>
+        <div class="bilhete">
+          <div class="bilhete-cima">
+            <p class="bilhete-evento">{EVENTO.nome} <span>{EVENTO.edicao}</span></p>
+            <p class="bilhete-data mono">14 NOV 2026 · 22H · {EVENTO.local.toUpperCase()}</p>
+          </div>
+          <div class="bilhete-serrilha" aria-hidden="true"></div>
+          <div class="bilhete-baixo">
+            <div class="bilhete-qr" data-qr aria-hidden="true"></div>
+            <div class="bilhete-info">
+              <p class="bilhete-nome" data-pronto-nome>—</p>
+              <ul data-pronto-itens></ul>
+              <p class="bilhete-cod mono" data-pronto-cod>—</p>
+            </div>
+          </div>
+        </div>
+        <p class="form-nota aviso-demo">
+          QR ilustrativo. Nenhum ingresso real foi emitido — isto é uma demonstração
+          de fluxo de compra.
+        </p>
+        <button class="btn btn-vaz btn-cheio" type="button" data-fechar>Fechar</button>
+      </div>
+    </dialog>
+
+    {/* ═══════════════════ ENTRAR (dialog nativo) ═══════════════════ */}
+    <dialog class="modal" data-login aria-label="Entrar na conta PULSE">
+      <div class="modal-cab">
+        <p class="modal-t">Entrar</p>
+        <button type="button" class="gaveta-x" data-fechar-login aria-label="Fechar">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form class="form" data-form-login>
+        <p class="modal-d" data-login-motivo>
+          Entre para continuar. É com a conta que o ingresso fica nominal e você
+          consegue reemitir o QR depois.
+        </p>
+        <label>
+          E-mail
+          <input name="email" type="email" required autocomplete="email" placeholder="voce@email.com" />
+        </label>
+        <label>
+          Senha
+          <input name="senha" type="password" autocomplete="current-password" placeholder="qualquer coisa serve" />
+        </label>
+        <button class="btn btn-neon btn-cheio btn-g" type="submit">Entrar</button>
+        <p class="form-nota aviso-demo">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          Demonstração: a senha não é verificada e nada sai do seu navegador.
+        </p>
+        <p class="form-nota">
+          Ainda não tem conta? <a href="#conta" data-ir-cadastro>Cadastre-se aqui</a>.
+        </p>
+      </form>
+    </dialog>
+
+    {/* ═══════════════════ RODAPÉ ═══════════════════ */}
+    <footer class="rodape">
+      <div class="caixa rodape-grade">
+        <div>
+          <p class="rodape-marca">{EVENTO.nome}<span>{EVENTO.edicao}</span></p>
+          <p class="rodape-d">
+            Uma noite, dois palcos, sete horas. {EVENTO.dataFmt} na {EVENTO.local},
+            {' '}{EVENTO.bairro}, {EVENTO.cidade}.
+          </p>
+          <ul class="redes">
+            <li><a href={`https://instagram.com/${EVENTO.insta}`} rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true" /></a></li>
+            <li><a href={`https://tiktok.com/@${EVENTO.tiktok}`} rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok" aria-hidden="true" /></a></li>
+            <li><a href={`https://open.spotify.com/${EVENTO.spotify}`} rel="noopener" aria-label="Spotify"><i class="fa-brands fa-spotify" aria-hidden="true" /></a></li>
+            <li><a href={`https://youtube.com/${EVENTO.youtube}`} rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true" /></a></li>
+            <li><a href={`https://wa.me/${EVENTO.zap}`} rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true" /></a></li>
+          </ul>
+        </div>
+
+        <nav aria-label="Rodapé">
+          <p class="rodape-t">O evento</p>
+          <ul>
+            <li><a href="#lineup">Line-up e horários</a></li>
+            <li><a href="#show">Local e estrutura</a></li>
+            <li><a href="#ingressos">Ingressos e lotes</a></li>
+            <li><a href="#conta">Minha conta</a></li>
+            <li><a href="#duvidas">Dúvidas frequentes</a></li>
+          </ul>
+        </nav>
+
+        <div class="rodape-contato">
+          <p class="rodape-t">Contato</p>
+          <ul>
+            <li><i class="fa-solid fa-location-dot" aria-hidden="true" /><span>{EVENTO.rua}<br />{EVENTO.bairro} · {EVENTO.cidade}/{EVENTO.uf}<br />CEP {EVENTO.cep}</span></li>
+            <li><i class="fa-solid fa-phone" aria-hidden="true" /><a href={`tel:${EVENTO.foneLink}`}>{EVENTO.fone}</a></li>
+            <li><i class="fa-brands fa-whatsapp" aria-hidden="true" /><a href={`https://wa.me/${EVENTO.zap}`} rel="noopener">{EVENTO.zapFmt}</a></li>
+            <li><i class="fa-solid fa-envelope" aria-hidden="true" /><a href={`mailto:${EVENTO.email}`}>{EVENTO.email}</a></li>
+          </ul>
+        </div>
+
+        <div class="rodape-mapa">
+          <p class="rodape-t">Como chegar</p>
+          <iframe
+            title={`Mapa — ${EVENTO.local}`}
+            src={`https://www.google.com/maps?q=${mapaQuery}&z=16&output=embed`}
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen></iframe>
+          <p class="rodape-mini">
+            Estação Barra Funda a 900 m. Ponto oficial de aplicativo na Rua
+            Vitorino Carmilo, com equipe até as 07h.
+          </p>
+        </div>
+      </div>
+
+      <div class="caixa rodape-aviso">
+        <p>
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+          Evento para maiores de {EVENTO.idade}. Documento com foto obrigatório na
+          portaria. Beba com moderação e não dirija depois — o ponto de aplicativo
+          fica aberto até as 07h.
+        </p>
+      </div>
+
+      <div class="caixa rodape-fim">
+        <span>© 2026 {EVENTO.nome} {EVENTO.edicao} · {EVENTO.cidade}/{EVENTO.uf}</span>
+        <span class="rodape-cred">
+          Demonstração fictícia · fotos do <a href="https://pixabay.com" rel="noopener">Pixabay</a>
+        </span>
+        <a href="/">← Voltar ao portfolio</a>
+      </div>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .pl {
+    --breu: #05030a;
+    --breu-2: #0a0614;
+    --carta: #110b1e;
+    --carta-2: #170f28;
+    --linha: #251938;
+    --linha-viva: #3d2960;
+
+    --neon: #ff2d95;
+    --neon-2: #ff6ab5;
+    --ciano: #00e0ff;
+    --roxo: #8b2fff;
+    --lima: #c8ff36;
+
+    --branco: #f4f0fb;
+    --c60: #a99ec4;
+    --c40: #6f6690;
+
+    --raio: 14px;
+    --raio-g: 22px;
+    --t: 0.45s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --topo-h: 4.2rem;
+    --glow: 0 6px 18px -10px rgba(255, 45, 149, 0.75);
+
+    position: relative;
+    background: var(--breu);
+    color: var(--branco);
+    font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.65;
+    overflow-x: clip;
+  }
+  :global(body) { background: #05030a; color: #f4f0fb; }
+  :global(html) { scrollbar-color: #3d2960 #0a0614; }
+  :global(::selection) { background: #ff2d95; color: #fff; }
+
+  .pl a { text-underline-offset: 0.18em; }
+  .pl :is(input, textarea, select) { caret-color: var(--neon); }
+  .pl :is(input, textarea)::placeholder { color: var(--c40); }
+  .mono { font-family: 'DM Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--neon); color: #fff; padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0;
+  }
+  .pular:focus { left: 0; }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 {
+    font-family: 'Anton', 'Arial Narrow', sans-serif;
+    font-weight: 400; text-transform: uppercase;
+    font-size: clamp(2.6rem, 6vw, 4.2rem); line-height: 0.98; letter-spacing: 0.01em;
+  }
+  h1 span { color: var(--ciano); }
+  /* título de seção é tipo de interface, não de cartaz */
+  h2 {
+    font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+    font-weight: 700; letter-spacing: -0.015em; line-height: 1.18;
+  }
+  h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+  p { margin: 0; text-wrap: pretty; }
+  .lead { font-size: 1.01rem; color: var(--c60); max-width: 58ch; }
+
+  .olho {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--ciano); margin-bottom: 0.9rem;
+    display: flex; align-items: center; gap: 0.65rem;
+  }
+  .olho::before {
+    content: ''; width: 1.6rem; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--ciano));
+  }
+
+  .caixa { max-width: 1220px; margin: 0 auto; padding-inline: clamp(1.1rem, 4vw, 2.6rem); }
+  .secao { position: relative; padding-block: clamp(3.6rem, 7.5vw, 6.5rem); }
+  .cab { margin-bottom: clamp(2.2rem, 4.5vw, 3.4rem); max-width: 64ch; }
+  .cab .lead { margin-top: 1rem; }
+  .pl section[id] { scroll-margin-top: calc(var(--topo-h) + 0.8rem); }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+    padding: 0.78rem 1.5rem; border-radius: 999px;
+    font-family: inherit; font-size: 0.92rem; font-weight: 600;
+    text-decoration: none; border: 1px solid transparent;
+    white-space: nowrap; cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease,
+      box-shadow 0.3s ease, translate 0.3s ease, opacity 0.3s ease;
+  }
+  .btn-g { padding: 0.96rem 1.8rem; font-size: 0.98rem; }
+  .btn-min { padding: 0.52rem 1.1rem; font-size: 0.84rem; }
+  .btn-cheio { width: 100%; }
+  .btn-neon { background: var(--neon); color: #fff; box-shadow: var(--glow); }
+  .btn-neon:hover { translate: 0 -1px; box-shadow: 0 10px 22px -10px rgba(255, 45, 149, 0.8); }
+  .btn-neon:disabled { opacity: 0.35; box-shadow: none; cursor: not-allowed; translate: 0; }
+  .btn-vaz { border-color: var(--linha-viva); color: var(--branco); background: rgba(255, 255, 255, 0.03); }
+  .btn-vaz:hover { border-color: var(--ciano); color: var(--ciano); translate: 0 -2px; }
+
+  /* ---------- topo ---------- */
+  .topo {
+    position: sticky; top: 0; z-index: 60;
+    height: var(--topo-h);
+    display: flex; align-items: center; gap: clamp(0.6rem, 2vw, 1.5rem);
+    padding-inline: clamp(1.1rem, 4vw, 2.6rem);
+    background: rgba(5, 3, 10, 0.72);
+    backdrop-filter: blur(16px) saturate(1.4);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t) var(--e), background var(--t) var(--e);
+  }
+  .topo[data-topo='rolou'] { border-bottom-color: var(--linha); background: rgba(5, 3, 10, 0.92); }
+  .topo-barra {
+    position: absolute; inset: auto 0 -1px 0; height: 2px; transform-origin: 0 50%;
+    background: linear-gradient(90deg, var(--ciano), var(--neon));
+    scale: 0 1;
+  }
+  .marca {
+    display: inline-flex; align-items: baseline; gap: 0.45rem;
+    text-decoration: none; color: var(--branco); margin-right: auto;
+  }
+  .marca-txt { font-family: 'Anton', sans-serif; font-size: 1.45rem; letter-spacing: 0.04em; }
+  .marca-ed {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    color: var(--ciano); letter-spacing: 0.1em;
+  }
+  .topo-nav { display: none; gap: clamp(0.8rem, 1.8vw, 1.6rem); }
+  .topo-nav a {
+    color: var(--c60); text-decoration: none; font-size: 0.86rem; font-weight: 500;
+    padding-block: 0.35rem; position: relative; transition: color 0.3s ease;
+  }
+  .topo-nav a::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1.5px;
+    background: var(--ciano); scale: 0 1; transform-origin: 0 50%;
+    transition: scale 0.3s ease;
+  }
+  .topo-nav a:hover { color: var(--branco); }
+  .topo-nav a:hover::after { scale: 1 1; }
+
+  .btn-carrinho {
+    position: relative; width: 2.5rem; height: 2.5rem; padding: 0; flex: none;
+    border-radius: 50%; border-color: var(--linha-viva);
+    background: rgba(255, 255, 255, 0.04); color: var(--branco);
+  }
+  .btn-carrinho:hover { border-color: var(--neon); color: var(--neon-2); }
+  .carrinho-n {
+    position: absolute; top: -4px; right: -4px; min-width: 1.15rem; height: 1.15rem;
+    display: grid; place-items: center; padding-inline: 0.25rem;
+    border-radius: 999px; background: var(--neon); color: #fff;
+    font-family: 'DM Mono', monospace; font-size: 0.66rem; font-weight: 500;
+    box-shadow: var(--glow);
+  }
+  .entrar { display: none; }
+  .usuario { position: relative; flex: none; }
+  .usuario[hidden] { display: none; }
+  .usuario summary {
+    display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+    padding: 0.34rem 0.7rem 0.34rem 0.34rem; border-radius: 999px;
+    border: 1px solid var(--linha-viva); background: rgba(255, 255, 255, 0.03);
+    list-style: none; font-size: 0.8rem; color: var(--c60);
+    transition: border-color 0.3s ease, color 0.3s ease;
+  }
+  .usuario summary::-webkit-details-marker { display: none; }
+  .usuario summary:hover { border-color: var(--ciano); color: var(--branco); }
+  .usuario-ini {
+    width: 1.6rem; height: 1.6rem; flex: none; display: grid; place-items: center;
+    border-radius: 50%; background: var(--neon); color: #fff;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  }
+  .usuario-mail { display: none; max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .usuario summary i { font-size: 0.6rem; transition: rotate 0.3s ease; }
+  .usuario[open] summary i { rotate: 180deg; }
+  .usuario-menu {
+    position: absolute; right: 0; top: calc(100% + 0.5rem); z-index: 5;
+    min-width: 11rem; display: grid;
+    border-radius: var(--raio); border: 1px solid var(--linha);
+    background: var(--carta); overflow: hidden;
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.8);
+  }
+  .usuario-menu :is(a, button) {
+    padding: 0.7rem 0.95rem; text-align: left; cursor: pointer;
+    border: 0; background: transparent; color: var(--c60);
+    font-family: inherit; font-size: 0.85rem; text-decoration: none;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .usuario-menu :is(a, button):hover { background: var(--carta-2); color: var(--branco); }
+
+  /* modal centrado — mesma mecânica da gaveta, entrando por escala */
+  .modal {
+    width: min(100%, 25rem); max-width: none; margin: auto; padding: 0; border: 0;
+    border-radius: var(--raio-g); border: 1px solid var(--linha);
+    background: var(--breu-2); color: var(--branco);
+    opacity: 0; scale: 0.96;
+    transition: opacity var(--t) var(--e), scale var(--t) var(--e),
+      overlay var(--t) allow-discrete, display var(--t) allow-discrete;
+  }
+  .modal[open] { opacity: 1; scale: 1; }
+  @starting-style { .modal[open] { opacity: 0; scale: 0.96; } }
+  .modal::backdrop {
+    background: rgba(5, 3, 10, 0.78); backdrop-filter: blur(3px);
+    opacity: 0; transition: opacity var(--t) var(--e), overlay var(--t) allow-discrete, display var(--t) allow-discrete;
+  }
+  .modal[open]::backdrop { opacity: 1; }
+  @starting-style { .modal[open]::backdrop { opacity: 0; } }
+  .modal-cab {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.2rem; border-bottom: 1px solid var(--linha);
+  }
+  .modal-t { font-size: 1.05rem; font-weight: 700; }
+  .modal-d { font-size: 0.85rem; color: var(--c60); margin-bottom: 0.4rem; }
+  .modal .form { border: 0; background: transparent; }
+  .modal .form-nota a { color: var(--ciano); }
+
+  .cesta-login {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.75rem 0.95rem; border-radius: var(--raio);
+    border: 1px dashed var(--linha-viva); background: rgba(255, 255, 255, 0.02);
+    font-size: 0.82rem; color: var(--c60);
+  }
+  .cesta-login[hidden] { display: none; }
+  .cesta-login i { color: var(--ciano); }
+  .form input[readonly] { color: var(--c60); cursor: default; }
+
+  /* ---------- herói ---------- */
+  .heroi {
+    position: relative; isolation: isolate; overflow: hidden;
+    padding-block: clamp(2.4rem, 5vw, 4rem) clamp(3rem, 6vw, 5rem);
+    background: var(--breu); border-bottom: 1px solid var(--linha);
+  }
+  /* foto do local bem apagada: contexto de fundo, não espetáculo */
+  .heroi-fundo { position: absolute; inset: 0; z-index: -3; opacity: 0.24; }
+  .heroi-fundo img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.4); }
+  .heroi-veu {
+    position: absolute; inset: 0; z-index: -2;
+    background:
+      linear-gradient(180deg, rgba(5, 3, 10, 0.9), rgba(5, 3, 10, 0.72) 45%, var(--breu)),
+      radial-gradient(70% 60% at 20% 40%, rgba(139, 47, 255, 0.16), transparent 70%);
+  }
+  .heroi-grade { display: grid; gap: clamp(1.8rem, 4vw, 3rem); align-items: center; }
+
+  .fita {
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    padding: 0.36rem 0.9rem 0.36rem 0.68rem; margin-bottom: 1.2rem;
+    border-radius: 999px; border: 1px solid var(--linha-viva);
+    background: rgba(17, 11, 30, 0.7);
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--c60);
+  }
+  .bolinha {
+    width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--lima);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bolinha { animation: bate 2.4s steps(1) infinite; }
+  }
+  @keyframes bate { 50% { opacity: 0.3; } }
+
+  .heroi-sub { margin-top: 0.9rem; font-size: 1.02rem; color: var(--c60); max-width: 46ch; }
+
+  .heroi-info {
+    display: grid; gap: 0.9rem 1.6rem; margin: 1.8rem 0 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  }
+  .heroi-info dt {
+    display: flex; align-items: center; gap: 0.45rem;
+    font-family: 'DM Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40);
+  }
+  .heroi-info dt i { color: var(--ciano); }
+  .heroi-info dd { margin: 0.25rem 0 0; font-size: 0.9rem; font-weight: 600; }
+
+  .heroi-compra {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.6rem;
+    margin-top: 2rem; padding-top: 1.6rem; border-top: 1px solid var(--linha);
+  }
+  .heroi-preco { display: grid; }
+  .heroi-preco small {
+    font-family: 'DM Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40);
+  }
+  .heroi-preco b { font-size: 1.9rem; font-weight: 700; line-height: 1.15; }
+  .heroi-preco span { font-size: 0.74rem; color: var(--c40); }
+  .heroi-conta { margin-top: 1.3rem; font-size: 0.78rem; color: var(--c40); }
+  .heroi-conta b { color: var(--ciano); font-weight: 500; }
+
+  .cartaz { margin: 0; }
+  .cartaz picture { display: block; overflow: hidden; border-radius: var(--raio-g); border: 1px solid var(--linha); }
+  .cartaz img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+  .cartaz figcaption { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+  .cartaz-n {
+    padding: 0.24rem 0.7rem; border-radius: 999px;
+    border: 1px solid var(--linha); background: var(--carta);
+    font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--c60);
+  }
+
+  /* ---------- line-up ---------- */
+  .lineup { background: var(--breu); border-top: 1px solid var(--linha); }
+  .grade-art {
+    display: grid; gap: clamp(1rem, 2vw, 1.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  }
+  .art {
+    position: relative; overflow: hidden;
+    border-radius: var(--raio-g); border: 1px solid var(--linha);
+    background: var(--carta);
+    transition: border-color var(--t) var(--e), translate var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .art:hover { border-color: var(--linha-viva); translate: 0 -4px; }
+  .art-head { border-color: rgba(255, 45, 149, 0.4); }
+  .art-foto { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--carta-2); }
+  .art-foto img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    filter: grayscale(0.55) contrast(1.08);
+    transition: filter 0.6s var(--e), scale 0.8s var(--e);
+  }
+  .art:hover .art-foto img { filter: grayscale(0) contrast(1.02); scale: 1.05; }
+  .art-foto::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 42%, rgba(5, 3, 10, 0.92));
+  }
+  .art-hora {
+    position: absolute; z-index: 1; left: 0.85rem; top: 0.85rem;
+    padding: 0.24rem 0.6rem; border-radius: 999px;
+    background: rgba(5, 3, 10, 0.8); border: 1px solid var(--linha-viva);
+    font-size: 0.72rem; color: var(--ciano);
+  }
+  .art-selo {
+    position: absolute; z-index: 1; right: 0.85rem; top: 0.85rem;
+    padding: 0.24rem 0.65rem; border-radius: 999px;
+    background: var(--neon); color: #fff; box-shadow: var(--glow);
+    font-family: 'DM Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .art-corpo { padding: 1.2rem 1.3rem 1.4rem; margin-top: -3.2rem; position: relative; z-index: 1; }
+  .art-corpo h3 { font-size: 1.22rem; font-weight: 700; letter-spacing: -0.01em; }
+  .art-meta {
+    margin-top: 0.3rem; display: flex; flex-wrap: wrap; gap: 0.4rem;
+    font-size: 0.78rem; color: var(--ciano);
+  }
+  .art-meta .ponto { color: var(--c40); }
+  .art-sobre { margin-top: 0.85rem; font-size: 0.87rem; color: var(--c60); }
+  .art-palco {
+    margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--linha);
+    font-size: 0.72rem; color: var(--c40);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .art-palco i { color: var(--neon); }
+
+  /* ---------- galeria em trilho ---------- */
+  .galeria {
+    padding-block: clamp(3.4rem, 7vw, 6rem);
+    background: var(--breu-2); border-block: 1px solid var(--linha);
+    overflow: hidden;
+  }
+  .galeria h2 { margin-bottom: clamp(1.8rem, 3.5vw, 2.8rem); }
+  .trilho-caixa { display: grid; gap: clamp(0.7rem, 1.6vw, 1.1rem); }
+  .trilho {
+    display: flex; gap: clamp(0.7rem, 1.6vw, 1.1rem); width: max-content;
+    will-change: transform;
+  }
+  .trilho-volta { margin-left: -14vw; }
+  .trilho-i { margin: 0; flex: none; width: clamp(230px, 26vw, 400px); }
+  .trilho-i picture { display: block; overflow: hidden; border-radius: var(--raio-g); }
+  .trilho-i img {
+    display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover;
+    filter: grayscale(0.35) contrast(1.06) brightness(0.9);
+    transition: filter 0.5s var(--e);
+  }
+  .trilho-i:hover img { filter: none; }
+
+  /* ---------- o show ---------- */
+  .show { background: var(--breu); }
+  .grade-det {
+    list-style: none; margin: 0 0 clamp(2.2rem, 4vw, 3.2rem); padding: 0;
+    display: grid; gap: 1px; background: var(--linha);
+    border: 1px solid var(--linha); border-radius: var(--raio-g); overflow: hidden;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  }
+  .det {
+    display: flex; gap: 0.85rem; align-items: flex-start;
+    padding: 1.2rem 1.25rem; background: var(--carta);
+    transition: background 0.3s ease;
+  }
+  .det:hover { background: var(--carta-2); }
+  .det-i {
+    width: 2.2rem; height: 2.2rem; flex: none; display: grid; place-items: center;
+    border-radius: 10px; background: rgba(0, 224, 255, 0.1);
+    color: var(--ciano); font-size: 0.85rem;
+  }
+  .det-t {
+    font-family: 'DM Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--c40);
+  }
+  .det-d { margin-top: 0.2rem; font-size: 0.9rem; font-weight: 600; }
+
+  .show-dupla { display: grid; gap: clamp(1.4rem, 3vw, 2.2rem); align-items: start; }
+  .show-foto { margin: 0; }
+  .show-foto picture { display: block; overflow: hidden; border-radius: var(--raio-g); }
+  .show-foto img { display: block; width: 100%; height: auto; }
+  .show-foto figcaption { margin-top: 0.9rem; display: grid; gap: 0.2rem; }
+  .show-foto b { font-size: 1.1rem; font-weight: 700; }
+  .show-foto span { font-size: 0.84rem; color: var(--c60); }
+
+  .levar {
+    display: grid; gap: 1.4rem;
+    padding: clamp(1.3rem, 2.6vw, 1.8rem);
+    border-radius: var(--raio-g); border: 1px solid var(--linha); background: var(--carta);
+  }
+  .levar-t {
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 0.7rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .levar-sim { color: var(--lima); }
+  .levar-nao { color: var(--neon-2); }
+  .levar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; font-size: 0.87rem; color: var(--c60); }
+  .levar li { padding-left: 0.9rem; position: relative; }
+  .levar li::before { content: ''; position: absolute; left: 0; top: 0.72em; width: 5px; height: 1px; background: var(--c40); }
+
+  /* ---------- ingressos ---------- */
+  .ingressos { background: var(--breu-2); border-block: 1px solid var(--linha); }
+  .grade-ing {
+    display: grid; gap: clamp(1rem, 2vw, 1.4rem); align-items: stretch;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  }
+  .ing {
+    position: relative; display: flex; flex-direction: column;
+    padding: clamp(1.4rem, 2.6vw, 1.9rem);
+    border-radius: var(--raio-g); border: 1px solid var(--linha); background: var(--carta);
+    transition: border-color var(--t) var(--e), translate var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .ing:hover { border-color: var(--linha-viva); translate: 0 -4px; }
+  .ing-destaque { border-color: rgba(255, 45, 149, 0.45); }
+  .ing-fora { opacity: 0.62; }
+  .ing-fita {
+    position: absolute; top: -0.8rem; left: 50%; translate: -50% 0;
+    padding: 0.26rem 0.85rem; border-radius: 999px;
+    background: var(--neon); color: #fff; box-shadow: var(--glow);
+    font-family: 'DM Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap;
+  }
+  .ing-fita-fora { background: var(--linha-viva); box-shadow: none; color: var(--c60); }
+  .ing-lote { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ciano); }
+  .ing h3 { font-size: 1.22rem; font-weight: 700; margin-top: 0.3rem; }
+  .ing-preco { margin-top: 1.1rem; display: grid; gap: 0.2rem; }
+  .ing-de { font-size: 0.8rem; color: var(--c40); }
+  .ing-valor { display: flex; align-items: baseline; gap: 0.25rem; color: var(--branco); }
+  .ing-valor small { font-size: 0.9rem; font-weight: 600; color: var(--c60); }
+  .ing-valor b { font-size: clamp(1.8rem, 3vw, 2.2rem); font-weight: 700; line-height: 1.1; }
+  .ing-meia { font-size: 0.76rem; color: var(--c40); }
+  /* margin-bottom auto empurra tipo, quantidade e botão para a base — é o que
+     alinha o rodapé dos quatro cards mesmo com listas de tamanhos diferentes */
+  .ing-inclui {
+    list-style: none; margin: 1.2rem 0 auto; padding: 1.1rem 0 0;
+    border-top: 1px solid var(--linha);
+    display: grid; gap: 0.55rem; font-size: 0.85rem; color: var(--c60);
+  }
+  .ing-inclui li { display: grid; grid-template-columns: 1rem 1fr; gap: 0.55rem; align-items: start; }
+  .ing-inclui i { color: var(--ciano); font-size: 0.7rem; margin-top: 0.4rem; }
+  .ing-restam {
+    margin-top: 1.2rem; font-size: 0.76rem; color: var(--neon-2);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .ing-aviso { margin-top: 1.2rem; font-size: 0.82rem; color: var(--c40); }
+
+  .ing-tipo {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 1.2rem;
+    padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--linha);
+  }
+  .ing-tipo button {
+    border: 0; border-radius: 999px; padding: 0.45rem 0.5rem; cursor: pointer;
+    background: transparent; color: var(--c60);
+    font-family: inherit; font-size: 0.8rem; font-weight: 600;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .ing-tipo button.ativo { background: var(--linha-viva); color: var(--branco); }
+
+  .ing-passo {
+    display: grid; grid-template-columns: 2.4rem 1fr 2.4rem; align-items: center;
+    gap: 0.4rem; margin: 0.7rem 0 0.9rem;
+  }
+  .ing-passo button {
+    height: 2.4rem; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--linha); background: rgba(255, 255, 255, 0.04);
+    color: var(--branco); font-size: 1.1rem; line-height: 1;
+    transition: border-color 0.3s ease, color 0.3s ease, background 0.3s ease;
+  }
+  .ing-passo button:hover { border-color: var(--ciano); color: var(--ciano); }
+  .ing-passo output {
+    text-align: center; font-family: 'DM Mono', monospace; font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ing-nota {
+    margin-top: clamp(1.6rem, 3vw, 2.4rem); padding: 1rem 1.3rem;
+    border-radius: var(--raio-g); border: 1px dashed var(--linha-viva);
+    background: rgba(255, 255, 255, 0.02);
+    font-size: 0.85rem; color: var(--c60); text-align: center;
+  }
+  .ing-nota i { color: var(--ciano); margin-right: 0.4rem; }
+  .ing-nota b { color: var(--branco); }
+
+  /* ---------- conta ---------- */
+  .conta { background: var(--breu); }
+  .conta-grade { display: grid; gap: clamp(2rem, 4vw, 3.4rem); align-items: start; }
+  .conta .lead { margin-top: 1rem; }
+  .conta-lista { list-style: none; margin: 1.8rem 0 0; padding: 0; display: grid; gap: 0.7rem; font-size: 0.9rem; color: var(--c60); }
+  .conta-lista i { color: var(--ciano); width: 1.2rem; margin-right: 0.5rem; }
+  .conta-caixa { position: relative; }
+
+  .form {
+    display: grid; gap: 0.85rem;
+    padding: clamp(1.4rem, 3vw, 2rem);
+    border-radius: var(--raio-g); border: 1px solid var(--linha); background: var(--carta);
+  }
+  .form-t {
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--ciano);
+    margin-bottom: 0.4rem;
+  }
+  .form-2 { display: grid; gap: 0.85rem; }
+  .form label {
+    display: grid; gap: 0.38rem;
+    font-family: 'DM Mono', monospace; font-size: 0.66rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--c40);
+  }
+  .form :is(input, select) {
+    width: 100%; padding: 0.75rem 0.9rem;
+    border-radius: 12px; border: 1px solid var(--linha);
+    background: rgba(5, 3, 10, 0.6); color: var(--branco);
+    font-family: 'Bai Jamjuree', sans-serif; font-size: 0.92rem; font-weight: 400;
+    letter-spacing: normal; text-transform: none;
+    transition: border-color 0.3s ease, background 0.3s ease;
+  }
+  .form :is(input, select):focus {
+    outline: none; border-color: var(--neon); background: rgba(5, 3, 10, 0.85);
+  }
+  .form input[type='checkbox'] { width: auto; }
+  /* .form label (0,1,1) ganha de .marca-caixa (0,1,0) — o seletor precisa empatar */
+  .form .marca-caixa {
+    grid-template-columns: auto 1fr; align-items: center; gap: 0.6rem;
+    font-family: 'Bai Jamjuree', sans-serif; font-size: 0.82rem;
+    letter-spacing: normal; text-transform: none; color: var(--c60);
+    cursor: pointer;
+  }
+  .form-nota {
+    font-size: 0.74rem; color: var(--c40); text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  }
+  .aviso-demo { color: var(--neon-2); }
+
+  /* cartão de membro */
+  .cartao {
+    position: relative; overflow: hidden;
+    padding: clamp(1.4rem, 3vw, 2rem);
+    border-radius: var(--raio-g); border: 1px solid rgba(255, 45, 149, 0.4);
+    background:
+      radial-gradient(120% 90% at 88% 8%, rgba(139, 47, 255, 0.32), transparent 60%),
+      linear-gradient(150deg, var(--carta-2), var(--carta));
+  }
+  .cartao[hidden] { display: none; }
+  .cartao-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .cartao-marca {
+    font-family: 'Anton', sans-serif; font-size: 1.35rem; text-transform: uppercase;
+    display: flex; flex-direction: column; line-height: 1;
+  }
+  .cartao-marca span {
+    font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.28em;
+    color: var(--ciano); margin-top: 0.35rem;
+  }
+  .cartao-chip {
+    width: 2.4rem; height: 1.8rem; border-radius: 6px;
+    background: linear-gradient(140deg, var(--lima), var(--ciano));
+    opacity: 0.85;
+  }
+  .cartao-nome { margin-top: 1.6rem; font-size: 1.25rem; font-weight: 700; }
+  .cartao-dados {
+    display: grid; gap: 0.9rem 1.4rem; margin: 1.2rem 0 1.6rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+  }
+  .cartao-dados dt {
+    font-family: 'DM Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--c40);
+  }
+  .cartao-dados dd { margin: 0.2rem 0 0; font-size: 0.88rem; word-break: break-word; }
+  .cartao-acoes { display: grid; gap: 0.6rem; }
+
+  /* ---------- dúvidas ---------- */
+  .duvidas { background: var(--breu-2); border-top: 1px solid var(--linha); }
+  .duvidas-grade { display: grid; gap: clamp(2rem, 4vw, 3.4rem); align-items: start; }
+  .duvidas .cab { margin-bottom: 0; }
+  .duvidas .cab .btn { margin-top: 1.5rem; }
+  .fq { display: grid; gap: 0.6rem; }
+  .fq details {
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    background: var(--carta); overflow: hidden;
+    transition: border-color 0.3s ease;
+  }
+  .fq details[open] { border-color: var(--linha-viva); }
+  .fq summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1rem 1.3rem; cursor: pointer; list-style: none;
+    font-weight: 600; font-size: 0.94rem;
+    transition: color 0.3s ease;
+  }
+  .fq summary::-webkit-details-marker { display: none; }
+  .fq summary:hover { color: var(--ciano); }
+  .fq summary i {
+    flex: none; width: 1.7rem; height: 1.7rem; display: grid; place-items: center;
+    border-radius: 50%; background: rgba(0, 224, 255, 0.1); color: var(--ciano);
+    font-size: 0.64rem;
+    transition: rotate 0.3s ease, background 0.3s ease, color 0.3s ease;
+  }
+  .fq details[open] summary i { rotate: 135deg; background: var(--neon); color: #fff; }
+  .fq details p { padding: 0 1.3rem 1.25rem; font-size: 0.89rem; color: var(--c60); max-width: 68ch; }
+  @media (prefers-reduced-motion: no-preference) {
+    .fq details::details-content {
+      block-size: 0; overflow: hidden;
+      transition: block-size var(--t) var(--e), content-visibility var(--t) allow-discrete;
+    }
+    .fq details[open]::details-content { block-size: auto; }
+  }
+
+  /* ---------- gaveta do carrinho ---------- */
+  .gaveta {
+    width: min(100%, 27rem); max-width: none; height: 100dvh; max-height: none;
+    margin: 0 0 0 auto; padding: 0; border: 0;
+    border-left: 1px solid var(--linha);
+    background: var(--breu-2); color: var(--branco);
+    display: flex; flex-direction: column;
+    translate: 100% 0; opacity: 0;
+    transition: translate var(--t) var(--e), opacity var(--t) var(--e), overlay var(--t) allow-discrete, display var(--t) allow-discrete;
+  }
+  .gaveta[open] { translate: 0 0; opacity: 1; }
+  @starting-style { .gaveta[open] { translate: 100% 0; opacity: 0; } }
+  .gaveta::backdrop {
+    background: rgba(5, 3, 10, 0.72); backdrop-filter: blur(3px);
+    opacity: 0; transition: opacity var(--t) var(--e), overlay var(--t) allow-discrete, display var(--t) allow-discrete;
+  }
+  .gaveta[open]::backdrop { opacity: 1; }
+  @starting-style { .gaveta[open]::backdrop { opacity: 0; } }
+
+  .gaveta-cab {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 1.3rem; border-bottom: 1px solid var(--linha); flex: none;
+  }
+  .gaveta-t { font-size: 1.05rem; font-weight: 700; }
+  .gaveta-x {
+    width: 2.2rem; height: 2.2rem; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--linha); background: transparent; color: var(--c60);
+    transition: border-color 0.3s ease, color 0.3s ease;
+  }
+  .gaveta-x:hover { border-color: var(--neon); color: var(--neon-2); }
+  .gaveta-corpo {
+    flex: 1; overflow-y: auto; padding: 1.3rem;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .gaveta-corpo[hidden] { display: none; }
+
+  /* os itens da sacola nascem de innerHTML: sem :global o escopo do Astro não
+     alcança, e a linha do carrinho fica sem estilo nenhum */
+  .cesta { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
+  .cesta :global(li) {
+    display: grid; grid-template-columns: 1fr auto; gap: 0.6rem 0.9rem;
+    padding: 0.9rem 1rem; border-radius: var(--raio);
+    border: 1px solid var(--linha); background: var(--carta);
+  }
+  .cesta :global(.cesta-nome) { font-weight: 600; font-size: 0.92rem; }
+  .cesta :global(.cesta-tipo) { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--ciano); letter-spacing: 0.1em; text-transform: uppercase; }
+  .cesta :global(.cesta-v) { font-family: 'DM Mono', monospace; font-size: 0.92rem; text-align: right; }
+  .cesta :global(.cesta-ctrl) { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.5rem; }
+  .cesta :global(.cesta-ctrl button) {
+    width: 1.8rem; height: 1.8rem; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--linha); background: rgba(255, 255, 255, 0.04);
+    color: var(--branco); font-size: 0.9rem; line-height: 1;
+    transition: border-color 0.3s ease, color 0.3s ease;
+  }
+  .cesta :global(.cesta-ctrl button:hover) { border-color: var(--ciano); color: var(--ciano); }
+  .cesta :global(.cesta-q) { font-family: 'DM Mono', monospace; min-width: 1.4rem; text-align: center; }
+  .cesta :global(.cesta-tira) {
+    margin-left: auto; border: 0; background: transparent; cursor: pointer;
+    color: var(--c40); font-size: 0.76rem; text-decoration: underline;
+    transition: color 0.3s ease;
+  }
+  .cesta :global(.cesta-tira:hover) { color: var(--neon-2); }
+  .cesta-vazia {
+    display: grid; gap: 0.7rem; justify-items: center; text-align: center;
+    padding: 2.5rem 1rem; color: var(--c40); font-size: 0.88rem;
+  }
+  .cesta-vazia i { font-size: 1.6rem; color: var(--linha-viva); }
+  .cesta-vazia[hidden] { display: none; }
+
+  .soma { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--linha); display: grid; gap: 0.5rem; }
+  .soma[hidden] { display: none; }
+  .soma div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.88rem; color: var(--c60); }
+  .soma dt, .soma dd { margin: 0; }
+  .soma dd { font-family: 'DM Mono', monospace; }
+  .soma-total { font-size: 1.05rem; color: var(--branco); font-weight: 700; padding-top: 0.5rem; border-top: 1px dashed var(--linha); }
+  .soma-total dd { color: var(--ciano); }
+
+  .trilha-passo {
+    list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; gap: 0.4rem;
+    font-family: 'DM Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--c40);
+  }
+  .trilha-passo li { display: flex; align-items: center; gap: 0.4rem; }
+  .trilha-passo li:not(:last-child)::after { content: '›'; color: var(--linha-viva); }
+  .trilha-passo .feito { color: var(--c60); }
+  .trilha-passo .agora { color: var(--ciano); }
+  .gaveta .form { border: 0; padding: 0; background: transparent; }
+
+  .pag-opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .pag-opcoes button {
+    display: grid; gap: 0.2rem; padding: 0.9rem 0.8rem; cursor: pointer;
+    border-radius: var(--raio); border: 1px solid var(--linha);
+    background: var(--carta); color: var(--branco);
+    font-family: inherit; font-size: 0.9rem; font-weight: 600;
+    transition: border-color 0.3s ease, background 0.3s ease;
+  }
+  .pag-opcoes button small { font-weight: 400; font-size: 0.7rem; color: var(--c40); }
+  .pag-opcoes button.ativo { border-color: var(--neon); background: var(--carta-2); }
+  .pag-resumo {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 0.9rem 1rem; border-radius: var(--raio);
+    border: 1px solid var(--linha); background: var(--carta); font-size: 0.9rem;
+  }
+  .pag-resumo b { font-family: 'DM Mono', monospace; font-size: 1.15rem; color: var(--ciano); }
+  .pag-nota { font-size: 0.8rem; color: var(--c40); }
+
+  /* bilhete emitido */
+  .pronto-topo { display: grid; gap: 0.4rem; justify-items: center; text-align: center; padding-block: 0.5rem 1rem; }
+  .pronto-ok {
+    width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: 50%;
+    background: rgba(200, 255, 54, 0.14); color: var(--lima); font-size: 1.2rem;
+    margin-bottom: 0.4rem;
+  }
+  .pronto-t { font-size: 1.2rem; font-weight: 700; }
+  .pronto-d { font-size: 0.85rem; color: var(--c60); }
+  .pronto-d b { color: var(--branco); word-break: break-all; }
+
+  .bilhete {
+    border-radius: var(--raio-g); overflow: hidden;
+    border: 1px solid var(--linha-viva);
+    background: linear-gradient(150deg, var(--carta-2), var(--carta));
+  }
+  .bilhete-cima { padding: 1.1rem 1.2rem; background: var(--neon); }
+  .bilhete-evento { font-family: 'Anton', sans-serif; font-size: 1.5rem; text-transform: uppercase; color: #fff; line-height: 1; }
+  .bilhete-evento span { opacity: 0.72; }
+  .bilhete-data { margin-top: 0.35rem; font-size: 0.66rem; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.85); }
+  /* serrilha do canhoto: o recorte que diz "isto é um ingresso" */
+  .bilhete-serrilha {
+    height: 14px; background:
+      radial-gradient(circle at 7px 0, transparent 7px, var(--carta) 7.5px) repeat-x;
+    background-size: 18px 14px;
+    border-bottom: 1px dashed var(--linha-viva);
+  }
+  .bilhete-baixo { display: flex; gap: 1rem; padding: 1.1rem 1.2rem 1.3rem; align-items: flex-start; }
+  .bilhete-qr { width: 92px; height: 92px; flex: none; background: #fff; border-radius: 8px; padding: 6px; }
+  .bilhete-qr svg { display: block; width: 100%; height: 100%; }
+  .bilhete-info { min-width: 0; }
+  .bilhete-nome { font-weight: 700; font-size: 0.95rem; }
+  .bilhete-info :global(ul) { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.2rem; font-size: 0.78rem; color: var(--c60); }
+  .bilhete-info :global(li) { list-style: none; }
+  .bilhete-cod { margin-top: 0.7rem; font-size: 0.72rem; color: var(--ciano); letter-spacing: 0.08em; }
+
+  /* ---------- rodapé ---------- */
+  .rodape { background: var(--breu-2); border-top: 1px solid var(--linha); padding-top: clamp(2.8rem, 6vw, 4.2rem); }
+  .rodape-grade { display: grid; gap: 2.2rem clamp(1.4rem, 3vw, 2.6rem); padding-bottom: clamp(2.2rem, 4.5vw, 3.4rem); }
+  .rodape-marca { font-family: 'Anton', sans-serif; font-size: 1.8rem; text-transform: uppercase; line-height: 1; }
+  .rodape-marca span { color: var(--ciano); }
+  .rodape-d { margin-top: 0.8rem; font-size: 0.85rem; color: var(--c60); max-width: 34ch; }
+  .rodape .redes { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 0; padding: 0; }
+  .rodape .redes a {
+    display: grid; place-items: center; width: 2.3rem; height: 2.3rem;
+    border-radius: 12px; border: 1px solid var(--linha);
+    background: var(--carta); color: var(--c60); font-size: 0.9rem; text-decoration: none;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, translate 0.3s ease;
+  }
+  .rodape .redes a:hover { background: var(--neon); border-color: var(--neon); color: #fff; translate: 0 -3px; }
+  .rodape-t {
+    font-family: 'DM Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--branco); margin-bottom: 0.9rem;
+  }
+  .rodape ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+  .rodape a { color: var(--c60); text-decoration: none; font-size: 0.85rem; transition: color 0.3s ease; }
+  .rodape a:hover { color: var(--ciano); }
+  .rodape-contato li { display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.6rem; font-size: 0.85rem; color: var(--c60); }
+  .rodape-contato i { color: var(--neon-2); font-size: 0.8rem; margin-top: 0.32rem; }
+  .rodape-mapa iframe {
+    width: 100%; height: 160px; border: 0; display: block; border-radius: var(--raio);
+    filter: grayscale(0.9) invert(0.92) contrast(0.85);
+  }
+  .rodape-mini { margin-top: 0.6rem; font-size: 0.75rem; color: var(--c40); }
+  .rodape-aviso { padding-block: 1rem; border-top: 1px solid var(--linha); }
+  .rodape-aviso p { display: flex; gap: 0.7rem; align-items: baseline; font-size: 0.79rem; color: var(--c60); }
+  .rodape-aviso i { color: var(--lima); }
+  .rodape-fim {
+    display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; justify-content: space-between;
+    padding-block: 1.1rem 1.7rem; border-top: 1px solid var(--linha);
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--c40);
+  }
+  .rodape-cred a { font-size: inherit; text-decoration: underline; }
+
+  .pl :focus-visible { outline: 2px solid var(--ciano); outline-offset: 3px; border-radius: 8px; }
+
+  /* o que o Motion revela nasce escondido — só com JS e com vontade de movimento */
+  :global(.anima-on) .pl [data-anima] { opacity: 0; }
+
+  /* ---------- tablet ---------- */
+  @media (min-width: 700px) {
+    .form-2 { grid-template-columns: 1fr 1fr; }
+    .levar { grid-template-columns: 1fr 1fr; }
+    .levar .btn { grid-column: 1 / -1; }
+    .rodape-grade { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ---------- desktop ---------- */
+  @media (min-width: 980px) {
+    .topo-nav { display: flex; }
+    .entrar { display: inline-flex; }
+    .heroi-grade { grid-template-columns: 1.15fr 0.85fr; }
+    .usuario-mail { display: inline; }
+    .show-dupla { grid-template-columns: 1.25fr 0.75fr; }
+    .conta-grade { grid-template-columns: 0.9fr 1.1fr; }
+    .duvidas-grade { grid-template-columns: 0.85fr 1.15fr; }
+    .rodape-grade { grid-template-columns: 1.3fr 0.9fr 1fr 1.1fr; }
+  }
+
+  /* ---------- movimento reduzido ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .pl * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+
+<script>
+  /*
+    Bilheteria inteira do lado do cliente. Três estados moram aqui: o carrinho,
+    a conta e o passo do checkout. Os dois primeiros sobrevivem ao refresh pelo
+    localStorage; o terceiro não deve sobreviver, e por isso não é salvo.
+  */
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SAIDA = [0.22, 0.61, 0.36, 1] as const;
+  const raiz = document.documentElement;
+  const TAXA = 0.1;
+
+  const brl = (n: number) =>
+    n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+  /* ═════════════ 1. contagem regressiva ═════════════ */
+
+  const relogio = document.querySelector<HTMLElement>('[data-relogio]');
+  if (relogio) {
+    const alvo = new Date(relogio.dataset.alvo!).getTime();
+    const casa = (k: string) => relogio.querySelector<HTMLElement>(`[data-r="${k}"]`)!;
+    const campos = { d: casa('d'), h: casa('h'), m: casa('m'), s: casa('s') };
+    const dois = (n: number) => String(n).padStart(2, '0');
+    const tique = () => {
+      const falta = Math.max(0, alvo - Date.now());
+      const seg = Math.floor(falta / 1000);
+      campos.d.textContent = String(Math.floor(seg / 86400));
+      campos.h.textContent = dois(Math.floor(seg / 3600) % 24);
+      campos.m.textContent = dois(Math.floor(seg / 60) % 60);
+      campos.s.textContent = dois(seg % 60);
+    };
+    tique();
+    setInterval(tique, 1000);
+  }
+
+  /* ═════════════ 2. carrinho ═════════════ */
+
+  type Item = { id: string; nome: string; tipo: 'inteira' | 'meia'; preco: number; qtd: number };
+
+  const CHAVE_CARRINHO = 'pulse:carrinho';
+  const CHAVE_CONTA = 'pulse:conta';
+
+  const ler = <T,>(chave: string, padrao: T): T => {
+    try { return JSON.parse(localStorage.getItem(chave) ?? '') as T; } catch { return padrao; }
+  };
+  const gravar = (chave: string, v: unknown) => {
+    try { localStorage.setItem(chave, JSON.stringify(v)); } catch { /* modo privado: segue sem persistir */ }
+  };
+
+  let carrinho: Item[] = ler<Item[]>(CHAVE_CARRINHO, []).filter(
+    (i) => i && typeof i.preco === 'number' && typeof i.qtd === 'number' && i.qtd > 0,
+  );
+
+  const gaveta = document.querySelector<HTMLDialogElement>('[data-carrinho]');
+  const cesta = document.querySelector<HTMLElement>('[data-cesta]');
+  const vazia = document.querySelector<HTMLElement>('[data-vazia]');
+  const soma = document.querySelector<HTMLElement>('[data-soma]');
+  const contador = document.querySelector<HTMLElement>('[data-carrinho-n]');
+  const btnContinuar = document.querySelector<HTMLButtonElement>('[data-ir-dados]');
+
+  const subtotal = () => carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+  const total = () => subtotal() * (1 + TAXA);
+  const pecas = () => carrinho.reduce((s, i) => s + i.qtd, 0);
+
+  const escreverTotais = () => {
+    const sub = subtotal();
+    const setar = (sel: string, v: string) => {
+      document.querySelectorAll<HTMLElement>(sel).forEach((el) => (el.textContent = v));
+    };
+    setar('[data-subtotal]', brl(sub));
+    setar('[data-taxa]', brl(sub * TAXA));
+    setar('[data-total]', brl(sub * (1 + TAXA)));
+    setar('[data-total-pag]', brl(sub * (1 + TAXA)));
+  };
+
+  function pintarCarrinho() {
+    if (!cesta) return;
+    cesta.innerHTML = '';
+    for (const [n, item] of carrinho.entries()) {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div>
+          <p class="cesta-nome">${item.nome}</p>
+          <p class="cesta-tipo">${item.tipo}</p>
+        </div>
+        <p class="cesta-v">${brl(item.preco * item.qtd)}</p>
+        <div class="cesta-ctrl">
+          <button type="button" data-c-menos="${n}" aria-label="Menos um">−</button>
+          <span class="cesta-q">${item.qtd}</span>
+          <button type="button" data-c-mais="${n}" aria-label="Mais um">+</button>
+          <button type="button" class="cesta-tira" data-c-tira="${n}">remover</button>
+        </div>`;
+      cesta.append(li);
+    }
+    const tem = carrinho.length > 0;
+    if (vazia) vazia.hidden = tem;
+    if (soma) soma.hidden = !tem;
+    if (btnContinuar) btnContinuar.disabled = !tem;
+    if (contador) {
+      contador.textContent = String(pecas());
+      contador.hidden = !tem;
+    }
+    escreverTotais();
+    if (avisoLogin) avisoLogin.hidden = !tem || logado();
+    gravar(CHAVE_CARRINHO, carrinho);
+  }
+
+  cesta?.addEventListener('click', (ev) => {
+    const alvo = (ev.target as HTMLElement).closest<HTMLElement>('[data-c-menos],[data-c-mais],[data-c-tira]');
+    if (!alvo) return;
+    const { cMenos, cMais, cTira } = alvo.dataset;
+    const n = Number(cMenos ?? cMais ?? cTira);
+    if (cTira !== undefined) carrinho.splice(n, 1);
+    else if (cMais !== undefined) carrinho[n].qtd = Math.min(10, carrinho[n].qtd + 1);
+    else if (carrinho[n].qtd > 1) carrinho[n].qtd -= 1;
+    else carrinho.splice(n, 1);
+    pintarCarrinho();
+  });
+
+  const abrir = () => { irPara('itens'); gaveta?.showModal(); };
+  document.querySelectorAll('[data-abrir-carrinho]').forEach((b) => b.addEventListener('click', abrir));
+  document.querySelectorAll('[data-fechar]').forEach((b) => b.addEventListener('click', () => gaveta?.close()));
+
+  /* ═════════════ 4. cards de ingresso ═════════════ */
+
+  document.querySelectorAll<HTMLElement>('[data-setor]').forEach((card) => {
+    const saida = card.querySelector<HTMLOutputElement>('[data-qtd]');
+    const add = card.querySelector<HTMLButtonElement>('[data-add]');
+    if (!saida || !add) return;
+
+    let qtd = 1;
+    let tipo: 'inteira' | 'meia' = 'inteira';
+    const base = Number(card.dataset.preco);
+    const nome = card.dataset.nome!;
+
+    card.querySelector('[data-mais]')?.addEventListener('click', () => {
+      qtd = Math.min(10, qtd + 1);
+      saida.textContent = String(qtd);
+    });
+    card.querySelector('[data-menos]')?.addEventListener('click', () => {
+      qtd = Math.max(1, qtd - 1);
+      saida.textContent = String(qtd);
+    });
+
+    const valor = card.querySelector<HTMLElement>('[data-valor]');
+    const legenda = card.querySelector<HTMLElement>('[data-legenda]');
+
+    card.querySelectorAll<HTMLButtonElement>('[data-tipo]').forEach((b) => {
+      b.addEventListener('click', () => {
+        tipo = b.dataset.tipo as 'inteira' | 'meia';
+        card.querySelectorAll('[data-tipo]').forEach((o) => o.classList.toggle('ativo', o === b));
+        /* o preço grande é o que a pessoa lê: ele tem que virar meia junto */
+        const meia = tipo === 'meia';
+        if (valor) valor.textContent = String(meia ? base / 2 : base);
+        if (legenda) {
+          legenda.textContent = meia
+            ? `meia-entrada · inteira sai por R$ ${base}`
+            : `inteira · meia sai por R$ ${base / 2}`;
+        }
+      });
+    });
+
+    add.addEventListener('click', () => {
+      const preco = tipo === 'meia' ? base / 2 : base;
+      const id = `${card.dataset.setor}:${tipo}`;
+      /* mesmo setor e mesmo tipo somam quantidade em vez de virar duas linhas */
+      const existente = carrinho.find((i) => i.id === id);
+      if (existente) existente.qtd = Math.min(10, existente.qtd + qtd);
+      else carrinho.push({ id, nome, tipo, preco, qtd });
+      pintarCarrinho();
+      abrir();
+    });
+  });
+
+  /* ═════════════ 5. checkout em passos ═════════════ */
+
+  const passos = ['itens', 'dados', 'pagamento', 'pronto'] as const;
+  type Passo = (typeof passos)[number];
+
+  function irPara(p: Passo) {
+    for (const nome of passos) {
+      const el = document.querySelector<HTMLElement>(`[data-passo="${nome}"]`);
+      if (el) el.hidden = nome !== p;
+    }
+    document.querySelector<HTMLElement>('.gaveta-corpo:not([hidden])')?.scrollTo(0, 0);
+  }
+
+  let comprador = { nome: '', email: '', cpf: '' };
+
+  /* máscara de CPF só de dígitos: nada de regex de validação, é demonstração */
+  document.querySelector<HTMLInputElement>('[data-cpf]')?.addEventListener('input', (ev) => {
+    const el = ev.target as HTMLInputElement;
+    const d = el.value.replace(/\D/g, '').slice(0, 11);
+    el.value = d
+      .replace(/^(\d{3})(\d)/, '$1.$2')
+      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2');
+  });
+
+  btnContinuar?.addEventListener('click', () => {
+    if (!logado()) {
+      pedirLogin('Entre para finalizar a compra. O ingresso é nominal e fica na sua conta.', () => irPara('dados'));
+      return;
+    }
+    irPara('dados');
+  });
+  document.querySelector('[data-voltar-itens]')?.addEventListener('click', () => irPara('itens'));
+  document.querySelector('[data-voltar-dados]')?.addEventListener('click', () => irPara('dados'));
+
+  document.querySelector<HTMLFormElement>('[data-form-dados]')?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const d = new FormData(ev.target as HTMLFormElement);
+    comprador = {
+      nome: String(d.get('nome') ?? '').trim(),
+      email: String(d.get('email') ?? '').trim(),
+      cpf: String(d.get('cpf') ?? '').trim(),
+    };
+    escreverTotais();
+    irPara('pagamento');
+  });
+
+  const notaPag = document.querySelector<HTMLElement>('[data-pag-nota]');
+  document.querySelectorAll<HTMLButtonElement>('[data-pag]').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-pag]').forEach((o) => o.classList.toggle('ativo', o === b));
+      if (notaPag) {
+        notaPag.textContent =
+          b.dataset.pag === 'pix'
+            ? 'O código Pix vale por 15 minutos e o ingresso é emitido assim que o pagamento cai.'
+            : 'Em até 6× sem juros. O ingresso é emitido na aprovação, normalmente em segundos.';
+      }
+    });
+  });
+
+  /*
+    QR ilustrativo. Uma grade 25×25 derivada de um hash do código, com os três
+    olhos de canto desenhados por cima — não decodifica nada e a legenda diz
+    isso, mas dá ao bilhete a única coisa que faltava para parecer um bilhete.
+  */
+  function desenharQR(codigo: string) {
+    const N = 25;
+    let h = 2166136261;
+    for (const c of codigo) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+    const prox = () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
+
+    const olho = (x: number, y: number) =>
+      (x < 7 && y < 7) || (x >= N - 7 && y < 7) || (x < 7 && y >= N - 7);
+    const dentroOlho = (x: number, y: number) => {
+      const ox = x < 7 ? x : x - (N - 7);
+      const oy = y < 7 ? y : y - (N - 7);
+      const borda = ox === 0 || ox === 6 || oy === 0 || oy === 6;
+      const miolo = ox >= 2 && ox <= 4 && oy >= 2 && oy <= 4;
+      return borda || miolo;
+    };
+
+    let d = '';
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        const preto = olho(x, y) ? dentroOlho(x, y) : prox() > 0.52;
+        if (preto) d += `M${x} ${y}h1v1h-1z`;
+      }
+    }
+    return `<svg viewBox="0 0 ${N} ${N}" xmlns="http://www.w3.org/2000/svg"><path d="${d}" fill="#05030a"/></svg>`;
+  }
+
+  document.querySelector('[data-pagar]')?.addEventListener('click', () => {
+    if (!carrinho.length) return;
+    /* segunda tranca: ninguém fecha compra sem conta, nem chegando por atalho */
+    if (!logado()) {
+      pedirLogin('Entre para finalizar a compra.', () => irPara('pagamento'));
+      return;
+    }
+    const codigo =
+      'PLS-' +
+      Array.from({ length: 8 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 31)]).join('');
+
+    const setar = (sel: string, v: string) => {
+      const el = document.querySelector<HTMLElement>(sel);
+      if (el) el.textContent = v;
+    };
+    setar('[data-pronto-nome]', comprador.nome || 'Convidado');
+    setar('[data-pronto-email]', comprador.email || '—');
+    setar('[data-pronto-cod]', codigo);
+
+    const lista = document.querySelector<HTMLElement>('[data-pronto-itens]');
+    if (lista) {
+      lista.innerHTML = carrinho
+        .map((i) => `<li>${i.qtd}× ${i.nome} · ${i.tipo}</li>`)
+        .join('');
+    }
+    const qr = document.querySelector<HTMLElement>('[data-qr]');
+    if (qr) qr.innerHTML = desenharQR(codigo);
+
+    /* compra fechada: o carrinho zera, como zeraria de verdade */
+    carrinho = [];
+    pintarCarrinho();
+    irPara('pronto');
+  });
+
+  /* ═════════════ 6. conta e login, só no navegador ═════════════ */
+
+  type Conta = { nome: string; email: string; estilo: string; avisos: boolean; desde: string; id: string };
+
+  const formCadastro = document.querySelector<HTMLFormElement>('[data-cadastro]');
+  const cartao = document.querySelector<HTMLElement>('[data-cartao]');
+  const modalLogin = document.querySelector<HTMLDialogElement>('[data-login]');
+  const btnEntrar = document.querySelector<HTMLElement>('[data-abrir-login]');
+  const boxUsuario = document.querySelector<HTMLDetailsElement>('[data-usuario]');
+  const avisoLogin = document.querySelector<HTMLElement>('[data-precisa-login]');
+
+  let conta: Conta | null = null;
+  /* de onde veio o pedido de login: o checkout continua sozinho depois */
+  let aposLogin: (() => void) | null = null;
+
+  const logado = () => !!conta;
+
+  function pintarTopo() {
+    if (btnEntrar) btnEntrar.hidden = logado();
+    if (boxUsuario) {
+      boxUsuario.hidden = !logado();
+      boxUsuario.open = false;
+      if (conta) {
+        const ini = boxUsuario.querySelector<HTMLElement>('[data-u-ini]');
+        const mail = boxUsuario.querySelector<HTMLElement>('[data-u-mail]');
+        if (ini) ini.textContent = (conta.nome || conta.email).trim().charAt(0) || '?';
+        if (mail) mail.textContent = conta.email;
+      }
+    }
+    if (avisoLogin) avisoLogin.hidden = logado() || carrinho.length === 0;
+    /* o e-mail do checkout é o da conta, e não se digita de novo */
+    const campo = document.querySelector<HTMLInputElement>('[data-email-conta]');
+    if (campo) campo.value = conta?.email ?? '';
+    const nomeCampo = document.querySelector<HTMLFormElement>('[data-form-dados]')?.elements.namedItem('nome');
+    if (nomeCampo instanceof HTMLInputElement && conta?.nome && !nomeCampo.value) nomeCampo.value = conta.nome;
+  }
+
+  function entrar(email: string, nome?: string) {
+    conta = conta ?? {
+      nome: nome ?? email.split('@')[0].replace(/[._-]+/g, ' '),
+      email,
+      estilo: 'Escuto tudo',
+      avisos: true,
+      desde: new Date().toLocaleDateString('pt-BR'),
+      id: 'PLS' + Math.floor(100000 + Math.random() * 899999),
+    };
+    conta.email = email;
+    if (nome) conta.nome = nome;
+    gravar(CHAVE_CONTA, conta);
+    pintarConta(conta);
+    pintarTopo();
+  }
+
+  function pedirLogin(motivo: string, depois: () => void) {
+    aposLogin = depois;
+    const nota = document.querySelector<HTMLElement>('[data-login-motivo]');
+    if (nota) nota.textContent = motivo;
+    modalLogin?.showModal();
+  }
+
+  btnEntrar?.addEventListener('click', () => {
+    aposLogin = null;
+    pedirLogin(
+      'Entre para ver seus ingressos, reemitir o QR e comprar sem digitar tudo de novo.',
+      () => {},
+    );
+  });
+  document.querySelector('[data-fechar-login]')?.addEventListener('click', () => modalLogin?.close());
+  document.querySelector('[data-ir-cadastro]')?.addEventListener('click', () => {
+    modalLogin?.close();
+    gaveta?.close();
+  });
+
+  document.querySelector<HTMLFormElement>('[data-form-login]')?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const d = new FormData(ev.target as HTMLFormElement);
+    const email = String(d.get('email') ?? '').trim();
+    if (!email) return;
+    entrar(email);
+    modalLogin?.close();
+    const seguir = aposLogin;
+    aposLogin = null;
+    seguir?.();
+  });
+
+  const sair = () => {
+    try { localStorage.removeItem(CHAVE_CONTA); } catch { /* nada a limpar */ }
+    conta = null;
+    formCadastro?.reset();
+    pintarConta(null);
+    pintarTopo();
+  };
+  document.querySelector('[data-sair-topo]')?.addEventListener('click', sair);
+
+  function pintarConta(c: Conta | null) {
+    if (!formCadastro || !cartao) return;
+    formCadastro.hidden = !!c;
+    cartao.hidden = !c;
+    if (!c) return;
+    const setar = (sel: string, v: string) => {
+      const el = cartao.querySelector<HTMLElement>(sel);
+      if (el) el.textContent = v;
+    };
+    setar('[data-c-nome]', c.nome);
+    setar('[data-c-email]', c.email);
+    setar('[data-c-estilo]', c.estilo);
+    setar('[data-c-desde]', c.desde);
+    setar('[data-c-id]', c.id);
+  }
+
+  formCadastro?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const d = new FormData(formCadastro);
+    const nova: Conta = {
+      nome: String(d.get('nome') ?? '').trim(),
+      email: String(d.get('email') ?? '').trim(),
+      estilo: String(d.get('estilo') ?? ''),
+      avisos: d.get('avisos') === 'on',
+      desde: new Date().toLocaleDateString('pt-BR'),
+      id: 'PLS' + Math.floor(100000 + Math.random() * 899999),
+    };
+    conta = nova;
+    gravar(CHAVE_CONTA, nova);
+    pintarConta(nova);
+    pintarTopo();
+    /* o formulário some, então o foco precisa ir para o cartão que apareceu */
+    cartao?.setAttribute('tabindex', '-1');
+    cartao?.focus();
+  });
+
+  document.querySelector('[data-sair]')?.addEventListener('click', sair);
+
+  conta = ler<Conta | null>(CHAVE_CONTA, null);
+  pintarConta(conta);
+  pintarCarrinho();
+  pintarTopo();
+
+  /* ═════════════ 7. movimento ═════════════ */
+
+  async function ligarMovimento() {
+    if (reduz) return;
+    const { animate, inView, scroll, stagger } = await import('motion');
+
+    const umaVez = (el: Element, efeito: () => void, opcoes?: Parameters<typeof inView>[2]) => {
+      let parar = () => {};
+      parar = inView(el, () => { efeito(); parar(); }, opcoes);
+    };
+
+    const barra = document.querySelector<HTMLElement>('[data-progresso]');
+    if (barra) scroll(animate(barra, { scaleX: [0, 1] }, { ease: 'linear' }));
+
+    const topo = document.querySelector<HTMLElement>('[data-topo]');
+    if (topo) {
+      const marcar = () => { topo.dataset.topo = scrollY > 12 ? 'rolou' : ''; };
+      marcar();
+      addEventListener('scroll', marcar, { passive: true });
+    }
+
+    animate(
+      document.querySelectorAll('.heroi [data-anima]'),
+      { opacity: [0, 1], y: [18, 0] },
+      { duration: 0.75, delay: stagger(0.08), ease: SAIDA },
+    );
+
+    /* revelação em cascata, agrupada por pai para o stagger correr entre irmãos */
+    const grupos = new Map<Element, HTMLElement[]>();
+    for (const el of document.querySelectorAll<HTMLElement>('[data-anima]')) {
+      if (el.closest('.heroi')) continue;
+      const pai = el.parentElement!;
+      grupos.set(pai, [...(grupos.get(pai) ?? []), el]);
+    }
+    for (const irmaos of grupos.values()) {
+      umaVez(
+        irmaos[0],
+        () => animate(irmaos, { opacity: [0, 1], y: [20, 0] }, { duration: 0.6, delay: stagger(0.07), ease: SAIDA }),
+        { amount: 0.12, margin: '0px 0px -8% 0px' },
+      );
+    }
+
+    /* foto do herói com paralaxe curta, para a luz não parecer colada */
+    const foto = document.querySelector<HTMLElement>('.heroi-foto');
+    if (foto) scroll(animate(foto, { y: [0, 90], scale: [1.06, 1.14] }, { ease: 'linear' }), { target: foto });
+
+    /*
+      Os dois trilhos da galeria. Correm em sentidos opostos enquanto a seção
+      atravessa a tela; a distância é medida do próprio conteúdo, então
+      continua certa em qualquer largura.
+    */
+    const secaoGaleria = document.querySelector<HTMLElement>('.galeria');
+    if (secaoGaleria) {
+      document.querySelectorAll<HTMLElement>('[data-trilho]').forEach((trilho) => {
+        const sentido = Number(trilho.dataset.trilho);
+        const curso = Math.max(0, trilho.scrollWidth - innerWidth) * 0.5;
+        scroll(
+          animate(trilho, { x: sentido > 0 ? [0, -curso] : [-curso, 0] }, { ease: 'linear' }),
+          { target: secaoGaleria, offset: ['start end', 'end start'] },
+        );
+      });
+    }
+  }
+
+  const revelarTudo = () => raiz.classList.remove('anima-on');
+  const socorro = setTimeout(revelarTudo, 3000);
+  ligarMovimento().catch(revelarTudo).finally(() => clearTimeout(socorro));
+  if (reduz) revelarTudo();
+</script>

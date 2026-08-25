@@ -1,0 +1,468 @@
+---
+import Base from '../../../layouts/Base.astro';
+import './_volta.css';
+import { LOJA, PRODUTOS, LINHAS, NUMERACAO, VANTAGENS, TECNOLOGIA, DUVIDAS, mapaQuery } from './_dados';
+
+/*
+  VOLTA — a home.
+
+  Vitrine, não catálogo: mostra as categorias, os lançamentos e o argumento da
+  marca, e joga todo mundo que quer comprar para /sites/volta/loja, onde estão
+  filtro, ficha e sacola. Clicar num par aqui abre a ficha lá, por ?ver=<id>.
+
+  As duas páginas leem o mesmo `_dados.ts` e a mesma `_volta.css`, então preço,
+  estoque e visual nunca divergem entre uma e outra.
+*/
+
+const CATEGORIAS = [
+  { t: 'Corrida', d: 'Asfalto, esteira e prova', f: 'meridiano', q: 'linha=Corrida' },
+  { t: 'Casual', d: 'Do dia a dia, sem pensar', f: 'cais', q: 'linha=Casual' },
+  { t: 'Lifestyle', d: 'Para ser olhado', f: 'plataforma', q: 'linha=Lifestyle' },
+  { t: 'Trail', d: 'Barro, pedra e raiz', f: 'trilha', q: 'linha=Trail' },
+];
+
+/* lançamentos primeiro, oferta depois — é a ordem em que as duas coisas vendem */
+const DESTAQUES = [...PRODUTOS.filter((p) => p.novo), ...PRODUTOS.filter((p) => p.de)].slice(0, 4);
+
+const titulo = `${LOJA.nome} — tênis de corrida, casual e trail | ${LOJA.cidade}`;
+const descricao =
+  'VOLTA: tênis de corrida, casual, trail e lifestyle, masculino e feminino. Frete grátis acima de R$ 399, 30 dias para trocar e até 10× sem juros.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Store',
+      '@id': `${LOJA.site}/#loja`,
+      name: LOJA.nome,
+      slogan: LOJA.lema,
+      description: descricao,
+      url: LOJA.site,
+      telephone: LOJA.foneLink,
+      email: LOJA.email,
+      priceRange: 'R$ 379 – R$ 829',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: LOJA.rua,
+        addressLocality: LOJA.cidade,
+        addressRegion: LOJA.uf,
+        postalCode: LOJA.cep,
+        addressCountry: 'BR',
+      },
+      openingHoursSpecification: [
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], opens: '10:00', closes: '20:00' },
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Sunday', opens: '12:00', closes: '18:00' },
+      ],
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: DUVIDAS.map((d) => ({
+        '@type': 'Question',
+        name: d.p,
+        acceptedAnswer: { '@type': 'Answer', text: d.r },
+      })),
+    },
+  ],
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:url" content={LOJA.site} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    />
+    <link rel="preload" as="image" href="/img/volta/heroi-noturno.webp" type="image/webp" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="vt">
+    <a class="pular" href="#categorias">Pular para as categorias</a>
+
+    <p class="tarja">
+      Frete grátis acima de R$ {LOJA.freteGratis} · 30 dias para trocar · até 10× sem juros
+    </p>
+
+    <header class="topo topo-sobre" data-topo>
+      <div class="topo-barra" data-progresso aria-hidden="true"></div>
+      <a class="marca" href="/sites/volta/">{LOJA.nome}</a>
+      <nav class="topo-nav" aria-label="Categorias">
+        <a href="/sites/volta/loja?genero=masculino">Masculino</a>
+        <a href="/sites/volta/loja?genero=feminino">Feminino</a>
+        <a href="/sites/volta/loja?linha=Corrida">Corrida</a>
+        <a href="/sites/volta/loja">Todos os tênis</a>
+        <a href="#tecnologia">Tecnologia</a>
+      </nav>
+      <a class="icone" href="/sites/volta/loja" aria-label="Ir para a loja">
+        <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
+        <span class="icone-n" data-carrinho-n hidden>0</span>
+      </a>
+    </header>
+
+    <main>
+      {/* ═══════════════════ HERÓI ═══════════════════ */}
+      <section class="palco" data-palco>
+        {/* camadas de fundo: brilho e o nome grande atrás do produto */}
+        <div class="palco-luz" aria-hidden="true"></div>
+        <p class="palco-marca" aria-hidden="true" data-fundo>VOLTA</p>
+
+        <div class="caixa palco-grid">
+          <div class="palco-txt">
+            <p class="chip" data-anima>
+              <span class="chip-ponto" aria-hidden="true"></span>
+              Coleção 2026 · Noturno Reflex
+            </p>
+
+            <h1 data-anima>
+              <span class="l1">Um passo</span>
+              <span class="l2">à frente</span>
+              <span class="l3">do <em>óbvio</em></span>
+            </h1>
+
+            <p class="palco-lead" data-anima>
+              Entressola vazada que tira peso sem tirar altura, com painéis
+              iridescentes que mudam de cor conforme a luz bate. Dez modelos,
+              cinco masculinos e cinco femininos.
+            </p>
+
+            <div class="palco-acoes" data-anima>
+              <a class="btn btn-luz btn-g" href="/sites/volta/loja">
+                Ver todos os tênis <i class="fa-solid fa-arrow-right" aria-hidden="true" />
+              </a>
+              <a class="btn btn-vidro btn-g" href="/sites/volta/loja?ver=noturno">Ver o Noturno</a>
+            </div>
+
+            <dl class="palco-nums" data-anima>
+              <div><dt>10</dt><dd>modelos</dd></div>
+              <div><dt>4</dt><dd>linhas</dd></div>
+              <div><dt>30</dt><dd>dias para trocar</dd></div>
+            </dl>
+          </div>
+
+          {/*
+            O produto é cenário, não brinquedo: flutua sozinho, devagar, e não
+            responde ao ponteiro. Seguir o mouse denunciava que é um PNG plano
+            girando, que era justamente o que estragava a ilusão. O halo muda
+            de azul para violeta e volta — a mesma variação de cor que o
+            Noturno faz de verdade quando a luz bate nos painéis.
+          */}
+          <div class="palco-3d" data-cena>
+            <div class="cena">
+              <span class="halo" aria-hidden="true"></span>
+              <span class="anel" aria-hidden="true"></span>
+
+              <div class="tenis">
+                <picture>
+                  <source srcset="/img/volta/heroi-noturno.webp" type="image/webp" />
+                  <img
+                    src="/img/volta/heroi-noturno.png"
+                    alt="Tênis VOLTA Noturno Reflex, preto iridescente, flutuando."
+                    width="789"
+                    height="741"
+                    fetchpriority="high"
+                    decoding="async"
+                  />
+                </picture>
+              </div>
+
+              <span class="sombra" aria-hidden="true"></span>
+
+              <p class="tag tag-1"><b>395 g</b><span>no número 41</span></p>
+              <p class="tag tag-2"><b>R$ 699</b><span>10× sem juros</span></p>
+              <p class="tag tag-3"><b>30 dias</b><span>para trocar</span></p>
+            </div>
+          </div>
+        </div>
+
+        <p class="rola" aria-hidden="true">role</p>
+      </section>
+
+      {/* ═══════════════════ VANTAGENS ═══════════════════ */}
+      <section class="vantagens">
+        <ul class="caixa vantagens-grade">
+          {
+            VANTAGENS.map((v) => (
+              <li data-anima>
+                <i class={v.i} aria-hidden="true" />
+                <div>
+                  <p class="vant-t">{v.t}</p>
+                  <p class="vant-d">{v.d}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      {/* ═══════════════════ CATEGORIAS ═══════════════════ */}
+      <section class="secao" id="categorias">
+        <div class="caixa">
+          <header class="cab-larga" data-anima>
+            <div>
+              <p class="olho">Comprar por linha</p>
+              <h2>Cada modelo existe para um uso</h2>
+            </div>
+            <a class="btn btn-vaz" href="/sites/volta/loja">Ver os {PRODUTOS.length} modelos</a>
+          </header>
+
+          <ul class="categorias">
+            {
+              CATEGORIAS.map((c) => (
+                <li data-anima>
+                  <a href={`/sites/volta/loja?${c.q}`}>
+                    <span class="cat-foto">
+                      <picture>
+                        <source srcset={`/img/volta/${c.f}-1.webp`} type="image/webp" />
+                        <img src={`/img/volta/${c.f}-1.jpg`} alt="" width="900" height="900" loading="lazy" decoding="async" />
+                      </picture>
+                    </span>
+                    <span class="cat-corpo">
+                      <span class="cat-t">{c.t}</span>
+                      <span class="cat-d">{c.d}</span>
+                      <span class="cat-ir">Ver linha <i class="fa-solid fa-arrow-right" aria-hidden="true" /></span>
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </section>
+
+      {/* ═══════════════════ DESTAQUES ═══════════════════ */}
+      <section class="secao secao-papel">
+        <div class="caixa">
+          <header class="cab-larga" data-anima>
+            <div>
+              <p class="olho">Em destaque</p>
+              <h2>Lançamentos e o que está em oferta</h2>
+            </div>
+            <a class="btn btn-vaz" href="/sites/volta/loja">Ver catálogo completo</a>
+          </header>
+
+          <ul class="grade">
+            {
+              DESTAQUES.map((p) => (
+                <li class="prod" data-anima>
+                  <a class="prod-btn" href={`/sites/volta/loja?ver=${p.id}`}>
+                    <span class="prod-foto">
+                      <picture>
+                        <source srcset={`/img/volta/${p.id}-1.webp`} type="image/webp" />
+                        <img
+                          src={`/img/volta/${p.id}-1.jpg`}
+                          alt={`${LOJA.nome} ${p.nome} na cor ${p.cor.toLowerCase()}, vista lateral.`}
+                          width="900"
+                          height="900"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </picture>
+                      <picture class="prod-hover">
+                        <source srcset={`/img/volta/${p.id}-2.webp`} type="image/webp" />
+                        <img src={`/img/volta/${p.id}-2.jpg`} alt="" width="900" height="900" loading="lazy" decoding="async" />
+                      </picture>
+                      {p.novo && <span class="prod-selo">Lançamento</span>}
+                      {p.de && <span class="prod-selo prod-selo-off">-{Math.round((1 - p.preco / p.de) * 100)}%</span>}
+                      <span class="prod-ver">Ver detalhes</span>
+                    </span>
+                    <span class="prod-corpo">
+                      <span class="prod-linha">{p.linha} · {p.genero === 'masculino' ? 'Masculino' : 'Feminino'}</span>
+                      <span class="prod-nome">{p.nome}</span>
+                      <span class="prod-cor"><i style={`--cor:${p.corHex}`} aria-hidden="true"></i>{p.cor}</span>
+                      <span class="prod-nums">
+                        {(NUMERACAO[p.genero] ?? []).filter((n) => !p.esgotados.includes(n)).slice(0, 8).join(' · ')}
+                      </span>
+                      <span class="prod-preco">
+                        {p.de && <s>R$ {p.de}</s>}
+                        <b>R$ {p.preco}</b>
+                      </span>
+                      <span class="prod-parcela">10× de R$ {(p.preco / 10).toFixed(2).replace('.', ',')} sem juros</span>
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </section>
+
+      {/* ═══════════════════ TECNOLOGIA ═══════════════════ */}
+      <section class="secao tecnologia" id="tecnologia">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho olho-claro">Tecnologia</p>
+            <h2>Três coisas que dá para medir</h2>
+            <p class="lead lead-claro">
+              Nada de nome inventado para espuma comum. O que está aqui tem número
+              atrás, e o número saiu de teste em laboratório, não do marketing.
+            </p>
+          </header>
+          <div class="tec-grade">
+            {
+              TECNOLOGIA.map((t) => (
+                <article class="tec" data-anima>
+                  <p class="tec-n">{t.n}<small>{t.l}</small></p>
+                  <h3>{t.t}</h3>
+                  <p>{t.d}</p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ LOJA FÍSICA ═══════════════════ */}
+      <section class="secao">
+        <div class="caixa dupla">
+          <figure class="loja-foto" data-anima>
+            <picture>
+              <source srcset="/img/volta/estilo.webp" type="image/webp" />
+              <img src="/img/volta/estilo.jpg" alt="Pessoa calçando um tênis branco, sentada." width="1200" height="800" loading="lazy" decoding="async" />
+            </picture>
+          </figure>
+          <div data-anima>
+            <p class="olho">Loja física</p>
+            <h2>Prove antes, se preferir</h2>
+            <p class="lead">
+              A loja dos {LOJA.bairro} tem toda a coleção em todas as numerações e
+              uma esteira para você correr cinco minutos com o par nos pés antes de
+              decidir. Compra online também pode ser retirada aqui, pronta em até
+              quatro horas úteis.
+            </p>
+            <dl class="loja-dados">
+              <div><dt>Endereço</dt><dd>{LOJA.rua}<br />{LOJA.bairro} · {LOJA.cidade}/{LOJA.uf}</dd></div>
+              <div><dt>Horário</dt><dd>Seg a sáb, 10h às 20h<br />Dom, 12h às 18h</dd></div>
+              <div><dt>Telefone</dt><dd><a href={`tel:${LOJA.foneLink}`}>{LOJA.fone}</a></dd></div>
+              <div><dt>WhatsApp</dt><dd><a href={`https://wa.me/${LOJA.zap}`} rel="noopener">{LOJA.zapFmt}</a></dd></div>
+            </dl>
+            <a class="btn btn-vaz" href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+              <i class="fa-solid fa-map-location-dot" aria-hidden="true" /> Como chegar
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ DÚVIDAS ═══════════════════ */}
+      <section class="secao duvidas" id="duvidas">
+        <div class="caixa dupla-fq">
+          <header class="cab" data-anima>
+            <p class="olho">Dúvidas</p>
+            <h2>Antes de fechar o pedido</h2>
+            <p class="lead">
+              Numeração, troca, prazo e garantia — o que a gente mais responde no
+              WhatsApp, respondido aqui com número.
+            </p>
+            <a class="btn btn-vaz" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
+              <i class="fa-brands fa-whatsapp" aria-hidden="true" /> Falar com a loja
+            </a>
+          </header>
+          <div class="fq" data-anima>
+            {
+              DUVIDAS.map((d) => (
+                <details name="duvidas-volta">
+                  <summary><span>{d.p}</span><i class="fa-solid fa-plus" aria-hidden="true" /></summary>
+                  <p>{d.r}</p>
+                </details>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ CHAMADA FINAL ═══════════════════ */}
+      <section class="chamada">
+        <div class="caixa" data-anima>
+          <h2>Escolha o seu par</h2>
+          <p class="lead lead-claro">
+            Catálogo inteiro com filtro por numeração, cor e preço. Frete grátis
+            acima de R$ {LOJA.freteGratis}.
+          </p>
+          <a class="btn btn-claro btn-g" href="/sites/volta/loja">Ir para a loja</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <ul class="rodape-selos" aria-hidden="true">
+        {
+          VANTAGENS.map((v) => (
+            <li>
+              <i class={v.i} aria-hidden="true" />
+              {v.t}
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="caixa rodape-grade">
+        <div>
+          <p class="rodape-marca">{LOJA.nome}</p>
+          <p class="rodape-d">{LOJA.lema}</p>
+          <p class="rodape-d">
+            Loja de tênis em {LOJA.cidade} desde {LOJA.desde}. Corrida, casual, trail
+            e lifestyle, com fôrma feminina desenhada do zero.
+          </p>
+          <ul class="redes">
+            <li><a href={`https://instagram.com/${LOJA.insta}`} rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true" /></a></li>
+            <li><a href={`https://wa.me/${LOJA.zap}`} rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true" /></a></li>
+            <li><a href={`mailto:${LOJA.email}`} aria-label="E-mail"><i class="fa-solid fa-envelope" aria-hidden="true" /></a></li>
+            <li><a href={`tel:${LOJA.foneLink}`} aria-label="Telefone"><i class="fa-solid fa-phone" aria-hidden="true" /></a></li>
+          </ul>
+        </div>
+
+        <nav aria-label="Comprar">
+          <p class="rodape-t">Comprar</p>
+          <ul>
+            <li><a href="/sites/volta/loja?genero=masculino">Masculino</a></li>
+            <li><a href="/sites/volta/loja?genero=feminino">Feminino</a></li>
+            {LINHAS.map((l) => <li><a href={`/sites/volta/loja?linha=${l}`}>{l}</a></li>)}
+            <li><a href="/sites/volta/loja">Todos os tênis</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Ajuda">
+          <p class="rodape-t">Ajuda</p>
+          <ul>
+            <li><a href="#duvidas">Guia de tamanhos</a></li>
+            <li><a href="#duvidas">Trocas e devoluções</a></li>
+            <li><a href="#duvidas">Prazo de entrega</a></li>
+            <li><a href="#duvidas">Garantia</a></li>
+            <li><a href="#tecnologia">Tecnologia</a></li>
+          </ul>
+        </nav>
+
+        <div class="rodape-contato">
+          <p class="rodape-t">Loja e contato</p>
+          <ul>
+            <li><i class="fa-solid fa-location-dot" aria-hidden="true" /><span>{LOJA.rua}<br />{LOJA.bairro} · {LOJA.cidade}/{LOJA.uf}<br />CEP {LOJA.cep}</span></li>
+            <li><i class="fa-solid fa-clock" aria-hidden="true" /><span>Seg a sáb, 10h às 20h<br />Dom, 12h às 18h</span></li>
+            <li><i class="fa-solid fa-phone" aria-hidden="true" /><a href={`tel:${LOJA.foneLink}`}>{LOJA.fone}</a></li>
+            <li><i class="fa-solid fa-envelope" aria-hidden="true" /><a href={`mailto:${LOJA.email}`}>{LOJA.email}</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="caixa rodape-fim">
+        <span>© 2026 {LOJA.nome} Calçados · CNPJ {LOJA.cnpj}</span>
+        <span class="rodape-cred">Demonstração fictícia · fotos do <a href="https://pixabay.com" rel="noopener">Pixabay</a></span>
+        <a href="/">← Voltar ao portfolio</a>
+      </div>
+    </footer>
+  </div>
+</Base>
+
+<script>
+  import './_home';
+</script>

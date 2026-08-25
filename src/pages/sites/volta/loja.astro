@@ -1,0 +1,592 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { LOJA, PRODUTOS, LINHAS, NUMERACAO, TABELA_TAMANHO, DUVIDAS } from './_dados';
+import './_volta.css';
+
+/*
+  VOLTA — o catálogo.
+
+  Esta é a loja de verdade: barra lateral de filtros que fica presa ao rolar,
+  contagem de resultados, ordenação, ficha aberta em modal com carrossel e
+  numeração, sacola com frete por CEP e checkout em três passos.
+
+  A home (index.astro) é vitrine; quem vem comprar cai aqui. As duas leem o
+  mesmo `_dados.ts`, então preço e estoque nunca divergem entre as páginas.
+
+  A numeração é o ponto onde e-commerce de calçado costuma falhar, e por isso
+  ganhou tratamento próprio: cada botão mostra o número e o comprimento do pé
+  em centímetros, o esgotado continua na grade em vez de sumir, e clicar num
+  esgotado abre o aviso de reposição em vez de não fazer nada.
+*/
+
+const CORES = [...new Set(PRODUTOS.map((p) => p.cor))];
+const FAIXAS = [
+  { id: 'ate450', r: 'Até R$ 450', min: 0, max: 450 },
+  { id: '450a650', r: 'R$ 450 a R$ 650', min: 450, max: 650 },
+  { id: '650a800', r: 'R$ 650 a R$ 800', min: 650, max: 800 },
+  { id: 'acima800', r: 'Acima de R$ 800', min: 800, max: Infinity },
+];
+
+const titulo = `Todos os tênis — ${LOJA.nome}`;
+const descricao =
+  'Catálogo completo VOLTA: corrida, casual, trail e lifestyle, masculino e feminino. Filtre por numeração, linha, cor e preço.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Início', item: `${LOJA.site}/` },
+        { '@type': 'ListItem', position: 2, name: 'Todos os tênis', item: `${LOJA.site}/loja` },
+      ],
+    },
+    {
+      '@type': 'ItemList',
+      numberOfItems: PRODUTOS.length,
+      itemListElement: PRODUTOS.map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'Product',
+          name: `${LOJA.nome} ${p.nome}`,
+          description: p.resumo,
+          color: p.cor,
+          category: p.linha,
+          image: `${LOJA.site}/img/volta/${p.id}-1.jpg`,
+          brand: { '@type': 'Brand', name: LOJA.nome },
+          offers: { '@type': 'Offer', price: p.preco, priceCurrency: 'BRL', availability: 'https://schema.org/InStock' },
+        },
+      })),
+    },
+  ],
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://viacep.com.br" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script type="application/json" data-produtos set:html={JSON.stringify(PRODUTOS)}></script>
+    <script type="application/json" data-numeracao set:html={JSON.stringify(NUMERACAO)}></script>
+    <script type="application/json" data-tabela set:html={JSON.stringify(TABELA_TAMANHO)}></script>
+  </Fragment>
+
+  <div class="vt">
+    <a class="pular" href="#grade">Pular para os produtos</a>
+
+    <p class="tarja">
+      Frete grátis acima de R$ {LOJA.freteGratis} · 30 dias para trocar · até 10× sem juros
+    </p>
+
+    <header class="topo" data-topo>
+      <div class="topo-barra" data-progresso aria-hidden="true"></div>
+      <a class="marca" href="/sites/volta/">{LOJA.nome}</a>
+      <nav class="topo-nav" aria-label="Categorias">
+        <button type="button" data-atalho="genero:masculino">Masculino</button>
+        <button type="button" data-atalho="genero:feminino">Feminino</button>
+        <button type="button" data-atalho="linha:Corrida">Corrida</button>
+        <button type="button" data-atalho="linha:Trail">Trail</button>
+        <button type="button" data-atalho="linha:Lifestyle">Lifestyle</button>
+      </nav>
+      <button type="button" class="icone" data-abrir-carrinho aria-haspopup="dialog">
+        <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
+        <span class="sr">Abrir sacola</span>
+        <span class="icone-n" data-carrinho-n hidden>0</span>
+      </button>
+    </header>
+
+    <main>
+      <div class="caixa">
+        <nav class="migalha" aria-label="Você está em">
+          <a href="/sites/volta/">Início</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Todos os tênis</span>
+        </nav>
+
+        <header class="loja-cab">
+          <h1>Todos os tênis</h1>
+          <p class="lead">
+            Dez modelos, cinco masculinos e cinco femininos. Filtre pela numeração
+            que você calça: quem não tem o seu número some da lista, em vez de
+            aparecer e frustrar no fim.
+          </p>
+        </header>
+      </div>
+
+      <div class="caixa loja-grade">
+        {/* ───── barra lateral de filtros ───── */}
+        <aside class="lado" data-lado>
+          <div class="lado-cab">
+            <p class="lado-t">Filtros</p>
+            <button type="button" class="limpar" data-limpar hidden>Limpar tudo</button>
+            <button type="button" class="lado-x" data-fechar-lado aria-label="Fechar filtros">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <details class="grupo" open>
+            <summary>Gênero<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+            <div class="opcoes">
+              <label><input type="radio" name="genero" value="" checked data-f="genero" /><span>Todos</span></label>
+              <label><input type="radio" name="genero" value="masculino" data-f="genero" /><span>Masculino</span></label>
+              <label><input type="radio" name="genero" value="feminino" data-f="genero" /><span>Feminino</span></label>
+            </div>
+          </details>
+
+          <details class="grupo" open>
+            <summary>Linha<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+            <div class="opcoes">
+              {
+                LINHAS.map((l) => (
+                  <label>
+                    <input type="checkbox" value={l} data-f="linha" />
+                    <span>{l}</span>
+                    <em>{PRODUTOS.filter((p) => p.linha === l).length}</em>
+                  </label>
+                ))
+              }
+            </div>
+          </details>
+
+          <details class="grupo" open>
+            <summary>Numeração<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+            <p class="grupo-nota">Mostra só o que está disponível no seu número.</p>
+            <div class="num-grade">
+              {
+                [...new Set([...NUMERACAO.feminino, ...NUMERACAO.masculino])]
+                  .sort((a, b) => a - b)
+                  .map((n) => (
+                    <label class="num">
+                      <input type="checkbox" value={String(n)} data-f="tam" />
+                      <span>{n}</span>
+                    </label>
+                  ))
+              }
+            </div>
+          </details>
+
+          <details class="grupo" open>
+            <summary>Cor<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+            <div class="opcoes">
+              {
+                CORES.map((c) => {
+                  const hex = PRODUTOS.find((p) => p.cor === c)!.corHex;
+                  return (
+                    <label>
+                      <input type="checkbox" value={c} data-f="cor" />
+                      <i class="bolinha" style={`--cor:${hex}`} aria-hidden="true"></i>
+                      <span>{c}</span>
+                    </label>
+                  );
+                })
+              }
+            </div>
+          </details>
+
+          <details class="grupo" open>
+            <summary>Preço<i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
+            <div class="opcoes">
+              {
+                FAIXAS.map((f) => (
+                  <label>
+                    <input type="checkbox" value={f.id} data-f="faixa" />
+                    <span>{f.r}</span>
+                  </label>
+                ))
+              }
+            </div>
+          </details>
+        </aside>
+
+        {/* ───── resultados ───── */}
+        <div class="resultados">
+          <div class="barra">
+            <button type="button" class="btn btn-vaz abrir-lado" data-abrir-lado>
+              <i class="fa-solid fa-sliders" aria-hidden="true"></i> Filtros
+              <span class="barra-n" data-n-filtros hidden>0</span>
+            </button>
+            <p class="barra-conta" data-conta aria-live="polite"></p>
+            <label class="ordenar">
+              <span class="sr">Ordenar por</span>
+              <select data-ordem>
+                <option value="destaque">Ordenar: destaque</option>
+                <option value="menor">Menor preço</option>
+                <option value="maior">Maior preço</option>
+                <option value="nome">Nome A–Z</option>
+              </select>
+            </label>
+          </div>
+
+          <ul class="fichas" data-fichas hidden></ul>
+
+          <ul class="grade" id="grade" data-grade>
+            {
+              PRODUTOS.map((p) => (
+                <li
+                  class="prod"
+                  data-prod={p.id}
+                  data-genero={p.genero}
+                  data-linha={p.linha}
+                  data-cor={p.cor}
+                  data-preco={p.preco}
+                  data-nome={p.nome}>
+                  <button type="button" class="prod-btn" data-abrir={p.id}>
+                    <span class="prod-foto">
+                      <picture>
+                        <source srcset={`/img/volta/${p.id}-1.webp`} type="image/webp" />
+                        <img
+                          src={`/img/volta/${p.id}-1.jpg`}
+                          alt={`${LOJA.nome} ${p.nome} na cor ${p.cor.toLowerCase()}, vista lateral.`}
+                          width="900"
+                          height="900"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </picture>
+                      <picture class="prod-hover">
+                        <source srcset={`/img/volta/${p.id}-2.webp`} type="image/webp" />
+                        <img src={`/img/volta/${p.id}-2.jpg`} alt="" width="900" height="900" loading="lazy" decoding="async" />
+                      </picture>
+                      {p.novo && <span class="prod-selo">Lançamento</span>}
+                      {p.de && <span class="prod-selo prod-selo-off">-{Math.round((1 - p.preco / p.de) * 100)}%</span>}
+                      <span class="prod-ver">Ver detalhes</span>
+                    </span>
+                    <span class="prod-corpo">
+                      <span class="prod-linha">{p.linha} · {p.genero === 'masculino' ? 'Masculino' : 'Feminino'}</span>
+                      <span class="prod-nome">{p.nome}</span>
+                      <span class="prod-cor">
+                        <i style={`--cor:${p.corHex}`} aria-hidden="true"></i>{p.cor}
+                      </span>
+                      <span class="prod-nums">
+                        {
+                          (NUMERACAO[p.genero] ?? [])
+                            .filter((n) => !p.esgotados.includes(n))
+                            .slice(0, 8)
+                            .join(' · ')
+                        }
+                      </span>
+                      <span class="prod-preco">
+                        {p.de && <s>R$ {p.de}</s>}
+                        <b>R$ {p.preco}</b>
+                      </span>
+                      <span class="prod-parcela">10× de R$ {(p.preco / 10).toFixed(2).replace('.', ',')} sem juros</span>
+                    </span>
+                  </button>
+                </li>
+              ))
+            }
+          </ul>
+
+          <p class="vazio" data-vazio hidden>
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            Nenhum modelo com esses filtros.
+            <button type="button" data-limpar>Limpar tudo</button>
+          </p>
+
+          <p class="rodape-grade">
+            Mostrando <b data-mostrando>—</b> de {PRODUTOS.length} modelos · catálogo
+            completo, sem paginação
+          </p>
+        </div>
+      </div>
+
+      {/* ───── ajuda rápida ───── */}
+      <section class="secao ajuda">
+        <div class="caixa dupla-fq">
+          <header class="cab">
+            <p class="olho">Antes de comprar</p>
+            <h2>As três dúvidas de sempre</h2>
+            <p class="lead">
+              Numeração, troca e prazo. O resto está na home, e o WhatsApp responde
+              o que não estiver em lugar nenhum.
+            </p>
+            <a class="btn btn-vaz" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
+              <i class="fa-brands fa-whatsapp" aria-hidden="true" /> Falar com a loja
+            </a>
+          </header>
+          <div class="fq">
+            {
+              DUVIDAS.slice(0, 3).map((d) => (
+                <details name="duvidas-loja">
+                  <summary><span>{d.p}</span><i class="fa-solid fa-plus" aria-hidden="true" /></summary>
+                  <p>{d.r}</p>
+                </details>
+              ))
+            }
+            <p class="fq-mais"><a href="/sites/volta/#duvidas">Ver todas as dúvidas →</a></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    {/* ═══════════════════ MODAL DO PRODUTO ═══════════════════ */}
+    <dialog class="modal" data-modal aria-label="Detalhes do produto">
+      <button type="button" class="modal-x" data-fechar-modal aria-label="Fechar">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+
+      <div class="modal-grade">
+        <div class="carrossel">
+          <div class="carr-palco">
+            <div class="carr-trilho" data-carr-trilho></div>
+            <button type="button" class="carr-seta carr-ant" data-carr-ant aria-label="Foto anterior">
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="carr-seta carr-prox" data-carr-prox aria-label="Próxima foto">
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="carr-miniaturas" data-carr-mini aria-label="Fotos do produto"></div>
+        </div>
+
+        <div class="modal-info">
+          <p class="modal-linha" data-m-linha>—</p>
+          <h2 data-m-nome>—</h2>
+          <p class="modal-resumo" data-m-resumo>—</p>
+
+          <div class="modal-preco">
+            <s data-m-de hidden>—</s>
+            <b data-m-preco>—</b>
+            <span data-m-parcela>—</span>
+          </div>
+
+          <p class="modal-cor">
+            <span class="bola" data-m-bola aria-hidden="true"></span>
+            <span data-m-cor>—</span>
+          </p>
+
+          {/* ───── numeração ───── */}
+          <div class="tam-bloco">
+            <div class="tam-cab">
+              <p class="modal-t">Numeração <b class="obrig" aria-hidden="true">*</b></p>
+              <button type="button" class="tam-guia" data-abrir-guia>
+                <i class="fa-solid fa-ruler" aria-hidden="true"></i> Guia de tamanhos
+              </button>
+            </div>
+            <p class="tam-calce" data-m-calce>—</p>
+            <div class="tamanhos" data-m-tamanhos role="group" aria-label="Escolha a numeração"></div>
+            <p class="tam-legenda">
+              <span><i class="leg leg-ok" aria-hidden="true"></i> disponível</span>
+              <span><i class="leg leg-fora" aria-hidden="true"></i> esgotado</span>
+              <span class="tam-cm">o número menor é o comprimento do pé</span>
+            </p>
+            <p class="tam-aviso" data-tam-aviso hidden>
+              <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+              Escolha uma numeração para continuar.
+            </p>
+            <div class="avise" data-avise hidden>
+              <p><b data-avise-num>—</b> está esgotado. Avisamos assim que voltar.</p>
+              <div class="avise-linha">
+                <input type="email" placeholder="seu@email.com" data-avise-email aria-label="E-mail para aviso de reposição" />
+                <button type="button" class="btn btn-vaz" data-avise-ok>Avisar</button>
+              </div>
+              <p class="avise-feito" data-avise-feito hidden>Pronto — você é o primeiro a saber.</p>
+            </div>
+          </div>
+
+          <div class="modal-acoes">
+            <button class="btn btn-p btn-g btn-cheio" type="button" data-add>
+              <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i> Adicionar à sacola
+            </button>
+          </div>
+
+          <p class="modal-frete">
+            <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>
+            Frete grátis acima de R$ {LOJA.freteGratis} · 30 dias para trocar
+          </p>
+
+          <div class="modal-abas">
+            <details open>
+              <summary>Descrição<i class="fa-solid fa-plus" aria-hidden="true"></i></summary>
+              <p data-m-descricao>—</p>
+              <ul class="modal-destaques" data-m-destaques></ul>
+            </details>
+            <details>
+              <summary>Ficha técnica<i class="fa-solid fa-plus" aria-hidden="true"></i></summary>
+              <dl class="modal-ficha" data-m-ficha></dl>
+            </details>
+            <details>
+              <summary>Entrega e troca<i class="fa-solid fa-plus" aria-hidden="true"></i></summary>
+              <p>
+                Capitais do Sudeste em 2 a 4 dias úteis, demais capitais em 4 a 7,
+                interior em 5 a 10. Trinta dias para trocar, com a primeira etiqueta
+                de postagem por nossa conta. Garantia de 1 ano contra defeito de
+                fabricação.
+              </p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    {/* ═══════════════════ GUIA DE TAMANHOS ═══════════════════ */}
+    <dialog class="modal modal-guia" data-guia aria-label="Guia de tamanhos">
+      <div class="guia-cab">
+        <p class="modal-t">Guia de tamanhos</p>
+        <button type="button" class="modal-x modal-x-fixo" data-fechar-guia aria-label="Fechar">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="guia-corpo">
+        <ol class="guia-passos">
+          <li>Fique de pé sobre uma folha, com o peso nos dois pés.</li>
+          <li>Marque o calcanhar e a ponta do dedo mais longo.</li>
+          <li>Meça a distância em centímetros e compare na coluna <b>CM</b>.</li>
+        </ol>
+        <p class="guia-nota">
+          <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
+          Meça à noite: o pé incha ao longo do dia e é nesse tamanho que ele passa
+          a maior parte do tempo dentro do tênis. Caiu entre dois números? Suba um.
+        </p>
+        <div class="guia-tabela">
+          <table>
+            <thead><tr><th>BR</th><th>US</th><th>EU</th><th>Pé (cm)</th></tr></thead>
+            <tbody>
+              {
+                TABELA_TAMANHO.map((t) => (
+                  <tr data-linha-br={t.br}>
+                    <td><b>{t.br}</b></td>
+                    <td>{t.us}</td>
+                    <td>{t.eu}</td>
+                    <td>{t.cm.toFixed(1).replace('.', ',')}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </dialog>
+
+    {/* ═══════════════════ SACOLA ═══════════════════ */}
+    <dialog class="gaveta" data-carrinho aria-label="Sacola de compras">
+      <div class="gaveta-cab">
+        <p class="modal-t">Sua sacola</p>
+        <button type="button" class="modal-x modal-x-fixo" data-fechar aria-label="Fechar sacola">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="gaveta-corpo" data-passo="itens">
+        <ul class="cesta" data-cesta></ul>
+        <p class="cesta-vazia" data-vazia>
+          <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
+          Sua sacola está vazia.
+        </p>
+        <p class="falta-frete" data-falta hidden></p>
+
+        <div class="frete" data-bloco-frete hidden>
+          <p class="modal-t">Calcular frete e prazo</p>
+          <div class="frete-linha">
+            <input type="text" inputmode="numeric" placeholder="00000-000" data-cep-frete aria-label="CEP para cálculo de frete" />
+            <button type="button" class="btn btn-vaz" data-calc-frete>Calcular</button>
+          </div>
+          <p class="frete-saida" data-frete-saida hidden></p>
+        </div>
+
+        <dl class="soma" data-soma hidden>
+          <div><dt>Subtotal</dt><dd data-subtotal>R$ 0</dd></div>
+          <div><dt>Frete</dt><dd data-frete>—</dd></div>
+          <div class="soma-total"><dt>Total</dt><dd data-total>R$ 0</dd></div>
+        </dl>
+        <button class="btn btn-p btn-cheio btn-g" type="button" data-ir-entrega disabled>Fechar pedido</button>
+      </div>
+
+      <div class="gaveta-corpo" data-passo="entrega" hidden>
+        <ol class="passos" aria-hidden="true"><li class="feito">Sacola</li><li class="agora">Entrega</li><li>Pagamento</li></ol>
+        <form class="form" data-form-entrega>
+          <div class="form-2">
+            <label>Nome completo<input name="nome" type="text" required autocomplete="name" placeholder="Como está no documento" /></label>
+            <label>E-mail<input name="email" type="email" required autocomplete="email" placeholder="voce@email.com" /></label>
+          </div>
+          <label>
+            CEP
+            <span class="campo-cep">
+              <input name="cep" type="text" required inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" data-cep />
+              <span class="cep-estado" data-cep-estado></span>
+            </span>
+          </label>
+          <div class="form-2">
+            <label>Rua<input name="rua" type="text" required autocomplete="address-line1" data-c-rua /></label>
+            <label>Número<input name="numero" type="text" required placeholder="123" /></label>
+          </div>
+          <div class="form-2">
+            <label>Complemento <small>opcional</small><input name="compl" type="text" placeholder="apto, bloco, referência" /></label>
+            <label>Bairro<input name="bairro" type="text" required data-c-bairro /></label>
+          </div>
+          <div class="form-2">
+            <label>Cidade<input name="cidade" type="text" required autocomplete="address-level2" data-c-cidade /></label>
+            <label>UF<input name="uf" type="text" required maxlength="2" autocomplete="address-level1" data-c-uf /></label>
+          </div>
+          <button class="btn btn-p btn-cheio btn-g" type="submit">Ir para o pagamento</button>
+          <button class="btn btn-vaz btn-cheio" type="button" data-voltar-itens>Voltar à sacola</button>
+        </form>
+      </div>
+
+      <div class="gaveta-corpo" data-passo="pagamento" hidden>
+        <ol class="passos" aria-hidden="true"><li class="feito">Sacola</li><li class="feito">Entrega</li><li class="agora">Pagamento</li></ol>
+        <p class="entrega-resumo" data-entrega-resumo></p>
+        <div class="pag-opcoes" role="group" aria-label="Forma de pagamento">
+          <button type="button" class="ativo" data-pag="pix">
+            <i class="fa-solid fa-bolt" aria-hidden="true"></i> Pix<small>10% de desconto</small>
+          </button>
+          <button type="button" data-pag="cartao">
+            <i class="fa-regular fa-credit-card" aria-hidden="true"></i> Cartão<small>Até 10× sem juros</small>
+          </button>
+        </div>
+        <dl class="soma">
+          <div><dt>Subtotal</dt><dd data-subtotal>R$ 0</dd></div>
+          <div><dt>Frete</dt><dd data-frete>—</dd></div>
+          <div data-linha-desconto hidden><dt>Desconto Pix (10%)</dt><dd data-desconto>—</dd></div>
+          <div class="soma-total"><dt>Total</dt><dd data-total-pag>R$ 0</dd></div>
+        </dl>
+        <button class="btn btn-p btn-cheio btn-g" type="button" data-pagar>
+          <i class="fa-solid fa-lock" aria-hidden="true"></i> Finalizar compra
+        </button>
+        <button class="btn btn-vaz btn-cheio" type="button" data-voltar-entrega>Voltar</button>
+        <p class="form-nota nota-demo">Demonstração: nenhum pagamento é processado e nenhum dado sai do seu navegador.</p>
+      </div>
+
+      <div class="gaveta-corpo" data-passo="pronto" hidden>
+        <div class="pronto">
+          <span class="pronto-ok" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+          <p class="pronto-t">Pedido confirmado</p>
+          <p class="pronto-d">Número <b data-pedido-n>—</b></p>
+        </div>
+        <dl class="pronto-dados">
+          <div><dt>Entrega em</dt><dd data-pronto-endereco>—</dd></div>
+          <div><dt>Prazo estimado</dt><dd data-pronto-prazo>—</dd></div>
+          <div><dt>Pagamento</dt><dd data-pronto-pag>—</dd></div>
+          <div><dt>Total</dt><dd data-pronto-total>—</dd></div>
+        </dl>
+        <ul class="pronto-itens" data-pronto-itens></ul>
+        <p class="form-nota nota-demo">Nenhuma compra foi feita de verdade — isto é uma demonstração de fluxo.</p>
+        <button class="btn btn-vaz btn-cheio" type="button" data-fechar>Continuar comprando</button>
+      </div>
+    </dialog>
+
+    <footer class="rodape rodape-curto">
+      <div class="caixa rodape-fim">
+        <span>© 2026 {LOJA.nome} Calçados · CNPJ {LOJA.cnpj}</span>
+        <span><a href="/sites/volta/">Voltar à home da loja</a></span>
+        <a href="/">← Voltar ao portfolio</a>
+      </div>
+    </footer>
+  </div>
+</Base>
+
+<script>
+  import './_loja';
+</script>

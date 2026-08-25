@@ -1,0 +1,2434 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  FORNO ANTICO — cantina e pastificio no Bixiga.
+
+  Sem 3D. Nem WebGL, nem rotateY, nem perspective: o site é plano de
+  propósito. O que dá profundidade aqui é cor, textura e forma — seções que
+  alternam entre creme, verde-oliva, terracota e carvão, arcos de forno
+  recortando as fotos, trama de linho por baixo de tudo.
+
+  O movimento é todo do Motion One, e todo de sobra: opacidade, deslocamento
+  de uns poucos pixels, escala mínima. Nada que roube a atenção do prato.
+  Quem pede menos movimento não recebe nenhum.
+
+  A carta é o assunto: filtro por categoria, foto grande em arco, e cada
+  prato entra na sacola. O pedido fecha no WhatsApp, que é como restaurante
+  de bairro fecha pedido — a conta é do forno-pedido.ts, que tem teste.
+
+  As fotos dos pratos são do Wikimedia Commons, licença livre; o crédito de
+  cada uma está no rodapé, que é onde ele obriga a estar.
+*/
+
+const CASA = {
+  nome: 'Forno Antico',
+  sub: 'Cantina & Pastificio',
+  fone: '+55 11 3105-4400',
+  foneLink: '+551131054400',
+  zap: '5511971054400',
+  zapFmt: '(11) 97105-4400',
+  email: 'reservas@fornoantico.com.br',
+  rua: 'Rua Treze de Maio, 372',
+  bairro: 'Bixiga',
+  cidade: 'São Paulo',
+  uf: 'SP',
+  cep: '01327-000',
+  lat: -23.5589,
+  lon: -46.6437,
+  site: 'https://fornoantico.com.br',
+};
+
+const mapaQuery = encodeURIComponent(
+  `${CASA.rua}, ${CASA.bairro}, ${CASA.cidade} - ${CASA.uf}`,
+);
+
+/* regras do delivery — as mesmas que o forno-pedido.ts usa na conta */
+const ENTREGA = {
+  taxa: 9,
+  minimo: 60,
+  raio: '4 km',
+  tempo: '35 a 50 min',
+  bairros: 'Bixiga, Bela Vista, Consolação, Liberdade, Paraíso e Jardins',
+};
+
+const TITULO = ['Massa', 'fresca', 'todo', 'dia.'];
+
+const numeros = [
+  { v: 1962, casas: 0, ano: true, u: '', l: 'o ano em que a nonna Vera abriu a casa' },
+  { v: 1.2, casas: 1, ano: false, u: 'mm', l: 'a espessura da folha, conferida no calibrador' },
+  { v: 4, casas: 0, ano: false, u: 'h', l: 'o ragù em fogo que mal borbulha' },
+  { v: 12, casas: 0, ano: false, u: 'massas', l: 'na carta, e nenhuma delas vem de pacote' },
+];
+
+/*
+  A CARTA. Fonte única: alimenta a grade, o JSON-LD e o catálogo que o
+  carrinho lê no navegador. Preço é número — quem formata é o Intl.
+*/
+const CARDAPIO = [
+  {
+    id: 'fresche',
+    chip: 'Massa fresca',
+    olho: 'Le paste fresche',
+    titulo: 'A folha aberta hoje de manhã',
+    d: 'Sêmola de grão duro e ovo caipira, sovados doze minutos e abertos até 1,2 mm. Contra a luz dá para ler o jornal através dela.',
+    itens: [
+      {
+        slug: 'tagliatelle-ragu',
+        nome: 'Tagliatelle al Ragù',
+        ing: 'Ragù de músculo e panceta, sofrito de cenoura e aipo, vinho tinto, Parmigiano Reggiano 24 meses',
+        preco: 78,
+        alt: 'Prato fundo de tagliatelle cobertos de ragù de carne e parmesão ralado.',
+      },
+      {
+        slug: 'carbonara',
+        nome: 'Spaghetti alla Carbonara',
+        ing: 'Guanciale, gema de ovo caipira, pecorino romano, pimenta-do-reino moída na hora',
+        preco: 74,
+        alt: 'Spaghetti alla carbonara enrolados num prato raso, com pedaços de guanciale e pimenta moída por cima.',
+      },
+      {
+        slug: 'cacio-e-pepe',
+        nome: 'Tonnarelli Cacio e Pepe',
+        ing: 'Pecorino romano DOP, pimenta-do-reino tostada na frigideira, água da massa. Sem creme.',
+        preco: 66,
+        alt: 'Ninho de massa longa em prato branco, coberto por creme de queijo pecorino e pimenta.',
+      },
+      {
+        slug: 'pappardelle-funghi',
+        nome: 'Pappardelle ai Funghi',
+        ing: 'Funghi porcini, shimeji, manteiga de alho, tomilho fresco',
+        preco: 82,
+        alt: 'Pappardelle largos servidos com fatias douradas de cogumelo por cima.',
+      },
+    ],
+  },
+  {
+    id: 'ripieni',
+    chip: 'Recheados & forno',
+    olho: 'I ripieni e i forni',
+    titulo: 'O que vai fechado na mão e assado no forno',
+    d: 'Recheio fechado à mão, um a um, na bancada da frente. O forno a lenha é de 1962 e nunca apagou por mais de um dia.',
+    itens: [
+      {
+        slug: 'ravioli-ricotta',
+        nome: 'Ravioli di Ricotta e Spinaci',
+        ing: 'Ricota fresca, espinafre, pomodoro San Marzano, manjericão',
+        preco: 72,
+        alt: 'Ravioli quadrados de borda ondulada cobertos por molho de tomate e manjericão.',
+      },
+      {
+        slug: 'lasagna',
+        nome: 'Lasagna alla Bolognese',
+        ing: 'Sete camadas de folha fina, ragù de quatro horas, besciamella, Parmigiano gratinado',
+        preco: 76,
+        alt: 'Fatia de lasanha à bolonhesa em pé no prato, com as camadas de massa e ragù à mostra.',
+      },
+      {
+        slug: 'tortellini-brodo',
+        nome: 'Tortellini in Brodo',
+        ing: 'Recheio de mortadela e prosciutto, caldo de galinha caipira de 6 horas',
+        preco: 69,
+        alt: 'Prato fundo com tortellini pequenos boiando em caldo dourado.',
+      },
+      {
+        slug: 'gnocchi-sorrentina',
+        nome: 'Gnocchi alla Sorrentina',
+        ing: 'Nhoque de batata asterix, pomodoro, mozzarella de búfala, manjericão',
+        preco: 68,
+        alt: 'Travessa de nhoque gratinado com molho de tomate, mussarela derretida e folhas de manjericão.',
+      },
+    ],
+  },
+  {
+    id: 'sud',
+    chip: 'Clássicos do sul',
+    olho: 'I classici del sud',
+    titulo: 'Poucos ingredientes e nenhuma rede de segurança',
+    d: 'Massa seca de bronze, cinco ingredientes no máximo e uma frigideira. É onde a cozinha aparece inteira ou não aparece.',
+    itens: [
+      {
+        slug: 'vongole',
+        nome: 'Spaghetti alle Vongole',
+        ing: 'Vongole frescas, alho, salsinha, vinho branco seco, azeite extravirgem',
+        preco: 89,
+        alt: 'Spaghetti alle vongole com conchas abertas e salsinha picada, num prato branco.',
+      },
+      {
+        slug: 'arrabbiata',
+        nome: "Penne all'Arrabbiata",
+        ing: 'Pomodoro, alho, peperoncino calabrês, salsinha',
+        preco: 58,
+        alt: 'Penne em molho de tomate vermelho-vivo numa panela, com folhas de manjericão.',
+      },
+      {
+        slug: 'pesto',
+        nome: 'Trofie al Pesto Genovese',
+        ing: 'Manjericão genovês no pilão, pinoli, pecorino, batata e vagem cozidas junto',
+        preco: 64,
+        alt: 'Trofie curtas cobertas de pesto verde-vivo numa tigela clara.',
+      },
+      {
+        slug: 'norma',
+        nome: 'Rigatoni alla Norma',
+        ing: 'Berinjela frita, pomodoro, ricotta salata, manjericão',
+        preco: 62,
+        alt: 'Rigatoni com molho de tomate e fatias de berinjela frita, servidos em prato azul-claro.',
+      },
+    ],
+  },
+];
+
+/* Sem foto de propósito: cardápio de papel não tem foto de água com gás. */
+const EXTRAS = [
+  {
+    t: 'Antipasti',
+    itens: [
+      { slug: 'bruschetta', nome: 'Bruschetta al Pomodoro', ing: 'Pão de fermentação natural, tomate, alho, manjericão', preco: 32 },
+      { slug: 'salumi', nome: 'Tagliere di Salumi', ing: 'Prosciutto, coppa, salame de Felino, pecorino, mel de laranjeira', preco: 68 },
+      { slug: 'burrata', nome: 'Burrata e Pomodorini', ing: 'Burrata do dia, tomatinhos confitados, azeite novo', preco: 54 },
+      { slug: 'caponata', nome: 'Caponata Siciliana', ing: 'Berinjela, aipo, alcaparra, azeitona, agrodolce', preco: 36 },
+    ],
+  },
+  {
+    t: 'Dolci',
+    itens: [
+      { slug: 'tiramisu', nome: 'Tiramisù della Nonna', ing: 'Mascarpone, savoiardi, café coado na hora, cacau', preco: 34 },
+      { slug: 'panna-cotta', nome: 'Panna Cotta ai Frutti', ing: 'Baunilha em fava, calda de frutas vermelhas', preco: 30 },
+      { slug: 'cannoli', nome: 'Cannoli Siciliani', ing: 'Ricota de ovelha, gotas de chocolate, pistache', preco: 28 },
+    ],
+  },
+  {
+    t: 'Da adega e do balcão',
+    itens: [
+      { slug: 'chianti', nome: 'Chianti Classico', ing: 'Taça de 150 ml · garrafa R$ 168', preco: 34 },
+      { slug: 'limonata', nome: 'Limonata Siciliana', ing: 'Limão siciliano, água com gás, hortelã', preco: 16 },
+      { slug: 'agua', nome: 'Água mineral', ing: 'Com ou sem gás, 500 ml', preco: 8 },
+      { slug: 'espresso', nome: 'Espresso', ing: 'Blend italiano, torra escura', preco: 9 },
+    ],
+  },
+];
+
+/* catálogo achatado: é o que o carrinho lê para saber o preço de um slug */
+const CARTA_PLANA = [
+  ...CARDAPIO.flatMap((c) => c.itens),
+  ...EXTRAS.flatMap((e) => e.itens),
+].map(({ slug, nome, preco }) => ({ slug, nome, preco }));
+
+const DESTAQUE = CARDAPIO[0].itens[0];
+
+const molhos = [
+  {
+    t: 'Ragù alla Bolognese',
+    d: 'Músculo e panceta moídos na hora, sofrito de cenoura, aipo e cebola, vinho tinto e um dedo de leite no fim.',
+    n: '4 h de fogo',
+  },
+  {
+    t: 'Pomodoro San Marzano',
+    d: 'Tomate pelado San Marzano, um dente de alho inteiro que sai antes de servir, azeite e manjericão fora do fogo.',
+    n: '40 min',
+  },
+  {
+    t: 'Pesto Genovese',
+    d: 'Manjericão genovês, pinoli, alho e os dois queijos no pilão de mármore. Lâmina esquenta a folha e escurece o pesto.',
+    n: 'no pilão',
+  },
+  {
+    t: 'Cacio e Pepe',
+    d: 'Pecorino romano DOP e pimenta tostada, emulsionados só com a água da massa. Sem creme, sem manteiga.',
+    n: '2 ingredientes',
+  },
+  {
+    t: 'Burro e Salvia',
+    d: 'Manteiga levada até noisette com folhas de sálvia inteiras. São trinta segundos entre o ponto certo e a queimada.',
+    n: '30 s de ponto',
+  },
+];
+
+const aconchego = [
+  {
+    t: 'Quarenta e dois lugares',
+    d: 'Mesa de madeira sem toalha de papel, cadeira de palhinha e uma lâmpada quente por mesa. Ninguém é apressado a levantar.',
+  },
+  {
+    t: 'O balcão da máquina',
+    d: 'Oito banquetas de frente para a laminadora. Dá para jantar vendo a folha do dia seguinte ser aberta.',
+  },
+  {
+    t: 'O forno de 1962',
+    d: 'Tijolo refratário na parede do fundo, aceso desde as cinco da manhã. É ele que aquece o salão inteiro no inverno.',
+  },
+];
+
+const horarios = [
+  { d: 'Terça a quinta', h: '18h30 – 23h' },
+  { d: 'Sexta e sábado', h: '12h – 15h · 19h – 00h' },
+  { d: 'Domingo', h: '12h – 17h' },
+  { d: 'Segunda', h: 'Fechado' },
+];
+
+const HORAS = [
+  '12:00', '12:30', '13:00', '13:30', '14:00',
+  '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
+];
+
+const PAGAMENTOS = ['Pix', 'Cartão na entrega', 'Dinheiro', 'Já pago por link'];
+
+/* crédito das fotos: exigência das licenças CC BY e CC BY-SA */
+const fotos = [
+  { p: 'Tagliatelle al Ragù', a: 'Jessica Spengler', l: 'CC BY 2.0' },
+  { p: 'Spaghetti alla Carbonara', a: 'Tamorlan', l: 'CC BY-SA 3.0' },
+  { p: 'Tonnarelli Cacio e Pepe', a: 'Der Zahir', l: 'CC BY-SA 4.0' },
+  { p: 'Pappardelle ai Funghi', a: 'Anna Massini', l: 'CC BY 4.0' },
+  { p: 'Ravioli di Ricotta', a: 'Marica Massaro', l: 'CC BY-SA 4.0' },
+  { p: 'Lasagna alla Bolognese', a: 'Marica Massaro', l: 'CC BY-SA 4.0' },
+  { p: 'Tortellini in Brodo', a: 'Ramagliolo9', l: 'CC BY-SA 4.0' },
+  { p: 'Gnocchi alla Sorrentina', a: 'Davide Zambelli', l: 'CC BY 3.0' },
+  { p: 'Spaghetti alle Vongole', a: 'Wikimedia Commons', l: 'CC BY 2.0' },
+  { p: "Penne all'Arrabbiata", a: 'Petar Milošević', l: 'CC BY-SA 4.0' },
+  { p: 'Trofie al Pesto', a: 'Superchilum', l: 'CC BY-SA 4.0' },
+  { p: 'Rigatoni alla Norma', a: 'Paoletta S.', l: 'CC BY 2.0' },
+];
+
+const titulo = 'Forno Antico — Massa fresca no Bixiga, com pedido online e entrega';
+const descricao =
+  'Cantina e pastificio no Bixiga desde 1962. Massa aberta todo dia às seis, ragù de quatro horas e doze massas na carta. Peça online para entrega ou retirada, ou reserve sua mesa.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Restaurant',
+      '@id': `${CASA.site}/#restaurante`,
+      name: `${CASA.nome} ${CASA.sub}`,
+      description: descricao,
+      url: CASA.site,
+      telephone: CASA.fone,
+      email: CASA.email,
+      servesCuisine: ['Italiana', 'Massas'],
+      priceRange: 'R$$',
+      foundingDate: '1962',
+      acceptsReservations: 'True',
+      hasDeliveryMethod: ['http://purl.org/goodrelations/v1#DeliveryModeOwnFleet', 'http://purl.org/goodrelations/v1#DeliveryModePickUp'],
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: CASA.rua,
+        addressLocality: CASA.cidade,
+        addressRegion: CASA.uf,
+        postalCode: CASA.cep,
+        addressCountry: 'BR',
+      },
+      geo: { '@type': 'GeoCoordinates', latitude: CASA.lat, longitude: CASA.lon },
+      openingHoursSpecification: [
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday'], opens: '18:30', closes: '23:00' },
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday', 'Saturday'], opens: '12:00', closes: '15:00' },
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Friday', 'Saturday'], opens: '19:00', closes: '23:59' },
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Sunday', opens: '12:00', closes: '17:00' },
+      ],
+      potentialAction: {
+        '@type': 'OrderAction',
+        target: `${CASA.site}/#pedido`,
+        deliveryMethod: 'http://purl.org/goodrelations/v1#DeliveryModeOwnFleet',
+      },
+      hasMenu: {
+        '@type': 'Menu',
+        name: 'A carta',
+        hasMenuSection: [
+          ...CARDAPIO.map((c) => ({
+            '@type': 'MenuSection',
+            name: c.olho,
+            hasMenuItem: c.itens.map((i) => ({
+              '@type': 'MenuItem',
+              name: i.nome,
+              description: i.ing,
+              offers: { '@type': 'Offer', price: i.preco, priceCurrency: 'BRL' },
+            })),
+          })),
+          ...EXTRAS.map((e) => ({
+            '@type': 'MenuSection',
+            name: e.t,
+            hasMenuItem: e.itens.map((i) => ({
+              '@type': 'MenuItem',
+              name: i.nome,
+              description: i.ing,
+              offers: { '@type': 'Offer', price: i.preco, priceCurrency: 'BRL' },
+            })),
+          })),
+        ],
+      },
+    },
+  ],
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <link rel="canonical" href={CASA.site} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="geo.region" content="BR-SP" />
+    <meta name="geo.placename" content="São Paulo" />
+    <meta name="geo.position" content={`${CASA.lat};${CASA.lon}`} />
+    <meta property="og:type" content="restaurant" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content={CASA.nome} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:url" content={CASA.site} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#221b16" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..600&family=Karla:wght@400;500;600;700&display=swap"
+    />
+    <link rel="preload" as="image" href={`/img/pratos/${DESTAQUE.slug}.webp`} type="image/webp" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    {/*
+      Bloqueante e minúsculo: esconde o que o Motion vai revelar, antes da
+      primeira pintura. Sem ele o conteúdo pisca; sem JS ele nunca roda e
+      tudo nasce visível, que é o certo.
+    */}
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="fo">
+    <script type="application/json" data-carta set:html={JSON.stringify(CARTA_PLANA)}></script>
+
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="topo">
+      <div class="topo-barra" data-progresso aria-hidden="true"></div>
+      <a class="marca" href="/">
+        Forno Antico
+        <span>{CASA.sub} · {CASA.bairro}</span>
+      </a>
+      <nav class="topo-nav" aria-label="Seções">
+        <a href="#carta">A carta</a>
+        <a href="#pedido">Pedir online</a>
+        <a href="#molhos">Os molhos</a>
+        <a href="#casa">A casa</a>
+      </nav>
+      <div class="topo-acoes">
+        <a class="btn btn-fant btn-min topo-reserva" href="#reserva">Reservar</a>
+        <button class="btn btn-p btn-min sacola-btn" type="button" data-abrir-sacola>
+          <i class="fa-solid fa-shopping-cart" aria-hidden="true"></i>
+          <span>Sacola</span>
+          <b data-conta hidden>0</b>
+        </button>
+      </div>
+    </header>
+
+    <main id="conteudo">
+      {/* ================= HERÓI ================= */}
+      <section class="heroi">
+        <div class="heroi-brasa" aria-hidden="true"></div>
+        <div class="heroi-grade">
+          <div class="heroi-txt">
+            <h1 class="titulo">
+              {TITULO.map((p) => <span class="palavra" data-palavra>{p}</span>)}
+              <em data-palavra>Molho de quatro horas.</em>
+            </h1>
+            <p class="lead lead-claro" data-anima>
+              A folha é aberta às seis da manhã e o ragù entra no fogo às sete.
+              O que sobra do dia vira almoço da equipe — nunca o jantar de amanhã.
+            </p>
+            <div class="heroi-acoes" data-anima>
+              <a class="btn btn-p btn-g" href="#carta">Ver a carta</a>
+              <a class="btn btn-claro btn-g" href="#pedido">Pedir para entrega</a>
+            </div>
+            <ul class="heroi-fatos" data-anima>
+              <li><i class="fa-solid fa-motorcycle" aria-hidden="true"></i> Entrega em {ENTREGA.tempo}</li>
+              <li><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i> Massa aberta todo dia</li>
+              <li><i class="fa-solid fa-fire" aria-hidden="true"></i> Forno a lenha de 1962</li>
+            </ul>
+          </div>
+
+          <figure class="heroi-foto" data-anima>
+            <div class="arco" data-parallax>
+              <picture>
+                <source srcset={`/img/pratos/${DESTAQUE.slug}.webp`} type="image/webp" />
+                <img
+                  src={`/img/pratos/${DESTAQUE.slug}.jpg`}
+                  alt={DESTAQUE.alt}
+                  width="800"
+                  height="600"
+                  fetchpriority="high"
+                  decoding="async"
+                />
+              </picture>
+            </div>
+            <p class="selo" aria-hidden="true"><span>dal</span><b>1962</b><span>Bixiga</span></p>
+            <figcaption>{DESTAQUE.nome} · {DESTAQUE.ing.split(',')[0]}</figcaption>
+          </figure>
+        </div>
+
+        <p class="heroi-rola" aria-hidden="true">role</p>
+      </section>
+
+      {/* ================= NÚMEROS ================= */}
+      <section class="faixa" aria-label="A casa em números">
+        <dl class="nums">
+          {
+            numeros.map((n) => (
+              <div class="num" data-anima>
+                <dt>
+                  <span
+                    data-conta-ate={n.v}
+                    data-casas={n.casas}
+                    data-ano={n.ano ? '1' : null}
+                  >
+                    {n.ano
+                      ? n.v
+                      : n.v.toLocaleString('pt-BR', {
+                          minimumFractionDigits: n.casas,
+                          maximumFractionDigits: n.casas,
+                        })}
+                  </span>
+                  {n.u && <i>{n.u}</i>}
+                </dt>
+                <dd>{n.l}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+
+      {/* ================= A CARTA — o assunto da página ================= */}
+      <section class="secao carta" id="carta">
+        <header class="cab cab-centro" data-anima>
+          <h2>Doze massas, e todas passam pela mesma folha</h2>
+          <p class="lead">
+            A carta muda quando a feira muda. Massa fresca acaba: se der vontade
+            de uma em especial, avise no pedido que a cozinha separa.
+          </p>
+        </header>
+
+        {/* prato da casa */}
+        <article class="destaque" data-anima>
+          <div class="destaque-foto">
+            <div class="arco arco-largo">
+              <picture>
+                <source srcset={`/img/pratos/${DESTAQUE.slug}.webp`} type="image/webp" />
+                <img src={`/img/pratos/${DESTAQUE.slug}.jpg`} alt={DESTAQUE.alt} width="800" height="600" loading="lazy" decoding="async" />
+              </picture>
+            </div>
+          </div>
+          <div class="destaque-txt">
+            <h3>{DESTAQUE.nome}</h3>
+            <p>{DESTAQUE.ing}</p>
+            <p class="destaque-nota">
+              O ragù que sai hoje entrou no fogo às sete da manhã. Não existe
+              versão apressada dele — quando acaba, acabou.
+            </p>
+            <div class="destaque-pe">
+              <b class="preco-g">R$ {DESTAQUE.preco}</b>
+              <button class="btn btn-p" type="button" data-add={DESTAQUE.slug}>
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Adicionar à sacola
+              </button>
+            </div>
+          </div>
+        </article>
+
+        {/* filtro */}
+        <div class="filtro" role="group" aria-label="Filtrar a carta" data-anima>
+          <button class="chip" type="button" data-cat="tudo" aria-pressed="true">Tudo</button>
+          {CARDAPIO.map((c) => (
+            <button class="chip" type="button" data-cat={c.id} aria-pressed="false">{c.chip}</button>
+          ))}
+        </div>
+
+        <p class="filtro-titulo" data-filtro-titulo aria-live="polite">Doze pratos na carta de hoje</p>
+
+        <ul class="grade-carta" data-grade>
+          {
+            CARDAPIO.flatMap((c) =>
+              c.itens.map((i) => (
+                <li class="prato" data-cat={c.id}>
+                  <div class="prato-foto">
+                    <div class="arco">
+                      <picture>
+                        <source srcset={`/img/pratos/${i.slug}.webp`} type="image/webp" />
+                        <img src={`/img/pratos/${i.slug}.jpg`} alt={i.alt} width="800" height="600" loading="lazy" decoding="async" />
+                      </picture>
+                    </div>
+                    <span class="prato-tag">{c.chip}</span>
+                  </div>
+                  <div class="prato-txt">
+                    <p class="prato-n">
+                      <span>{i.nome}</span>
+                      <b>R$ {i.preco}</b>
+                    </p>
+                    <p class="prato-i">{i.ing}</p>
+                  </div>
+                  <button class="btn btn-linha" type="button" data-add={i.slug}>
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Adicionar
+                  </button>
+                </li>
+              )),
+            )
+          }
+        </ul>
+
+        {/* o resto da carta, em papel: sem foto, com o pontilhado de sempre */}
+        <div class="extras">
+          {
+            EXTRAS.map((e) => (
+              <section class="extra" data-anima>
+                <h3 class="extra-t">{e.t}</h3>
+                <ul class="extra-lista">
+                  {e.itens.map((i) => (
+                    <li>
+                      <p class="prato-n">
+                        <span>{i.nome}</span>
+                        <b>R$ {i.preco}</b>
+                      </p>
+                      <p class="prato-i">{i.ing}</p>
+                      <button class="mais" type="button" data-add={i.slug} aria-label={`Adicionar ${i.nome} à sacola`}>
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))
+          }
+        </div>
+      </section>
+
+      {/* ================= PEDIDO ONLINE ================= */}
+      <section class="pedido arco-topo" id="pedido">
+        <div class="pedido-caixa">
+          <header class="cab" data-anima>
+            <h2>Da nossa panela para a sua mesa, sem intermediário</h2>
+            <p class="lead lead-claro">
+              A entrega é feita pela casa, não por aplicativo. O motoboy é o
+              Wilson, trabalha aqui desde 2009, e a massa sai da panela quando
+              ele encosta a moto na porta.
+            </p>
+          </header>
+
+          <ol class="passos-pedido">
+            {[
+              { i: 'fa-utensils', t: 'Monte a sacola', d: 'Toque em adicionar em qualquer prato da carta. A sacola fica salva se você fechar a página.' },
+              { i: 'fa-truck-fast', t: 'Entrega ou retirada', d: `Entrega em ${ENTREGA.raio} pelo Bixiga e vizinhança, taxa única de R$ ${ENTREGA.taxa}. Retirada no balcão sai sem taxa.` },
+              { i: 'fa-comments', t: 'Confirme no WhatsApp', d: 'O pedido abre pronto na conversa da casa. A cozinha responde com o tempo real do dia.' },
+            ].map((p, n) => (
+              <li data-anima>
+                <span class="passo-n">{String(n + 1).padStart(2, '0')}</span>
+                <i class={`fa-solid ${p.i}`} aria-hidden="true"></i>
+                <h3>{p.t}</h3>
+                <p>{p.d}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class="pedido-regras" data-anima>
+            <dl>
+              <div><dt>Tempo médio</dt><dd>{ENTREGA.tempo}</dd></div>
+              <div><dt>Taxa de entrega</dt><dd>R$ {ENTREGA.taxa} fixa</dd></div>
+              <div><dt>Pedido mínimo</dt><dd>R$ {ENTREGA.minimo} na entrega</dd></div>
+              <div><dt>Retirada no balcão</dt><dd>Sem taxa, sem mínimo</dd></div>
+            </dl>
+            <p class="pedido-area">Entregamos em {ENTREGA.bairros}.</p>
+            <button class="btn btn-claro btn-g" type="button" data-abrir-sacola>
+              <i class="fa-solid fa-shopping-cart" aria-hidden="true"></i> Abrir minha sacola
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= MOLHOS ================= */}
+      <section class="molhos" id="molhos">
+        <div class="molhos-caixa">
+          <header class="cab" data-anima>
+            <h2>Cinco molhos. É neles que a casa se decide.</h2>
+            <p class="lead lead-claro">
+              Massa boa qualquer um compra. O molho é o que não dá para
+              terceirizar — e é o que a cozinha faz do zero, todo dia, na mesma
+              ordem desde 1962.
+            </p>
+          </header>
+          <ul class="grade-molhos">
+            {
+              molhos.map((m) => (
+                <li class="card-molho" data-anima>
+                  <h3>{m.t}</h3>
+                  <p>{m.d}</p>
+                  <p class="card-nota">{m.n}</p>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </section>
+
+      {/* ================= A CASA / AMBIENTE ================= */}
+      <section class="ambiente arco-topo" id="casa">
+        <div class="ambiente-brasa" aria-hidden="true"></div>
+        <div class="ambiente-grade">
+          <figure class="ambiente-foto" data-anima>
+            <div class="arco arco-alto" data-parallax>
+              <img src="/img/molho.jpg" alt="Panela de molho de tomate cozinhando lentamente no fogão da cozinha." width="512" height="512" loading="lazy" decoding="async" />
+            </div>
+            <figcaption>A panela de ragù, às sete e dez da manhã.</figcaption>
+          </figure>
+
+          <div class="ambiente-txt">
+            <header class="cab" data-anima>
+              <h2>Um salão pequeno, quente e barulhento — do jeito certo</h2>
+            </header>
+            <blockquote data-anima>
+              “Não faço comida para fotografia. Faço para quem senta, tira o
+              casaco e fica.”
+              <cite>Vera Battaglia, 1962 – 2004</cite>
+            </blockquote>
+            <ul class="aconchego">
+              {
+                aconchego.map((a) => (
+                  <li data-anima>
+                    <h3>{a.t}</h3>
+                    <p>{a.d}</p>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= RESERVA ================= */}
+      <section class="secao secao-reserva" id="reserva">
+        <div class="reserva" data-anima>
+          <div class="reserva-txt">
+            <h2>Guarde uma mesa</h2>
+            <p class="lead">
+              São 42 lugares no salão e 8 no balcão de frente para a máquina de
+              massa. Sexta e sábado costumam fechar na quarta-feira.
+            </p>
+            <ul class="reserva-links">
+              <li><a href={`https://wa.me/${CASA.zap}`} rel="noopener">WhatsApp {CASA.zapFmt}</a></li>
+              <li><a href={`tel:${CASA.foneLink}`}>{CASA.fone}</a></li>
+              <li><a href={`mailto:${CASA.email}`}>{CASA.email}</a></li>
+            </ul>
+            <p class="reserva-nota">
+              Grupos acima de 10 pessoas: fale com a casa antes, o salão é pequeno.
+            </p>
+          </div>
+
+          <form class="form" data-form-reserva data-zap={CASA.zap}>
+            <div class="form-2">
+              <label>
+                Nome
+                <input name="nome" type="text" required autocomplete="name" placeholder="Como podemos te chamar" />
+              </label>
+              <label>
+                WhatsApp
+                <input name="fone" type="tel" required autocomplete="tel" placeholder="(11) 90000-0000" />
+              </label>
+            </div>
+
+            <div class="form-3">
+              <label>
+                Dia
+                <input name="data" type="date" required data-hoje />
+              </label>
+              <label>
+                Hora
+                <select name="hora">
+                  {HORAS.map((h) => <option selected={h === '20:00'}>{h}</option>)}
+                </select>
+              </label>
+              <label>
+                Pessoas
+                <select name="pessoas">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                    <option selected={n === 2}>{n}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Alguma coisa que a cozinha precise saber?
+              <textarea
+                name="obs"
+                rows="3"
+                placeholder="Aniversário, cadeirinha de bebê, alergia a frutos do mar, mesa perto da janela…"></textarea>
+            </label>
+
+            <button class="btn btn-p btn-cheio" type="submit">Enviar pelo WhatsApp</button>
+            <p class="form-nota">
+              Abre a conversa com tudo preenchido. A reserva vale quando a casa confirma.
+            </p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    {/* ================= SACOLA ================= */}
+    <dialog class="sacola" data-sacola aria-labelledby="sacola-t">
+      <form class="sacola-form" method="dialog" data-form-pedido data-zap={CASA.zap}>
+        <header class="sacola-cab">
+          <h2 id="sacola-t">Sua sacola</h2>
+          <button class="sacola-x" type="button" data-fechar-sacola aria-label="Fechar a sacola">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="sacola-corpo">
+          <p class="sacola-vazia" data-vazia>
+            Ainda não tem nada aqui. Volte para a carta e toque em
+            <b>Adicionar</b> no prato que te chamou.
+          </p>
+
+          <ul class="sacola-lista" data-linhas></ul>
+
+          <fieldset class="sacola-modo" data-campos hidden>
+            <legend>Como você prefere receber?</legend>
+            <label class="radio">
+              <input type="radio" name="modo" value="entrega" checked />
+              <span><b>Entrega</b><small>R$ {ENTREGA.taxa} · {ENTREGA.tempo} · mínimo R$ {ENTREGA.minimo}</small></span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="modo" value="retirada" />
+              <span><b>Retirada no balcão</b><small>Sem taxa · {CASA.rua}</small></span>
+            </label>
+          </fieldset>
+
+          <div class="sacola-campos" data-campos hidden>
+            {/* quem recebe */}
+            <fieldset class="bloco">
+              <legend><i class="fa-solid fa-user-circle" aria-hidden="true"></i> Quem recebe</legend>
+              <div class="form-2">
+                <label>
+                  Nome completo
+                  <input name="nome" type="text" required autocomplete="name" placeholder="Como está na campainha" />
+                </label>
+                <label>
+                  WhatsApp
+                  <input name="fone" type="tel" required autocomplete="tel" placeholder="(11) 90000-0000" />
+                </label>
+              </div>
+            </fieldset>
+
+            {/* onde entregar — só faz sentido na entrega */}
+            <fieldset class="bloco" data-so-entrega>
+              <legend><i class="fa-solid fa-map-marker-alt" aria-hidden="true"></i> Onde entregar</legend>
+              <label>
+                Endereço
+                <input name="endereco" type="text" autocomplete="street-address" placeholder="Rua Treze de Maio, 372" />
+              </label>
+              <div class="form-2">
+                <label>
+                  Complemento
+                  <input name="complemento" type="text" autocomplete="address-line2" placeholder="Apto 42, bloco B, fundos" />
+                </label>
+                <label>
+                  Bairro
+                  <input name="bairro" type="text" autocomplete="address-level3" placeholder="Bixiga" />
+                </label>
+              </div>
+              <label>
+                Ponto de referência <span class="opc">opcional</span>
+                <input name="referencia" type="text" placeholder="Portão verde, ao lado da padaria" />
+              </label>
+            </fieldset>
+
+            {/* forma de pagamento */}
+            <fieldset class="bloco">
+              <legend><i class="fa-solid fa-wallet" aria-hidden="true"></i> Forma de pagamento</legend>
+              <label>
+                Como você vai pagar
+                <select name="pagamento" data-pagamento>
+                  {PAGAMENTOS.map((p) => <option>{p}</option>)}
+                </select>
+              </label>
+              <label data-troco hidden>
+                Troco para quanto?
+                <input name="troco" type="text" inputmode="numeric" placeholder="R$ 200" />
+              </label>
+              <p class="bloco-nota">
+                Pix e link chegam pela mesma conversa do WhatsApp, depois que a
+                cozinha confirmar o pedido.
+              </p>
+            </fieldset>
+
+            <label>
+              Observações para a cozinha <span class="opc">opcional</span>
+              <textarea name="obs" rows="2" placeholder="Sem queijo, massa mais al dente, alergia a frutos do mar…"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <footer class="sacola-pe" data-campos hidden>
+          <dl class="sacola-conta">
+            <div><dt>Subtotal</dt><dd data-subtotal>R$ 0,00</dd></div>
+            <div data-linha-taxa><dt>Entrega</dt><dd data-taxa>R$ 0,00</dd></div>
+            <div class="sacola-total"><dt>Total</dt><dd data-total>R$ 0,00</dd></div>
+          </dl>
+          <p class="sacola-aviso" data-aviso hidden></p>
+          <button class="btn btn-p btn-cheio btn-g" type="submit" data-enviar>
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Enviar pedido pelo WhatsApp
+          </button>
+          <p class="form-nota">
+            Abre a conversa com o pedido pronto. Vale quando a cozinha confirmar.
+          </p>
+        </footer>
+      </form>
+    </dialog>
+
+    {/* ================= RODAPÉ ================= */}
+    <footer class="rodape">
+      <div class="rodape-grade">
+        <div>
+          <p class="rodape-marca">{CASA.nome}<small>{CASA.sub}</small></p>
+          <address>
+            {CASA.rua}<br />
+            {CASA.bairro} · {CASA.cidade}/{CASA.uf}<br />
+            CEP {CASA.cep}
+          </address>
+          <p class="rodape-contato">
+            <a href={`https://wa.me/${CASA.zap}`} rel="noopener">WhatsApp {CASA.zapFmt}</a><br />
+            <a href={`tel:${CASA.foneLink}`}>{CASA.fone}</a><br />
+            <a href={`mailto:${CASA.email}`}>{CASA.email}</a>
+          </p>
+        </div>
+
+        <div>
+          <p class="rodape-t">Horários</p>
+          <dl class="horarios">
+            {horarios.map((h) => (
+              <div>
+                <dt>{h.d}</dt>
+                <dd>{h.h}</dd>
+              </div>
+            ))}
+          </dl>
+          <p class="rodape-t rodape-t2">Entrega</p>
+          <p class="rodape-entrega">
+            {ENTREGA.bairros}. Taxa única de R$ {ENTREGA.taxa}, pedido mínimo
+            de R$ {ENTREGA.minimo}. Retirada no balcão sem taxa.
+          </p>
+        </div>
+
+        <div class="rodape-mapa">
+          <p class="rodape-t">Como chegar</p>
+          <iframe
+            title={`Mapa — ${CASA.rua}, ${CASA.bairro}`}
+            src={`https://www.google.com/maps?q=${mapaQuery}&z=16&output=embed`}
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen></iframe>
+          <p class="mapa-nota">
+            A 600 m do metrô Brigadeiro. Estacionamento conveniado na Treze de Maio, 410.
+          </p>
+          <a class="mapa-link" href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+            Abrir no Google Maps →
+          </a>
+        </div>
+      </div>
+
+      <details class="creditos">
+        <summary>Crédito das fotos dos pratos</summary>
+        <ul>
+          {fotos.map((f) => <li>{f.p} — {f.a}, {f.l}, via Wikimedia Commons</li>)}
+        </ul>
+      </details>
+
+      <p class="rodape-fim">
+        <span>© 2026 {CASA.nome} · {CASA.bairro}, {CASA.cidade}/{CASA.uf}</span>
+        <a href="/">← Voltar ao portfolio</a>
+      </p>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  .fo {
+    /*
+      Paleta rústica: farinha, terracota do tijolo, oliva da garrafa e o
+      carvão do forno. O vermelho só aparece onde há molho ou fogo.
+    */
+    --creme: #f7f0e3;
+    --creme-e: #efe4d1;
+    --papel: #fffdf7;
+    --linha: #e0d3ba;
+
+    --carvao: #221b16;
+    --carvao-e: #16110e;
+    --oliva: #33463a;
+    --oliva-e: #26352b;
+    --terra: #ad4527;
+    --terra-e: #8b3319;
+    --brasa: #e2803c;
+    --trigo: #d9a441;
+
+    --tinta: #2a221b;
+    --c60: #6b5f52;
+    --c40: #948877;
+    --claro: #f2e9da;
+    --claro-60: #b8ab99;
+    --claro-40: #8c8071;
+
+    /* altura do topo fixo — compensada no padding do herói */
+    --topo-h: 3.9rem;
+
+    --raio: 12px;
+    --raio-g: 20px;
+    /* o arco do forno: meia-volta em cima, pé reto embaixo */
+    --arco: 999px 999px 14px 14px;
+
+    --t: 0.4s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    --sombra: 0 1px 2px rgba(34, 27, 22, 0.05), 0 8px 20px -10px rgba(34, 27, 22, 0.14);
+    --sombra-alta: 0 2px 4px rgba(34, 27, 22, 0.07), 0 18px 40px -16px rgba(34, 27, 22, 0.26);
+
+    position: relative;
+    background: var(--creme);
+    color: var(--tinta);
+    font-family: 'Karla', ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.62;
+  }
+
+  /* a trama de linho da toalha, por baixo de tudo e discreta */
+  .fo::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: url('/img/linho.svg') 0 0 / 22px;
+    opacity: 0.1;
+  }
+  /*
+    Sobe o conteúdo acima da trama de linho do ::before — menos o topo, que
+    precisa continuar `fixed`.
+
+    O `:not` não é preciosismo: o Astro escopa este seletor como
+    `.fo[cid] > [cid]`, que tem especificidade (0,3,0) e ganha de
+    `.topo[cid]` (0,2,0). O `position: relative` daqui estava sobrescrevendo
+    o `fixed` do topo por especificidade, e o header rolava junto com a
+    página — a sacola sumia da tela justo quando se escolhe o prato.
+  */
+  .fo > *:not(.topo) { position: relative; z-index: 1; }
+
+  :global(body) { background: #f7f0e3; color: #2a221b; }
+  :global(::selection) { background: #ad4527; color: #fff; }
+  /*
+    O que o navegador desenha por conta também é parte do design: a barra de
+    rolagem acompanha a página por 8.000px, o cursor de texto pisca dentro de
+    todo campo do formulário, e o sublinhado padrão corta a perna das letras.
+  */
+  :global(html) { scrollbar-color: #c8b79a #efe4d1; }
+  .fo :is(input, textarea, select) { caret-color: var(--terra); }
+  .fo a { text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+  .fo :is(input, textarea)::placeholder { color: var(--c40); }
+
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--carvao); color: var(--claro); padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0;
+  }
+  .pular:focus { left: 0; }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3 {
+    font-family: 'Fraunces', ui-serif, Georgia, serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.14;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 { font-size: clamp(2.5rem, 6.6vw, 4.9rem); font-weight: 700; line-height: 1.03; letter-spacing: -0.035em; }
+  h2 { font-size: clamp(1.75rem, 3.4vw, 2.8rem); }
+  h3 { font-size: 1.16rem; }
+  p { margin: 0; text-wrap: pretty; }
+
+  .lead { font-size: 1.05rem; color: var(--c60); max-width: 56ch; }
+  /*
+    Preço, hora e medida em numerais tabulares: sem isso o 1 é mais estreito
+    que o 8 e a coluna de preços da carta fica com o R$ dançando de linha em
+    linha. É a diferença entre uma tabela e uma lista.
+  */
+  .prato-n b, .item-preco, .nums dt, .horarios dd, .linha-preco b,
+  .resumo-linha b, .sacola-linha b, .total b {
+    font-variant-numeric: tabular-nums;
+  }
+  .lead-claro { color: var(--claro-60); }
+
+  .cab-centro { margin-inline: auto; text-align: center; }
+  .cab-centro .lead { margin-inline: auto; }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.8rem 1.45rem; border-radius: 999px;
+    font-family: inherit; font-size: 0.94rem; font-weight: 600; text-decoration: none;
+    border: 1px solid transparent; white-space: nowrap; cursor: pointer;
+    transition: background var(--t) var(--e), color var(--t) var(--e),
+      border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .btn-g { padding: 0.95rem 1.7rem; font-size: 1rem; }
+  .btn-min { padding: 0.55rem 1.05rem; font-size: 0.85rem; }
+  .btn-cheio { width: 100%; }
+
+  .btn-p { background: var(--terra); color: #fff; box-shadow: 0 10px 22px -14px rgba(139, 51, 25, 0.9); }
+  .btn-p:hover { background: var(--terra-e); box-shadow: 0 14px 28px -14px rgba(139, 51, 25, 0.95); }
+  .btn-claro { background: var(--claro); color: var(--carvao); }
+  .btn-claro:hover { background: #fff; }
+  .btn-fant { background: transparent; color: var(--tinta); border-color: color-mix(in srgb, var(--tinta) 26%, transparent); }
+  .btn-fant:hover { border-color: var(--terra); color: var(--terra); }
+  .btn-linha {
+    background: transparent; color: var(--terra);
+    border-color: color-mix(in srgb, var(--terra) 34%, transparent);
+    padding: 0.6rem 1.1rem; font-size: 0.87rem;
+  }
+  .btn-linha:hover { background: var(--terra); color: #fff; border-color: var(--terra); }
+
+  /* ---------- formas: o arco do forno ---------- */
+  .arco {
+    position: relative; overflow: hidden;
+    border-radius: var(--arco);
+    background: var(--creme-e);
+    box-shadow: var(--sombra-alta);
+  }
+  /*
+    Direção de arte das fotos.
+
+    As doze massas vêm do Wikimedia, de cozinhas, câmeras e horas diferentes:
+    toalha azul numa, luz fluorescente na outra, madeira na terceira. Doze
+    dessas lado a lado é o que denuncia uma página — não a tipografia nem o
+    layout. Três camadas empurram todas para a mesma família:
+
+      1. o filtro tira a saturação de sobra, aquece e devolve contraste;
+      2. o `soft-light` joga a mesma luz de tungstênio e a mesma trama de linho
+         da toalha por cima de todas, sem chapar o verde do manjericão como um
+         duotone faria;
+      3. a vinheta escurece a borda, então o fundo bagunçado recua e o prato
+         avança.
+
+    O `scale` de 4% corta a franja da foto, onde mora quase toda a sujeira de
+    enquadramento — talher cortado, borda de outra travessa, mão.
+  */
+  .arco img {
+    display: block; width: 100%; height: 100%; object-fit: cover;
+    transform: scale(1.04);
+    filter: saturate(0.84) contrast(1.08) brightness(1.03) sepia(0.2) hue-rotate(-8deg);
+  }
+  .arco::before {
+    content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background:
+      url('/img/linho.svg') 0 0 / 20px,
+      linear-gradient(
+        165deg,
+        rgba(217, 164, 65, 0.5),
+        rgba(173, 69, 39, 0.4) 58%,
+        rgba(34, 27, 22, 0.52)
+      );
+    mix-blend-mode: soft-light;
+  }
+  /* aro de tijolo em volta do arco, e a vinheta que faz o fundo recuar */
+  .arco::after {
+    content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--terra) 30%, transparent);
+    border-radius: inherit;
+    background: radial-gradient(118% 96% at 50% 32%, transparent 36%, rgba(34, 27, 22, 0.42) 100%);
+  }
+  .arco-largo { border-radius: 220px 220px 14px 14px; }
+  .arco-alto { border-radius: 999px 999px 14px 14px; }
+
+  /* ---------- topo ---------- */
+  .topo {
+    /* fixo, não sticky: a sacola tem que estar ao alcance em qualquer ponto
+       da página. O --topo-h devolve a altura ao fluxo no herói. */
+    position: fixed; inset: 0 0 auto; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem clamp(1rem, 4vw, 2.8rem);
+    background: color-mix(in srgb, var(--creme) 88%, transparent);
+    backdrop-filter: blur(14px) saturate(1.1);
+    border-bottom: 1px solid color-mix(in srgb, var(--terra) 16%, transparent);
+  }
+  .topo-barra {
+    position: absolute; inset: auto 0 -1px; height: 2px;
+    background: linear-gradient(90deg, var(--terra), var(--trigo));
+    transform: scaleX(0); transform-origin: 0 50%;
+  }
+  .topo a { text-decoration: none; }
+  .topo a:not(.btn) { color: var(--tinta); }
+  .marca { font-family: 'Fraunces', ui-serif, Georgia, serif; font-weight: 700; font-size: 1.1rem; line-height: 1; letter-spacing: -0.015em; }
+  .marca span {
+    display: block; font-family: 'Karla', sans-serif; font-size: 0.58rem; font-weight: 600;
+    letter-spacing: 0.19em; text-transform: uppercase; color: var(--terra); margin-top: 0.32rem;
+  }
+  .topo-nav { display: none; gap: 1.5rem; }
+  .topo-nav a { font-size: 0.9rem; font-weight: 500; color: var(--c60); position: relative; }
+  .topo-nav a::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 2px;
+    background: var(--terra); transform: scaleX(0); transform-origin: 0 50%;
+    transition: transform var(--t) var(--e);
+  }
+  .topo-nav a:hover { color: var(--tinta); }
+  .topo-nav a:hover::after { transform: scaleX(1); }
+  .topo-acoes { display: flex; align-items: center; gap: 0.5rem; }
+  .topo-reserva { display: none; }
+  .sacola-btn b {
+    display: inline-grid; place-items: center; min-width: 1.3rem; height: 1.3rem;
+    padding: 0 0.35rem; border-radius: 999px;
+    background: #fff; color: var(--terra); font-size: 0.75rem; font-weight: 700;
+  }
+  .sacola-btn span { display: none; }
+  /*
+    O prato em voo: fora do fluxo e acima de tudo, inclusive do topo fixo.
+    `:global` é obrigatório aqui — o Astro escopa o <style> por atributo no
+    elemento, e este é criado pelo JS, então sem `:global` a regra não casa e
+    o clone nasce como um <span> inline de largura zero.
+  */
+  :global(.voo) {
+    position: fixed; z-index: 90; pointer-events: none;
+    border-radius: var(--arco);
+    background-size: cover; background-position: center;
+    box-shadow: 0 18px 40px -16px rgba(34, 27, 22, 0.55);
+    will-change: transform, opacity;
+  }
+
+  .fo section[id] { scroll-margin-top: calc(var(--topo-h) + 0.7rem); }
+
+  /* borda de arcos entre duas seções de cor diferente */
+  .arco-topo { position: relative; }
+  .arco-topo::before {
+    content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 18px;
+    background: radial-gradient(16px 18px at 50% 100%, var(--creme) 97%, transparent 100%) 0 0 / 32px 18px repeat-x;
+  }
+
+  /* ---------- herói ---------- */
+  .heroi {
+    position: relative; overflow: hidden;
+    background: var(--carvao); color: var(--claro);
+    padding: calc(var(--topo-h) + clamp(2rem, 5vh, 4rem)) clamp(1rem, 4vw, 2.8rem) clamp(4rem, 9vh, 6rem);
+  }
+  .heroi::before {
+    content: ''; position: absolute; inset: -10%;
+    background: url('/img/massa.svg') 0 0 / 240px;
+    opacity: 0.07; filter: brightness(0) invert(1) sepia(0.35);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .heroi::before { animation: deriva 120s linear infinite; }
+  }
+  @keyframes deriva { to { background-position: 240px 180px; } }
+
+  /* a brasa do forno: a luz quente que faz o preto não ser preto */
+  .heroi-brasa {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(60% 55% at 78% 22%, rgba(226, 128, 60, 0.28), transparent 68%),
+      radial-gradient(50% 45% at 8% 88%, rgba(173, 69, 39, 0.24), transparent 70%);
+  }
+
+  .heroi-grade {
+    position: relative; z-index: 2;
+    max-width: 1200px; margin: 0 auto;
+    display: grid; gap: clamp(2.5rem, 6vw, 4rem); align-items: center;
+  }
+  .heroi h1 { color: var(--claro); }
+  .titulo .palavra { display: inline-block; margin-right: 0.26em; }
+  .titulo em {
+    display: block; margin-top: 0.12em;
+    font-style: italic; font-weight: 400;
+    font-size: 0.58em; letter-spacing: -0.02em;
+    color: var(--brasa);
+  }
+  .heroi .lead { margin-top: 1.5rem; font-size: 1.1rem; max-width: 46ch; }
+  .heroi-acoes { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2.1rem; }
+  .heroi-fatos {
+    list-style: none; margin: 2.2rem 0 0; padding: 1.3rem 0 0;
+    border-top: 1px solid rgba(242, 233, 218, 0.14);
+    display: flex; flex-wrap: wrap; gap: 0.7rem 1.6rem;
+    font-size: 0.86rem; color: var(--claro-60);
+  }
+  .heroi-fatos li { display: flex; align-items: center; gap: 0.5rem; }
+  .heroi-fatos i { color: var(--trigo); }
+
+  .heroi-foto { position: relative; margin: 0; }
+  .heroi-foto .arco { height: clamp(20rem, 52vw, 34rem); }
+  .heroi-foto figcaption {
+    margin-top: 1rem; font-size: 0.8rem; color: var(--claro-40);
+    text-align: center; font-style: italic;
+  }
+  /* selo de fundação, torto como carimbo em papel */
+  .selo {
+    position: absolute; left: -0.6rem; bottom: 3.4rem;
+    width: 6.4rem; height: 6.4rem; display: grid; place-content: center; text-align: center;
+    border-radius: 50%; background: var(--trigo); color: var(--carvao);
+    transform: rotate(-9deg);
+    box-shadow: 0 12px 26px -14px rgba(0, 0, 0, 0.8);
+    font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; line-height: 1.5;
+  }
+  .selo b {
+    display: block; font-family: 'Fraunces', ui-serif, serif;
+    font-size: 1.55rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1;
+    margin: 0.1rem 0;
+  }
+
+  .heroi-rola {
+    position: absolute; z-index: 2; left: 50%; bottom: 1.1rem; transform: translateX(-50%);
+    font-size: 0.64rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--claro-40);
+  }
+  .heroi-rola::after {
+    content: ''; display: block; width: 1px; height: 2rem; margin: 0.55rem auto 0;
+    background: linear-gradient(var(--claro-40), transparent);
+  }
+
+  /* ---------- números ---------- */
+  .faixa {
+    background: var(--creme-e);
+    border-bottom: 1px solid var(--linha);
+  }
+  .nums {
+    max-width: 1200px; margin: 0 auto;
+    padding: clamp(2.4rem, 5vw, 3.6rem) clamp(1rem, 4vw, 2.8rem);
+    display: grid; gap: clamp(1.4rem, 3vw, 2.4rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  }
+  .num dt {
+    display: flex; align-items: baseline; gap: 0.25rem;
+    font-family: 'Fraunces', ui-serif, Georgia, serif; font-weight: 700;
+    font-size: clamp(2.3rem, 4.6vw, 3.2rem); line-height: 1; letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+  }
+  .num dt i { font-size: 0.34em; font-style: normal; font-weight: 700; color: var(--terra); letter-spacing: 0.02em; }
+  .num dd { margin: 0.6rem 0 0; font-size: 0.9rem; color: var(--c60); max-width: 26ch; }
+
+  /* ---------- layout base ---------- */
+  .secao { padding: clamp(3.5rem, 7vw, 6.5rem) clamp(1rem, 4vw, 2.8rem); max-width: 1200px; margin: 0 auto; }
+  .cab { margin-bottom: clamp(2rem, 4vw, 3rem); max-width: 62ch; }
+  .cab .lead { margin-top: 0.9rem; }
+
+  /* ---------- a carta ---------- */
+  .carta .cab-centro { max-width: 46rem; }
+
+  .destaque {
+    display: grid; gap: clamp(1.4rem, 3vw, 2.6rem); align-items: center;
+    margin: clamp(2.5rem, 5vw, 4rem) 0;
+    background: var(--papel); border: 1px solid var(--linha);
+    border-radius: var(--raio-g); padding: clamp(1.2rem, 2.6vw, 2rem);
+    box-shadow: var(--sombra);
+  }
+  .destaque-foto .arco { height: clamp(16rem, 38vw, 24rem); }
+  .destaque h3 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-style: italic; margin-bottom: 0.7rem; }
+  .destaque-txt > p { color: var(--c60); font-size: 0.98rem; }
+  /* filete fino em cima, como as réguas pontilhadas da carta — e não a
+     barrinha colorida na lateral, que é adesivo, não tipografia */
+  .destaque-nota {
+    margin-top: 1.2rem !important; padding-top: 0.9rem;
+    border-top: 1px solid color-mix(in srgb, var(--trigo) 55%, transparent);
+    font-size: 0.92rem !important; font-style: italic; color: var(--c60);
+  }
+  .destaque-pe {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1rem;
+    margin-top: 1.6rem; padding-top: 1.3rem; border-top: 1px dashed var(--linha);
+  }
+  .preco-g {
+    font-family: 'Fraunces', ui-serif, serif; font-size: 1.9rem;
+    font-weight: 700; letter-spacing: -0.03em; color: var(--terra);
+  }
+
+  .filtro { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 1.4rem; }
+  .chip {
+    font: inherit; font-size: 0.87rem; font-weight: 600; cursor: pointer;
+    padding: 0.52rem 1.1rem; border-radius: 999px;
+    background: transparent; color: var(--c60);
+    border: 1px solid var(--linha);
+    transition: background var(--t) var(--e), color var(--t) var(--e), border-color var(--t) var(--e);
+  }
+  .chip:hover { border-color: var(--terra); color: var(--terra); }
+  .chip[aria-pressed='true'] { background: var(--carvao); border-color: var(--carvao); color: var(--claro); }
+
+  .filtro-titulo {
+    text-align: center; margin-bottom: clamp(1.6rem, 3vw, 2.4rem);
+    font-family: 'Fraunces', ui-serif, serif; font-style: italic;
+    font-size: 1.05rem; color: var(--c40);
+  }
+
+  .grade-carta {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.6rem);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  }
+  .grade-carta [hidden] { display: none; }
+
+  .prato {
+    display: flex; flex-direction: column;
+    background: var(--papel); border: 1px solid var(--linha);
+    border-radius: var(--raio-g); padding: 0.85rem 0.85rem 1.1rem;
+    box-shadow: var(--sombra);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .prato:hover { border-color: color-mix(in srgb, var(--terra) 40%, var(--linha)); box-shadow: var(--sombra-alta); }
+  .prato-foto { position: relative; }
+  .prato-foto .arco { height: clamp(12rem, 24vw, 15rem); }
+  .prato-foto img { transition: scale var(--t) var(--e); }
+  .prato:hover .prato-foto img { scale: 1.04; }
+  .prato-tag {
+    position: absolute; left: 50%; bottom: -0.7rem; translate: -50% 0;
+    padding: 0.26rem 0.75rem; border-radius: 999px;
+    background: var(--carvao); color: var(--claro);
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .prato-txt { flex: 1; padding: 1.7rem 0.5rem 0; }
+
+  /* nome à esquerda, preço à direita, pontilhado no meio — cardápio de papel.
+     O `order` põe o pseudo-elemento entre os dois sem markup extra. */
+  .prato-n {
+    display: flex; align-items: baseline; gap: 0.5rem; margin: 0;
+    font-family: 'Fraunces', ui-serif, Georgia, serif;
+    font-size: 1.02rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25;
+  }
+  .prato-n::before {
+    content: ''; order: 1; flex: 1 1 auto; min-width: 0.8rem;
+    transform: translateY(-0.2em);
+    border-bottom: 1px dotted color-mix(in srgb, var(--c40) 70%, transparent);
+  }
+  .prato-n b {
+    order: 2; flex: none; white-space: nowrap;
+    font-family: 'Karla', ui-sans-serif, sans-serif;
+    font-size: 0.85rem; font-weight: 700; color: var(--terra);
+  }
+  .prato-i { margin: 0.35rem 0 0; font-size: 0.83rem; line-height: 1.55; color: var(--c60); }
+  .prato > .btn { margin: 1.1rem 0.5rem 0; }
+  @media (max-width: 560px) {
+    .prato-n::before { display: none; }
+    .prato-n b { margin-left: auto; }
+  }
+
+  /* ---------- o resto da carta, sem foto ---------- */
+  .extras {
+    margin-top: clamp(2.6rem, 5vw, 4rem);
+    padding-top: clamp(2.2rem, 4vw, 3rem);
+    border-top: 1px dashed var(--linha);
+    display: grid; gap: clamp(1.6rem, 3vw, 2.6rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  }
+  .extra-t {
+    font-size: 1.35rem; font-style: italic; margin-bottom: 1.1rem;
+    padding-bottom: 0.6rem; border-bottom: 2px solid var(--trigo);
+  }
+  .extra-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.05rem; }
+  .extra-lista li { position: relative; padding-right: 2.4rem; }
+  .mais {
+    position: absolute; right: 0; top: 0;
+    width: 1.9rem; height: 1.9rem; display: grid; place-items: center;
+    border-radius: 50%; cursor: pointer; font-size: 0.72rem;
+    background: transparent; color: var(--terra);
+    border: 1px solid color-mix(in srgb, var(--terra) 35%, transparent);
+    transition: background var(--t) var(--e), color var(--t) var(--e);
+  }
+  .mais:hover { background: var(--terra); color: #fff; }
+
+  /* ---------- pedido online ---------- */
+  .pedido { background: var(--oliva); color: var(--claro); }
+  .pedido-caixa {
+    max-width: 1200px; margin: 0 auto;
+    padding: clamp(3.5rem, 7vw, 6rem) clamp(1rem, 4vw, 2.8rem);
+  }
+  .pedido h2, .pedido h3 { color: var(--claro); }
+  /*
+    Três passos, não três caixas. A versão anterior era o template de sempre —
+    caixa igual, ícone, título, texto, e um numeral gigante de enfeite no canto
+    em 10% de opacidade. O numeral fantasma não carrega informação nenhuma: a
+    ordem já está no <ol> e agora aparece como índice legível ao lado do ícone.
+    Sem a caixa, o que separa uma coluna da outra é um filete — que é como se
+    separa coluna em página impressa.
+  */
+  .passos-pedido {
+    list-style: none; margin: 0 0 clamp(2rem, 4vw, 3rem); padding: 0;
+    display: grid; gap: clamp(1.4rem, 3vw, 2.4rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  }
+  .passos-pedido li {
+    padding-top: 1.1rem;
+    border-top: 1px solid rgba(242, 233, 218, 0.22);
+  }
+  .passo-n {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+    color: var(--trigo);
+  }
+  .passos-pedido i {
+    font-size: 0.95rem; color: var(--trigo); margin-left: 0.55rem;
+  }
+  .passos-pedido h3 { margin: 0.75rem 0 0.45rem; font-size: 1.12rem; }
+  .passos-pedido p { font-size: 0.9rem; color: var(--claro-60); max-width: 34ch; }
+
+  .pedido-regras {
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(242, 233, 218, 0.14);
+    border-radius: var(--raio-g); padding: clamp(1.3rem, 3vw, 2rem);
+  }
+  .pedido-regras dl {
+    margin: 0 0 1.3rem;
+    display: grid; gap: 0.9rem 1.6rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  }
+  .pedido-regras dt {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--trigo);
+  }
+  .pedido-regras dd {
+    margin: 0.3rem 0 0;
+    font-family: 'Fraunces', ui-serif, serif; font-size: 1.15rem; font-weight: 600;
+  }
+  .pedido-area { font-size: 0.88rem; color: var(--claro-60); margin-bottom: 1.4rem; }
+
+  /* ---------- molhos ---------- */
+  .molhos { position: relative; overflow: hidden; background: var(--terra); color: var(--claro); }
+  .molhos::before {
+    content: ''; position: absolute; inset: -10%;
+    background: url('/img/massa.svg') 0 0 / 210px;
+    opacity: 0.1; filter: brightness(0) invert(1) sepia(0.2);
+    translate: var(--desliza, 0px) 0;
+    pointer-events: none;
+  }
+  .molhos-caixa {
+    position: relative; max-width: 1200px; margin: 0 auto;
+    padding: clamp(3.5rem, 7vw, 6rem) clamp(1rem, 4vw, 2.8rem);
+  }
+  .molhos h2, .molhos h3 { color: #fff; }
+  .molhos .olho-claro { color: #f7d9a8; }
+  .molhos .lead-claro { color: rgba(255, 250, 244, 0.8); }
+  .grade-molhos {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(0.9rem, 1.8vw, 1.3rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 265px), 1fr));
+  }
+  /* cinco cards em três colunas deixam um buraco na última linha; em seis
+     colunas viram três de dois e dois de três, sem sobra */
+  @media (min-width: 1040px) {
+    .grade-molhos { grid-template-columns: repeat(6, 1fr); }
+    .grade-molhos > li { grid-column: span 2; }
+    .grade-molhos > li:nth-child(4), .grade-molhos > li:nth-child(5) { grid-column: span 3; }
+  }
+  .card-molho {
+    position: relative; overflow: hidden;
+    background: rgba(255, 250, 244, 0.08);
+    border: 1px solid rgba(255, 250, 244, 0.18);
+    border-radius: var(--raio-g); padding: clamp(1.3rem, 2.2vw, 1.7rem);
+    backdrop-filter: blur(2px);
+    transition: background var(--t) var(--e), border-color var(--t) var(--e);
+  }
+  .card-molho::before {
+    content: ''; position: absolute; inset: 0 0 auto; height: 1px;
+    background: var(--trigo); transform: scaleX(0); transform-origin: 0 50%;
+    transition: transform var(--t) var(--e);
+  }
+  .card-molho:hover { background: rgba(255, 250, 244, 0.13); border-color: rgba(255, 250, 244, 0.32); }
+  .card-molho:hover::before { transform: scaleX(1); }
+  .card-molho h3 { margin-bottom: 0.55rem; }
+  .card-molho p { color: rgba(255, 250, 244, 0.78); font-size: 0.93rem; }
+  .card-nota {
+    display: inline-block; margin-top: 1.1rem; padding: 0.28rem 0.72rem;
+    border-radius: 999px; font-size: 0.74rem !important; font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--carvao) !important; background: var(--trigo);
+  }
+
+  /* ---------- a casa ---------- */
+  .ambiente {
+    position: relative; overflow: hidden;
+    background: var(--carvao-e); color: var(--claro);
+  }
+  .ambiente::before {
+    /* a borda de arcos herda a cor da seção anterior, que aqui é terracota */
+    background: radial-gradient(16px 18px at 50% 100%, var(--terra) 97%, transparent 100%) 0 0 / 32px 18px repeat-x;
+  }
+  .ambiente-brasa {
+    position: absolute; inset: 0;
+    background: radial-gradient(46% 50% at 22% 30%, rgba(226, 128, 60, 0.22), transparent 70%);
+  }
+  .ambiente-grade {
+    position: relative; z-index: 2;
+    max-width: 1200px; margin: 0 auto;
+    padding: clamp(3.8rem, 7vw, 6.5rem) clamp(1rem, 4vw, 2.8rem);
+    display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: center;
+  }
+  .ambiente h2 { color: var(--claro); }
+  .ambiente-foto { margin: 0; }
+  .ambiente-foto .arco { height: clamp(20rem, 46vw, 30rem); }
+  .ambiente-foto figcaption {
+    margin-top: 0.9rem; font-size: 0.8rem; font-style: italic;
+    color: var(--claro-40); text-align: center;
+  }
+  .ambiente blockquote {
+    position: relative;
+    margin: 0 0 2rem; padding-left: 2.2rem;
+    font-family: 'Fraunces', ui-serif, serif; font-style: italic;
+    font-size: clamp(1.15rem, 2vw, 1.4rem); line-height: 1.45; color: var(--claro);
+  }
+  /* a aspa pendurada na margem faz o trabalho que a barrinha fazia mal:
+     é composição de citação, não etiqueta colada na lateral */
+  .ambiente blockquote::before {
+    content: '\201C';
+    position: absolute; left: -0.1rem; top: -0.6rem;
+    font-size: 3.6rem; line-height: 1; color: var(--brasa); opacity: 0.7;
+  }
+  .ambiente cite {
+    display: block; margin-top: 0.8rem;
+    font-family: 'Karla', sans-serif; font-style: normal;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--claro-40);
+  }
+  .aconchego { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.4rem; }
+  .aconchego li { padding-top: 1.4rem; border-top: 1px solid rgba(242, 233, 218, 0.13); }
+  .aconchego h3 { color: var(--trigo); font-size: 1.05rem; margin-bottom: 0.4rem; }
+  .aconchego p { font-size: 0.92rem; color: var(--claro-60); }
+
+  /* ---------- reserva ---------- */
+  .secao-reserva { max-width: 1200px; }
+  .reserva {
+    display: grid; gap: 2rem; align-items: start;
+    background: var(--papel); border: 1px solid var(--linha);
+    border-radius: var(--raio-g); padding: clamp(1.5rem, 4vw, 3rem);
+    box-shadow: var(--sombra-alta);
+  }
+  .reserva h2 { margin-bottom: 0.9rem; }
+  .reserva-links { list-style: none; margin: 1.6rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+  .reserva-links a {
+    color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 0.95rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--terra) 45%, transparent);
+    transition: color var(--t) var(--e);
+  }
+  .reserva-links a:hover { color: var(--terra); }
+  .reserva-nota { margin-top: 1.3rem; font-size: 0.82rem; color: var(--c40); }
+
+  /* ---------- formulários ---------- */
+  .form {
+    display: grid; gap: 0.85rem;
+    background: var(--creme); border: 1px solid var(--linha);
+    border-radius: var(--raio); padding: clamp(1.1rem, 2.6vw, 1.6rem);
+  }
+  .form label, .sacola-campos label {
+    display: grid; gap: 0.32rem;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--c60);
+  }
+  .form-2, .form-3 { display: grid; gap: 0.85rem; grid-template-columns: 1fr; }
+  .form input, .form select, .form textarea,
+  .sacola-campos input, .sacola-campos select, .sacola-campos textarea {
+    font: inherit; font-size: 0.94rem; font-weight: 400; letter-spacing: 0;
+    text-transform: none; color: var(--tinta);
+    background: var(--papel); border: 1px solid var(--linha); border-radius: 9px;
+    padding: 0.62rem 0.75rem; width: 100%;
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .form :is(input, select, textarea):focus,
+  .sacola-campos :is(input, select, textarea):focus {
+    outline: none; border-color: var(--terra);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--terra) 16%, transparent);
+  }
+  .form textarea, .sacola-campos textarea { resize: vertical; }
+  .form-nota { font-size: 0.73rem; color: var(--c40); text-align: center; }
+
+  /* ---------- sacola ---------- */
+  .sacola {
+    width: min(30rem, 100%); max-width: 100%;
+    max-height: 100dvh; height: 100dvh;
+    margin: 0 0 0 auto; padding: 0; border: 0;
+    background: var(--creme); color: var(--tinta);
+    box-shadow: -24px 0 60px -28px rgba(34, 27, 22, 0.6);
+  }
+  .sacola::backdrop { background: rgba(22, 17, 14, 0.55); backdrop-filter: blur(3px); }
+  .sacola-form { display: flex; flex-direction: column; height: 100%; }
+  .sacola-cab {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1.1rem clamp(1rem, 4vw, 1.6rem);
+    border-bottom: 1px solid var(--linha);
+    background: var(--carvao); color: var(--claro);
+  }
+  .sacola-cab h2 { font-size: 1.35rem; color: var(--claro); }
+  .sacola-x {
+    width: 2.2rem; height: 2.2rem; display: grid; place-items: center; flex: none;
+    border-radius: 50%; cursor: pointer; font-size: 1rem;
+    background: rgba(242, 233, 218, 0.1); color: var(--claro); border: 0;
+    transition: background var(--t) var(--e);
+  }
+  .sacola-x:hover { background: rgba(242, 233, 218, 0.22); }
+
+  .sacola-corpo { flex: 1; overflow-y: auto; padding: clamp(1rem, 4vw, 1.6rem); display: grid; gap: 1.4rem; align-content: start; }
+  .sacola-vazia { font-size: 0.95rem; color: var(--c60); text-align: center; padding: 2.5rem 1rem; }
+  .sacola-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
+  .sacola-linha {
+    display: grid; grid-template-columns: 1fr auto; gap: 0.5rem 0.9rem; align-items: center;
+    background: var(--papel); border: 1px solid var(--linha);
+    border-radius: var(--raio); padding: 0.75rem 0.85rem;
+  }
+  .sacola-linha b { font-family: 'Fraunces', ui-serif, serif; font-size: 0.98rem; font-weight: 600; }
+  .sacola-linha small { display: block; font-size: 0.78rem; color: var(--c40); margin-top: 0.15rem; }
+  .qtd { display: flex; align-items: center; gap: 0.15rem; }
+  .qtd button {
+    width: 1.8rem; height: 1.8rem; display: grid; place-items: center;
+    border-radius: 50%; cursor: pointer;
+    font: inherit; font-size: 1rem; font-weight: 700; line-height: 1;
+    background: transparent; color: var(--tinta);
+    border: 1px solid var(--linha);
+    transition: background var(--t) var(--e), color var(--t) var(--e), border-color var(--t) var(--e);
+  }
+  .qtd button:hover { background: var(--terra); border-color: var(--terra); color: #fff; }
+  .qtd span { min-width: 1.7rem; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .sacola-modo { border: 0; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+  .sacola-modo legend {
+    padding: 0; margin-bottom: 0.5rem;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--c60);
+  }
+  .radio {
+    display: flex; align-items: center; gap: 0.7rem; cursor: pointer;
+    background: var(--papel); border: 1px solid var(--linha);
+    border-radius: var(--raio); padding: 0.7rem 0.85rem;
+    transition: border-color var(--t) var(--e), background var(--t) var(--e);
+  }
+  .radio:has(input:checked) { border-color: var(--terra); background: color-mix(in srgb, var(--terra) 6%, var(--papel)); }
+  .radio input { accent-color: var(--terra); width: 1.05rem; height: 1.05rem; flex: none; }
+  .radio b { display: block; font-size: 0.94rem; }
+  .radio small { display: block; font-size: 0.76rem; color: var(--c40); margin-top: 0.1rem; }
+
+  .sacola-campos { display: grid; gap: 0.9rem; }
+  .sacola-campos [hidden] { display: none; }
+
+  /* cada área de dados é um bloco fechado, com título e moldura próprios:
+     no celular a rolagem é longa e sem isso tudo vira um campo atrás do outro */
+  .bloco {
+    display: grid; gap: 0.8rem; margin: 0;
+    background: var(--papel); border: 1px solid var(--linha);
+    border-radius: var(--raio); padding: 1.25rem 0.95rem 1rem;
+  }
+  .bloco legend {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.28rem 0.7rem; margin-left: -0.2rem;
+    border-radius: 999px;
+    background: var(--carvao); color: var(--claro);
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .bloco legend i { color: var(--trigo); font-size: 0.8rem; }
+  .bloco-nota { font-size: 0.76rem; line-height: 1.55; color: var(--c40); }
+  .opc {
+    font-size: 0.62rem; font-weight: 600; letter-spacing: 0.1em;
+    color: var(--c40); text-transform: uppercase;
+  }
+  /* o label é grid, então o selo "opcional" cairia numa linha só dele:
+     duas colunas na primeira linha, e o campo atravessa as duas embaixo */
+  .sacola-campos label:has(.opc) { grid-template-columns: auto 1fr; align-items: baseline; }
+  .sacola-campos label:has(.opc) > :is(input, select, textarea) { grid-column: 1 / -1; }
+
+  .sacola-pe {
+    padding: clamp(1rem, 4vw, 1.6rem);
+    border-top: 1px solid var(--linha);
+    background: var(--creme-e);
+  }
+  .sacola-conta { margin: 0 0 1rem; display: grid; gap: 0.4rem; font-size: 0.9rem; }
+  .sacola-conta div { display: flex; justify-content: space-between; gap: 1rem; }
+  .sacola-conta dt { color: var(--c60); }
+  .sacola-conta dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .sacola-conta [hidden] { display: none; }
+  .sacola-total {
+    padding-top: 0.5rem; border-top: 1px dashed var(--linha);
+    font-family: 'Fraunces', ui-serif, serif; font-size: 1.2rem; font-weight: 700;
+  }
+  .sacola-total dt { color: var(--tinta) !important; }
+  .sacola-total dd { color: var(--terra); }
+  .sacola-aviso {
+    margin-bottom: 0.8rem; padding: 0.6rem 0.8rem; border-radius: 9px;
+    font-size: 0.83rem; font-weight: 600; color: var(--terra-e);
+    background: color-mix(in srgb, var(--terra) 11%, transparent);
+    border: 1px solid color-mix(in srgb, var(--terra) 34%, transparent);
+  }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+  /* ---------- rodapé ---------- */
+  .rodape { background: var(--carvao); color: var(--claro-60); }
+  .rodape-grade {
+    display: grid; gap: 2.4rem;
+    max-width: 1200px; margin: 0 auto;
+    padding: clamp(2.6rem, 6vw, 4.2rem) clamp(1rem, 4vw, 2.8rem) 1.6rem;
+  }
+  .rodape p, .rodape address { margin: 0 0 0.6rem; font-style: normal; font-size: 0.89rem; line-height: 1.8; }
+  .rodape-marca {
+    font-family: 'Fraunces', ui-serif, Georgia, serif; font-weight: 700;
+    font-size: 1.28rem; color: var(--claro); margin-bottom: 0.9rem !important;
+  }
+  .rodape-marca small {
+    display: block; font-family: 'Karla', sans-serif; font-weight: 600;
+    font-size: 0.57rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--trigo); margin-top: 0.35rem;
+  }
+  .rodape-t {
+    color: var(--claro); font-weight: 700; font-size: 0.7rem;
+    letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 0.9rem !important;
+  }
+  .rodape-t2 { margin-top: 1.6rem; }
+  .rodape-entrega { font-size: 0.84rem !important; color: var(--claro-40); }
+  .rodape a { color: var(--claro-60); text-decoration: none; transition: color var(--t) var(--e); }
+  .rodape a:hover { color: var(--claro); text-decoration: underline; }
+  .horarios { margin: 0; display: grid; gap: 0.45rem; font-size: 0.89rem; }
+  .horarios div { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 0.45rem; border-bottom: 1px solid #3a3028; }
+  .horarios dt { color: var(--claro-40); }
+  .horarios dd { margin: 0; color: var(--claro); }
+  .rodape-mapa iframe {
+    width: 100%; height: 210px; border: 1px solid #3a3028; border-radius: var(--raio);
+    display: block; filter: grayscale(0.35) contrast(1.05) brightness(0.94) sepia(0.15);
+  }
+  .mapa-nota { margin-top: 0.7rem !important; font-size: 0.82rem !important; color: var(--claro-40); }
+  .mapa-link { font-size: 0.82rem; font-weight: 700; color: var(--trigo) !important; }
+
+  .creditos {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 clamp(1rem, 4vw, 2.8rem) 1.2rem;
+    font-size: 0.75rem; color: var(--claro-40);
+  }
+  .creditos summary { cursor: pointer; padding: 0.4rem 0; }
+  .creditos ul { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.25rem; line-height: 1.7; }
+
+  .rodape-fim {
+    max-width: 1200px; margin: 0 auto;
+    padding: 1.1rem clamp(1rem, 4vw, 2.8rem) 1.6rem;
+    display: flex; flex-wrap: wrap; gap: 0.9rem; justify-content: space-between;
+    border-top: 1px solid #3a3028; font-size: 0.79rem !important; color: var(--claro-40);
+  }
+
+  /*
+    Alvo de dedo no toque. Medido em 390px: o `+` dos antipasti tinha 30px, os
+    links do rodapé 19px de altura. O aro visível continua do tamanho que
+    estava — quem cresce é a área que responde, via ::after invisível, para o
+    desenho da carta não engordar junto.
+  */
+  @media (max-width: 899px) {
+    /*
+      O botão inteiro cresce para 2,75rem e o aro visível desce para um
+      ::before de 1,9rem: a caixa que responde ao dedo é a do próprio botão,
+      e o desenho da carta não engorda junto. Verificado com clique a 18px
+      do centro — entra na sacola.
+    */
+    .mais {
+      width: 2.75rem; height: 2.75rem;
+      margin: -0.42rem -0.42rem 0 0;
+      border-color: transparent; background: transparent;
+    }
+    .mais::before {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 1.9rem; height: 1.9rem; translate: -50% -50%;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--terra) 35%, transparent);
+    }
+    .mais:hover::before, .mais:active::before { background: var(--terra); }
+    .rodape a, .mapa-link, .reserva-links a { display: inline-block; padding-block: 0.6rem; }
+    .horarios div { padding-block: 0.25rem 0.7rem; }
+    .sacola-btn { min-height: 2.75rem; }
+    .marca { padding-block: 0.35rem; }
+  }
+
+  .fo :focus-visible { outline: 2px solid var(--terra); outline-offset: 3px; border-radius: 6px; }
+  .heroi :focus-visible, .pedido :focus-visible, .ambiente :focus-visible,
+  .molhos :focus-visible, .rodape :focus-visible { outline-color: var(--trigo); }
+
+  /* o que o Motion vai revelar nasce escondido — e só quando há JS e vontade
+     de movimento. Ver o <script is:inline> no <head>. */
+  :global(.anima-on) .fo [data-anima],
+  :global(.anima-on) .fo .grade-carta .prato,
+  :global(.anima-on) .fo [data-palavra] { opacity: 0; }
+
+  /* ---------- do tablet para cima ---------- */
+  @media (min-width: 700px) {
+    .form-2 { grid-template-columns: 1fr 1fr; }
+    .form-3 { grid-template-columns: 1.3fr 1fr 1fr; }
+    .destaque { grid-template-columns: 0.85fr 1fr; }
+    .rodape-grade { grid-template-columns: 1.1fr 1fr; }
+    .sacola-btn span { display: inline; }
+  }
+
+  @media (min-width: 920px) {
+    .fo { --topo-h: 4.3rem; }
+    .topo-nav { display: flex; }
+    .topo-reserva { display: inline-flex; }
+    .heroi-grade { grid-template-columns: 1.05fr 0.95fr; }
+    .ambiente-grade { grid-template-columns: 0.85fr 1fr; }
+    .reserva { grid-template-columns: 1fr 1fr; gap: 3rem; }
+    .rodape-grade { grid-template-columns: 1.15fr 0.95fr 1.2fr; }
+  }
+
+  /* ---------- movimento reduzido ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .fo *, .sacola * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .prato:hover .prato-foto img { scale: 1; }
+  }
+</style>
+
+<script>
+  /*
+    Todo o movimento da página em um lugar, e todo ele pelo Motion One.
+    Ordem: primeiro o que a página precisa para funcionar (sacola, formulário),
+    depois o que ela precisa para ficar bonita (revelações, parallax).
+    Se o Motion falhar em carregar, o `catch` devolve o conteúdo visível.
+  */
+  import {
+    resumir,
+    brl,
+    MINIMO_ENTREGA,
+    type Sacola,
+    type Modo,
+    type ItemCarta,
+  } from '../../../scripts/forno-pedido';
+
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SAIDA = [0.22, 0.61, 0.36, 1] as const;
+  const raiz = document.documentElement;
+
+  /* ---------------- catálogo e sacola ---------------- */
+
+  const ilha = document.querySelector('[data-carta]');
+  const CARTA: ItemCarta[] = ilha ? JSON.parse(ilha.textContent || '[]') : [];
+
+  const CHAVE = 'forno-antico:sacola';
+  const ler = (): Sacola => {
+    try {
+      const cru = JSON.parse(localStorage.getItem(CHAVE) || '{}');
+      return cru && typeof cru === 'object' ? cru : {};
+    } catch {
+      return {}; // storage bloqueado ou lixo salvo: sacola nova, não página quebrada
+    }
+  };
+  const salvar = (s: Sacola) => {
+    try {
+      localStorage.setItem(CHAVE, JSON.stringify(s));
+    } catch {
+      /* modo privado sem storage: a sacola vale só nesta visita */
+    }
+  };
+
+  let sacola = ler();
+  let modo: Modo = 'entrega';
+
+  const dlg = document.querySelector<HTMLDialogElement>('[data-sacola]');
+  const elConta = document.querySelector<HTMLElement>('[data-conta]');
+  const elLinhas = document.querySelector<HTMLUListElement>('[data-linhas]');
+  const elVazia = document.querySelector<HTMLElement>('[data-vazia]');
+  const blocos = [...document.querySelectorAll<HTMLElement>('[data-campos]')];
+  const soEntrega = document.querySelector<HTMLElement>('[data-so-entrega]');
+  const elSub = document.querySelector<HTMLElement>('[data-subtotal]');
+  const elTaxa = document.querySelector<HTMLElement>('[data-taxa]');
+  const elLinhaTaxa = document.querySelector<HTMLElement>('[data-linha-taxa]');
+  const elTotal = document.querySelector<HTMLElement>('[data-total]');
+  const elAviso = document.querySelector<HTMLElement>('[data-aviso]');
+  const btnEnviar = document.querySelector<HTMLButtonElement>('[data-enviar]');
+  const selPag = document.querySelector<HTMLSelectElement>('[data-pagamento]');
+  const campoTroco = document.querySelector<HTMLElement>('[data-troco]');
+  const formPedido = document.querySelector<HTMLFormElement>('[data-form-pedido]');
+
+  function pintar() {
+    const r = resumir(sacola, CARTA, modo);
+
+    if (elConta) {
+      elConta.textContent = String(r.itens);
+      elConta.hidden = r.itens === 0;
+    }
+
+    if (elLinhas) {
+      elLinhas.innerHTML = '';
+      for (const l of r.linhas) {
+        const li = document.createElement('li');
+        li.className = 'sacola-linha';
+        li.innerHTML = `
+          <div><b></b><small></small></div>
+          <div class="qtd">
+            <button type="button" data-menos aria-label="Tirar um">&minus;</button>
+            <span></span>
+            <button type="button" data-mais aria-label="Somar um">+</button>
+          </div>`;
+        li.querySelector('b')!.textContent = l.nome;
+        li.querySelector('small')!.textContent = `${brl(l.preco)} · total ${brl(l.total)}`;
+        li.querySelector('.qtd span')!.textContent = String(l.qtd);
+        li.querySelector('[data-menos]')!.addEventListener('click', () => mexer(l.slug, -1));
+        li.querySelector('[data-mais]')!.addEventListener('click', () => mexer(l.slug, 1));
+        elLinhas.append(li);
+      }
+    }
+
+    const vazia = r.linhas.length === 0;
+    if (elVazia) elVazia.hidden = !vazia;
+    blocos.forEach((b) => (b.hidden = vazia));
+    if (soEntrega) soEntrega.hidden = modo !== 'entrega';
+    /* só rua e bairro são obrigatórios: casa sem complemento existe, e campo
+       required dentro de bloco escondido travaria o envio na retirada */
+    soEntrega
+      ?.querySelectorAll<HTMLInputElement>('[name="endereco"], [name="bairro"]')
+      .forEach((i) => (i.required = modo === 'entrega'));
+
+    /* troco só faz sentido pagando em dinheiro */
+    if (campoTroco) campoTroco.hidden = selPag?.value !== 'Dinheiro';
+
+    if (elSub) elSub.textContent = brl(r.subtotal);
+    if (elTaxa) elTaxa.textContent = brl(r.taxa);
+    if (elLinhaTaxa) elLinhaTaxa.hidden = modo !== 'entrega';
+    if (elTotal) elTotal.textContent = brl(r.total);
+
+    if (elAviso) {
+      elAviso.hidden = r.faltaMinimo === 0;
+      elAviso.textContent = `Faltam ${brl(r.faltaMinimo)} para o mínimo de ${brl(MINIMO_ENTREGA)} da entrega. Na retirada não tem mínimo.`;
+    }
+    if (btnEnviar) btnEnviar.disabled = !r.podeEnviar;
+  }
+
+  function mexer(slug: string, d: number) {
+    const q = (sacola[slug] || 0) + d;
+    if (q < 1) delete sacola[slug];
+    else sacola[slug] = Math.min(20, q);
+    salvar(sacola);
+    pintar();
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-add]').forEach((b) => {
+    b.addEventListener('click', () => {
+      mexer(b.dataset.add!, 1);
+      voar(b);
+      pulsar(b);
+    });
+  });
+
+  selPag?.addEventListener('change', pintar);
+
+  document.querySelectorAll<HTMLInputElement>('input[name="modo"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      modo = r.value as Modo;
+      pintar();
+    });
+  });
+
+  document.querySelectorAll('[data-abrir-sacola]').forEach((b) => b.addEventListener('click', abrir));
+  document.querySelector('[data-fechar-sacola]')?.addEventListener('click', fechar);
+  /* clique no backdrop: o alvo do clique é o próprio <dialog> */
+  dlg?.addEventListener('click', (e) => {
+    if (e.target === dlg) fechar();
+  });
+  /* ESC fecha, mas passando pela animação em vez de sumir de uma vez */
+  dlg?.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    fechar();
+  });
+
+  formPedido?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const r = resumir(sacola, CARTA, modo);
+    if (!r.podeEnviar) return;
+
+    const d = new FormData(formPedido);
+    const v = (k: string) => String(d.get(k) ?? '').trim();
+    const entrega = modo === 'entrega';
+
+    const linhas = [
+      'Olá! Pedido pelo site do Forno Antico.',
+      '',
+      ...r.linhas.map((l) => `• ${l.qtd}× ${l.nome} — ${brl(l.total)}`),
+      '',
+      `Subtotal: ${brl(r.subtotal)}`,
+      entrega && `Entrega: ${brl(r.taxa)}`,
+      `Total: ${brl(r.total)}`,
+      '',
+      entrega ? 'Entrega' : 'Retirada no balcão',
+      `Nome: ${v('nome')}`,
+      `Meu WhatsApp: ${v('fone')}`,
+      entrega && `Endereço: ${v('endereco')}`,
+      entrega && v('complemento') && `Complemento: ${v('complemento')}`,
+      entrega && `Bairro: ${v('bairro')}`,
+      entrega && v('referencia') && `Referência: ${v('referencia')}`,
+      `Pagamento: ${v('pagamento')}`,
+      v('pagamento') === 'Dinheiro' && v('troco') && `Troco para: ${v('troco')}`,
+      v('obs') && `Observações: ${v('obs')}`,
+    ].filter(Boolean);
+
+    window.open(
+      `https://wa.me/${formPedido.dataset.zap}?text=${encodeURIComponent(linhas.join('\n'))}`,
+      '_blank',
+      'noopener',
+    );
+  });
+
+  pintar();
+
+  /* ---------------- reserva ---------------- */
+
+  /* a data da reserva não pode ser ontem; o mínimo é hoje, no fuso do visitante */
+  const campoData = document.querySelector<HTMLInputElement>('[data-hoje]');
+  if (campoData) {
+    const hoje = new Date();
+    hoje.setMinutes(hoje.getMinutes() - hoje.getTimezoneOffset());
+    campoData.min = hoje.toISOString().slice(0, 10);
+    campoData.value = campoData.min;
+  }
+
+  /* site estático não tem para onde postar — e restaurante confirma no zap */
+  const formReserva = document.querySelector<HTMLFormElement>('[data-form-reserva]');
+  formReserva?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const d = new FormData(formReserva);
+    const v = (k: string) => String(d.get(k) ?? '').trim();
+    const [a, m, dia] = v('data').split('-');
+    const linhas = [
+      'Olá! Queria reservar uma mesa no Forno Antico.',
+      `Nome: ${v('nome')}`,
+      `Dia: ${dia}/${m}/${a} às ${v('hora')}`,
+      `Pessoas: ${v('pessoas')}`,
+      v('obs') && `Observações: ${v('obs')}`,
+      `Meu WhatsApp: ${v('fone')}`,
+    ].filter(Boolean);
+    window.open(
+      `https://wa.me/${formReserva.dataset.zap}?text=${encodeURIComponent(linhas.join('\n'))}`,
+      '_blank',
+      'noopener',
+    );
+  });
+
+  /* ---------------- filtro da carta ---------------- */
+
+  const grade = document.querySelector<HTMLElement>('[data-grade]');
+  const cards = [...document.querySelectorAll<HTMLElement>('.prato')];
+  const chips = [...document.querySelectorAll<HTMLButtonElement>('.filtro .chip')];
+  const tituloFiltro = document.querySelector<HTMLElement>('[data-filtro-titulo]');
+  const NOMES: Record<string, string> = {
+    tudo: 'Doze pratos na carta de hoje',
+    fresche: 'Le paste fresche — a folha aberta hoje de manhã',
+    ripieni: 'I ripieni e i forni — fechados à mão, assados no forno',
+    sud: 'I classici del sud — poucos ingredientes, nenhuma rede',
+  };
+
+  /* ---------------- movimento (Motion One) ---------------- */
+
+  /* feedback de "entrou na sacola": trocado por uma função de verdade assim
+     que o Motion carrega. Antes disso, e sem JS de animação, não faz nada. */
+  let pulsar: (el: HTMLElement) => void = () => {};
+  /* sem movimento (ou sem Motion) o pedido entra igual, só não voa */
+  let voar: (botao: HTMLElement) => void = () => {};
+
+  /* filtro em versão sem animação — vale até o Motion chegar, e para sempre
+     para quem pediu menos movimento */
+  let aplicarFiltro = (cat: string) => {
+    cards.forEach((c) => (c.hidden = cat !== 'tudo' && c.dataset.cat !== cat));
+    if (tituloFiltro) tituloFiltro.textContent = NOMES[cat] ?? NOMES.tudo;
+  };
+
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+      aplicarFiltro(chip.dataset.cat!);
+    });
+  });
+
+  function abrir() {
+    if (!dlg) return;
+    dlg.showModal();
+    abrirAnimado?.();
+  }
+  function fechar() {
+    if (!dlg) return;
+    if (fecharAnimado) fecharAnimado();
+    else dlg.close();
+  }
+  let abrirAnimado: (() => void) | null = null;
+  let fecharAnimado: (() => void) | null = null;
+
+  async function ligarMovimento() {
+    if (reduz) return;
+    const { animate, inView, scroll, stagger, press } = await import('motion');
+
+    /* 1. barra de progresso do topo */
+    const barra = document.querySelector<HTMLElement>('[data-progresso]');
+    if (barra) scroll(animate(barra, { scaleX: [0, 1] }, { ease: 'linear' }));
+
+    /* 2. herói: título palavra a palavra, depois o resto */
+    const palavras = document.querySelectorAll<HTMLElement>('[data-palavra]');
+    animate(
+      palavras,
+      { opacity: [0, 1], y: [18, 0], filter: ['blur(6px)', 'blur(0px)'] },
+      { duration: 0.75, delay: stagger(0.07), ease: SAIDA },
+    );
+    animate(
+      document.querySelectorAll('.heroi [data-anima]'),
+      { opacity: [0, 1], y: [14, 0] },
+      { duration: 0.7, delay: stagger(0.08, { startDelay: 0.25 }), ease: SAIDA },
+    );
+
+    /*
+      inView do Motion re-dispara a cada reentrada. Revelação é evento de
+      estreia: dispara uma vez e solta o observador.
+    */
+    const umaVez = (
+      alvo: Element,
+      efeito: () => void,
+      opcoes?: Parameters<typeof inView>[2],
+    ) => {
+      let parar = () => {};
+      parar = inView(alvo, () => { efeito(); parar(); }, opcoes);
+    };
+
+    /* 3. revelação das demais seções, em cascata dentro de cada grupo */
+    const fora = [...document.querySelectorAll<HTMLElement>('[data-anima]')].filter(
+      (el) => !el.closest('.heroi'),
+    );
+    /* agrupa por pai para o stagger correr entre irmãos, não pela página toda */
+    const grupos = new Map<Element, HTMLElement[]>();
+    for (const el of fora) {
+      const pai = el.parentElement!;
+      grupos.set(pai, [...(grupos.get(pai) ?? []), el]);
+    }
+    /*
+      Título e corpo param de entrar do mesmo jeito. O título sobe mais e sai
+      de um leve desfoque, como quem assenta o foco; o corpo só desliza um
+      fio. É a mesma linguagem — nunca dois efeitos brigando —, mas com peso
+      diferente para papéis diferentes, que é o que faz a página ter ritmo em
+      vez de um piscar uniforme.
+    */
+    const ehTitulo = (el: HTMLElement) => el.matches('header, .cab') || !!el.querySelector('h1, h2');
+    for (const irmaos of grupos.values()) {
+      umaVez(
+        irmaos[0],
+        () => {
+          const titulos = irmaos.filter(ehTitulo);
+          const corpo = irmaos.filter((el) => !ehTitulo(el));
+          if (titulos.length)
+            animate(
+              titulos,
+              { opacity: [0, 1], y: [30, 0], filter: ['blur(5px)', 'blur(0px)'] },
+              { duration: 0.75, delay: stagger(0.07), ease: SAIDA, filter: { duration: 0.45 } },
+            );
+          if (corpo.length)
+            animate(
+              corpo,
+              { opacity: [0, 1], y: [16, 0] },
+              { duration: 0.6, delay: stagger(0.06, { startDelay: titulos.length ? 0.1 : 0 }), ease: SAIDA },
+            );
+        },
+        { amount: 0.15, margin: '0px 0px -8% 0px' },
+      );
+    }
+
+    /*
+      3b. A CARTA CHEGANDO — o único momento autoral da página.
+
+      Antes, as doze massas simplesmente já estavam lá, e todas as outras
+      seções entravam com exatamente a mesma revelação genérica. Um site em
+      que tudo entra igual não tem momento nenhum. A carta é o assunto desta
+      página, então é ela que ganha o gesto: a onda sai do centro para fora
+      (`from: 'center'`), como quem serve a mesa a partir do meio, e o
+      desfoque limpa enquanto o prato sobe — o efeito de foco assentando.
+    */
+    const grade = document.querySelector<HTMLElement>('[data-grade]');
+    if (grade) {
+      const pratos = [...grade.querySelectorAll<HTMLElement>('.prato')];
+      /*
+        Gatilho por prato, e não um só para a grade inteira.
+
+        A primeira versão observava a grade e disparava um `stagger` sobre os
+        doze de uma vez. Testado, ela não disparava em todo caminho de scroll —
+        e como os pratos nascem em `opacity: 0`, a carta inteira, que é o
+        assunto da página, podia ficar invisível para sempre. Com um gatilho
+        por cartão não existe cartão órfão.
+
+        O atraso sai da distância horizontal até o centro da grade, medida na
+        hora: a onda abre do meio para as beiradas, como quem serve a mesa a
+        partir do centro. Em uma coluna só, todo cartão é o centro e o atraso
+        é zero — o gesto some sozinho no celular, onde não faria sentido.
+      */
+      pratos.forEach((prato) => {
+        umaVez(
+          prato,
+          () => {
+            const g = grade.getBoundingClientRect();
+            const r = prato.getBoundingClientRect();
+            const desvio = g.width > 0
+              ? Math.abs(r.left + r.width / 2 - (g.left + g.width / 2)) / (g.width / 2)
+              : 0;
+            animate(
+              prato,
+              { opacity: [0, 1], y: [30, 0], scale: [0.96, 1], filter: ['blur(8px)', 'blur(0px)'] },
+              {
+                duration: 0.75,
+                delay: desvio * 0.14,
+                ease: SAIDA,
+                filter: { duration: 0.5, ease: 'easeOut' },
+              },
+            );
+          },
+          { amount: 0.12, margin: '0px 0px -8% 0px' },
+        );
+      });
+    }
+
+    /* 4. os números contam até o valor quando entram na tela */
+    document.querySelectorAll<HTMLElement>('[data-conta-ate]').forEach((el) => {
+      const fim = Number(el.dataset.contaAte);
+      const casas = Number(el.dataset.casas || 0);
+      const ano = el.dataset.ano === '1';
+      umaVez(
+        el,
+        () => {
+          animate(0, fim, {
+            duration: 1.3,
+            ease: SAIDA,
+            onUpdate: (n) => {
+              el.textContent = ano
+                ? String(Math.round(n))
+                : n.toLocaleString('pt-BR', {
+                    minimumFractionDigits: casas,
+                    maximumFractionDigits: casas,
+                  });
+            },
+          });
+        },
+        { amount: 0.6 },
+      );
+    });
+
+    /* 5. parallax das fotos em arco — dois dedos de deslocamento, nada de 3D */
+    document.querySelectorAll<HTMLElement>('[data-parallax]').forEach((el) => {
+      scroll(animate(el, { y: [30, -30] }, { ease: 'linear' }), {
+        target: el,
+        offset: ['start end', 'end start'],
+      });
+    });
+
+    /* 6. o ladrilho de massa da faixa de molhos anda devagar com o scroll */
+    const molhos = document.querySelector<HTMLElement>('.molhos');
+    if (molhos) {
+      scroll(animate(molhos, { '--desliza': ['0px', '-60px'] } as any, { ease: 'linear' }), {
+        target: molhos,
+        offset: ['start end', 'end start'],
+      });
+    }
+
+    /* 7. tato: todo botão afunda um fio quando pressionado */
+    press('.fo :is(.btn, .chip, .mais)', (el) => {
+      animate(el, { scale: 0.96 }, { duration: 0.12 });
+      return () => animate(el, { scale: 1 }, { type: 'spring', stiffness: 500, damping: 26 });
+    });
+
+    /* 8. adicionar à sacola: o botão pulsa e o contador do topo pula */
+    const contador = document.querySelector<HTMLElement>('[data-conta]');
+    const btnSacola = document.querySelector<HTMLElement>('[data-abrir-sacola]');
+    pulsar = (el) => {
+      animate(el, { scale: [1, 1.07, 1] }, { duration: 0.35, ease: SAIDA });
+    };
+
+    /*
+      O prato voa até a sacola.
+
+      Sem isso, tocar em "Adicionar" no meio da carta só mudava um número lá
+      em cima, longe do dedo e fora do campo de visão — a pessoa não sabia se
+      o toque entrou. O clone sai exatamente de cima da foto, então a coisa
+      que voa é a comida que foi escolhida, não um ícone genérico.
+
+      O arco vem de dar `ease` diferente para x e para y: o horizontal corre
+      parelho e o vertical acelera no fim, e o resultado é uma parábola em vez
+      de uma diagonal reta. O clone vive no <body> com `position: fixed`, fora
+      do `overflow: hidden` do card, senão ele seria recortado na saída.
+    */
+    voar = (botao) => {
+      const foto = botao.closest('.prato, .destaque, .item')?.querySelector<HTMLImageElement>('.arco img');
+      const alvo = btnSacola?.getBoundingClientRect();
+      if (!foto || !alvo) {
+        if (contador) animate(contador, { scale: [1, 1.35, 1] }, { duration: 0.4, ease: SAIDA });
+        return;
+      }
+      const de = foto.getBoundingClientRect();
+      const clone = document.createElement('span');
+      clone.className = 'voo';
+      clone.style.cssText =
+        `left:${de.left}px; top:${de.top}px; width:${de.width}px; height:${de.height}px;` +
+        `background-image:url("${foto.currentSrc || foto.src}")`;
+      document.body.append(clone);
+
+      const dx = alvo.left + alvo.width / 2 - (de.left + de.width / 2);
+      const dy = alvo.top + alvo.height / 2 - (de.top + de.height / 2);
+
+      animate(
+        clone,
+        { x: dx, y: dy, scale: 0.1, opacity: [1, 1, 0.15], rotate: 26 },
+        {
+          duration: 0.72,
+          x: { ease: [0.35, 0, 0.25, 1] },
+          y: { ease: [0.75, 0, 0.85, 0.4] },
+          scale: { ease: [0.6, 0, 0.9, 0.5] },
+          opacity: { times: [0, 0.75, 1], ease: 'linear' },
+        },
+      ).finished.then(() => {
+        clone.remove();
+        /* o contador só reage quando o prato chega, senão o pulo vem antes da comida */
+        if (contador) animate(contador, { scale: [1, 1.45, 1] }, { type: 'spring', bounce: 0.6, visualDuration: 0.35 });
+        if (btnSacola) animate(btnSacola, { scale: [1, 1.06, 1] }, { duration: 0.32, ease: SAIDA });
+      });
+    };
+
+    /* 9. filtro: a grade sai junta e volta em cascata */
+    aplicarFiltro = async (cat) => {
+      const visiveis = cards.filter((c) => !c.hidden);
+      if (visiveis.length) {
+        await animate(visiveis, { opacity: 0, y: -8 }, { duration: 0.16, ease: 'easeIn' }).finished;
+      }
+      const ficam = cards.filter((c) => cat === 'tudo' || c.dataset.cat === cat);
+      cards.forEach((c) => (c.hidden = !ficam.includes(c)));
+      if (tituloFiltro) {
+        animate(tituloFiltro, { opacity: [0, 1], y: [6, 0] }, { duration: 0.35, ease: SAIDA });
+        tituloFiltro.textContent = NOMES[cat] ?? NOMES.tudo;
+      }
+      animate(
+        ficam,
+        { opacity: [0, 1], y: [14, 0] },
+        { duration: 0.45, delay: stagger(0.035), ease: SAIDA },
+      );
+    };
+
+    /* 10. a sacola entra deslizando da direita, e sai do mesmo jeito */
+    if (dlg) {
+      abrirAnimado = () => {
+        animate(dlg, { opacity: [0, 1], x: [32, 0] }, { duration: 0.34, ease: SAIDA });
+        animate(
+          dlg.querySelectorAll('.sacola-corpo > *:not([hidden])'),
+          { opacity: [0, 1], y: [12, 0] },
+          { duration: 0.4, delay: stagger(0.05, { startDelay: 0.1 }), ease: SAIDA },
+        );
+      };
+      fecharAnimado = async () => {
+        await animate(dlg, { opacity: 0, x: 32 }, { duration: 0.22, ease: 'easeIn' }).finished;
+        dlg.close();
+        dlg.style.cssText = '';
+      };
+    }
+
+    /* 11. a grade da carta entra na primeira visita */
+    if (grade) {
+      umaVez(
+        grade,
+        () => animate(cards, { opacity: [0, 1], y: [18, 0] }, { duration: 0.55, delay: stagger(0.04), ease: SAIDA }),
+        { amount: 0.05 },
+      );
+    }
+
+  }
+
+  /*
+    Rede de segurança: conteúdo vem antes de efeito. Se o Motion não carregar
+    — rede caindo, bundle bloqueado — tudo volta a ficar visível.
+  */
+  const revelarTudo = () => raiz.classList.remove('anima-on');
+  const socorro = setTimeout(revelarTudo, 3000);
+  ligarMovimento()
+    .catch(revelarTudo)
+    .finally(() => clearTimeout(socorro));
+  if (reduz) revelarTudo();
+</script>
