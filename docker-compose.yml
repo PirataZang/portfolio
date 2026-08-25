@@ -2,7 +2,7 @@ services:
   portfolio:
     build:
       context: .
-      target: portfolio
+      target: dev
     ports:
       - "4322:4322"
     volumes:
