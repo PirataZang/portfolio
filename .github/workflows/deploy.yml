@@ -18,4 +18,5 @@ jobs:
           port: ${{ vars.VPS_PORT || 22 }}
           script: |
             cd ${{ vars.VPS_PATH }}
+            git pull
             ./deploy.sh

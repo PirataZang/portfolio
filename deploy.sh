@@ -4,13 +4,14 @@ cd "$(dirname "$0")"
 
 # Publica a build de produção em dist/, dentro do próprio repositório — é de
 # lá que o nginx da VPS serve via `alias` (location ^~ /portfolio/).
-# Uso: ./deploy.sh — local (SSH manual) ou chamado pela GH Action em .github/workflows/deploy.yml.
+# Uso: dá `git pull` ANTES de chamar isso — não faça pull daqui de dentro, o
+# bash já tem o script carregado na memória e continuaria rodando a versão
+# antiga do arquivo mesmo depois do pull trocar o conteúdo em disco.
+# ./deploy.sh — local (SSH manual) ou chamado pela GH Action em .github/workflows/deploy.yml.
 
 DIST_DEST="$(pwd)/dist"
 VITE_BASE_URL="$(grep -E '^VITE_BASE_URL=' .env 2>/dev/null | cut -d= -f2- || true)"
 VITE_BASE_URL="${VITE_BASE_URL:-/portfolio}"
-
-git pull
 
 docker build --target build --build-arg VITE_BASE_URL="$VITE_BASE_URL" -t portfolio-build .
 
