@@ -387,7 +387,7 @@ const jsonLd = {
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     />
-    <link rel="preload" as="image" href="/img/chapas/estoque.webp" type="image/webp" />
+    <link rel="preload" as="image" href={`${import.meta.env.BASE_URL}img/chapas/estoque.webp`} type="image/webp" />
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     <script is:inline>
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -402,7 +402,7 @@ const jsonLd = {
 
     <header class="topo">
       <div class="topo-barra" data-progresso aria-hidden="true"></div>
-      <a class="marca" href="/">{NEGOCIO.nome}<span>{NEGOCIO.sub}</span></a>
+      <a class="marca" href={import.meta.env.BASE_URL}>{NEGOCIO.nome}<span>{NEGOCIO.sub}</span></a>
       <nav class="topo-nav" aria-label="Seções">
         <a href="#acervo">Acervo</a>
         <a href="#bancada">A bancada</a>
@@ -454,9 +454,9 @@ const jsonLd = {
               ].map((c, i) => (
                 <div class="lasca" style={`--i:${i}`}>
                   <picture>
-                    <source srcset={`/img/chapas/${c.arq}.webp`} type="image/webp" />
+                    <source srcset={`${import.meta.env.BASE_URL}img/chapas/${c.arq}.webp`} type="image/webp" />
                     <img
-                      src={`/img/chapas/${c.arq}.jpg`}
+                      src={`${import.meta.env.BASE_URL}img/chapas/${c.arq}.jpg`}
                       alt={`Superfície de ${c.nome} vista de perto: ${c.fam.toLowerCase()}.`}
                       width="900" height="600"
                       fetchpriority={i === 0 ? 'high' : undefined}
@@ -523,8 +523,8 @@ const jsonLd = {
               <li class="pedra" data-fam={p.familia}>
                 <div class="pedra-foto">
                   <picture>
-                    <source srcset={`/img/chapas/${p.arq}.webp`} type="image/webp" />
-                    <img src={`/img/chapas/${p.arq}.jpg`} alt={p.alt}
+                    <source srcset={`${import.meta.env.BASE_URL}img/chapas/${p.arq}.webp`} type="image/webp" />
+                    <img src={`${import.meta.env.BASE_URL}img/chapas/${p.arq}.jpg`} alt={p.alt}
                          width="900" height="600" loading="lazy" decoding="async" />
                   </picture>
                   <span class="pedra-fam">{p.familia}</span>
@@ -576,8 +576,8 @@ const jsonLd = {
               <article class="acab-item">
                 <figure class="acab-pedra">
                   <picture>
-                    <source srcset={`/img/acabamentos/${a.img}.webp`} type="image/webp" />
-                    <img src={`/img/acabamentos/${a.img}.jpg`} alt={a.alt} width="1536" height="1024" loading="lazy" decoding="async" />
+                    <source srcset={`${import.meta.env.BASE_URL}img/acabamentos/${a.img}.webp`} type="image/webp" />
+                    <img src={`${import.meta.env.BASE_URL}img/acabamentos/${a.img}.jpg`} alt={a.alt} width="1536" height="1024" loading="lazy" decoding="async" />
                   </picture>
                 </figure>
                 <div class="cena-card cena-card-escuro">
@@ -887,7 +887,7 @@ const jsonLd = {
 
       <p class="caixa rodape-fim">
         <span>© 2026 {NEGOCIO.nome} {NEGOCIO.sub} · {NEGOCIO.cidade}/{NEGOCIO.uf}</span>
-        <a href="/">← Voltar ao portfolio</a>
+        <a href={import.meta.env.BASE_URL}>← Voltar ao portfolio</a>
       </p>
     </footer>
   </div>

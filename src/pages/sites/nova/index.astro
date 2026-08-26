@@ -418,7 +418,7 @@ const ONDA = 'M0,58 C220,110 430,10 720,34 C1010,58 1230,120 1440,74 L1440,140 L
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     />
-    <link rel="preload" as="image" href="/img/psi/acolhida.webp" type="image/webp" />
+    <link rel="preload" as="image" href={`${import.meta.env.BASE_URL}img/psi/acolhida.webp`} type="image/webp" />
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     <script is:inline>
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -431,7 +431,7 @@ const ONDA = 'M0,58 C220,110 430,10 720,34 C1010,58 1230,120 1440,74 L1440,140 L
 
     <header class="topo" data-topo>
       <div class="topo-barra" data-progresso aria-hidden="true"></div>
-      <a class="marca" href="/">
+      <a class="marca" href={import.meta.env.BASE_URL}>
         <span class="marca-folha" aria-hidden="true">
           <svg viewBox="0 0 40 40" focusable="false">
             <path
@@ -505,9 +505,9 @@ const ONDA = 'M0,58 C220,110 430,10 720,34 C1010,58 1230,120 1440,74 L1440,140 L
           <figure class="heroi-foto" data-anima>
             <div class="folha" data-parallax>
               <picture>
-                <source srcset="/img/psi/acolhida.webp" type="image/webp" />
+                <source srcset={`${import.meta.env.BASE_URL}img/psi/acolhida.webp`} type="image/webp" />
                 <img
-                  src="/img/psi/acolhida.jpg"
+                  src={`${import.meta.env.BASE_URL}img/psi/acolhida.jpg`}
                   alt="Psicólogo ouvindo um paciente em sessão, com um vaso de planta entre eles."
                   width="1200"
                   height="800"
@@ -652,9 +652,9 @@ const ONDA = 'M0,58 C220,110 430,10 720,34 C1010,58 1230,120 1440,74 L1440,140 L
               ESPACO.map((f, i) => (
                 <figure class={`peca peca-${i}`} data-anima>
                   <picture>
-                    <source srcset={`/img/psi/${f.img}.webp`} type="image/webp" />
+                    <source srcset={`${import.meta.env.BASE_URL}img/psi/${f.img}.webp`} type="image/webp" />
                     <img
-                      src={`/img/psi/${f.img}.jpg`}
+                      src={`${import.meta.env.BASE_URL}img/psi/${f.img}.jpg`}
                       alt={f.alt}
                       width="1200"
                       height="800"
@@ -695,9 +695,9 @@ const ONDA = 'M0,58 C220,110 430,10 720,34 C1010,58 1230,120 1440,74 L1440,140 L
                 <article class="pessoa" data-anima>
                   <div class="pessoa-foto">
                     <picture>
-                      <source srcset={`/img/psi/${p.img}.webp`} type="image/webp" />
+                      <source srcset={`${import.meta.env.BASE_URL}img/psi/${p.img}.webp`} type="image/webp" />
                       <img
-                        src={`/img/psi/${p.img}.jpg`}
+                        src={`${import.meta.env.BASE_URL}img/psi/${p.img}.jpg`}
                         alt={p.alt}
                         width="800"
                         height="800"
@@ -1047,7 +1047,7 @@ const ONDA = 'M0,58 C220,110 430,10 720,34 C1010,58 1230,120 1440,74 L1440,140 L
         <span class="rodape-cred">
           Demonstração fictícia · fotos do <a href="https://pixabay.com" rel="noopener">Pixabay</a>
         </span>
-        <a href="/">← Voltar ao portfolio</a>
+        <a href={import.meta.env.BASE_URL}>← Voltar ao portfolio</a>
       </div>
     </footer>
   </div>

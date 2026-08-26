@@ -1193,7 +1193,7 @@ const jsonLd = {
             {
               DEMOS.map((d) => (
                 <li class="demo" data-anima>
-                  <a href={`/sites/${d.slug}`} class={d.pronto ? '' : 'demo-wip'}>
+                  <a href={`${import.meta.env.BASE_URL}sites/${d.slug}`} class={d.pronto ? '' : 'demo-wip'}>
                     <span class="demo-tag">{d.tag}</span>
                     <span class="demo-nome">{d.nome}</span>
                     <span class="demo-nota">{d.nota}</span>

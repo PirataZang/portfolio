@@ -80,7 +80,7 @@ const jsonLd = {
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
     />
-    <link rel="preload" as="image" href="/img/volta/heroi-noturno.webp" type="image/webp" />
+    <link rel="preload" as="image" href={`${import.meta.env.BASE_URL}img/volta/heroi-noturno.webp`} type="image/webp" />
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     <script is:inline>
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -97,15 +97,15 @@ const jsonLd = {
 
     <header class="topo topo-sobre" data-topo>
       <div class="topo-barra" data-progresso aria-hidden="true"></div>
-      <a class="marca" href="/sites/volta/">{LOJA.nome}</a>
+      <a class="marca" href={`${import.meta.env.BASE_URL}sites/volta/`}>{LOJA.nome}</a>
       <nav class="topo-nav" aria-label="Categorias">
-        <a href="/sites/volta/loja?genero=masculino">Masculino</a>
-        <a href="/sites/volta/loja?genero=feminino">Feminino</a>
-        <a href="/sites/volta/loja?linha=Corrida">Corrida</a>
-        <a href="/sites/volta/loja">Todos os tênis</a>
+        <a href={`${import.meta.env.BASE_URL}sites/volta/loja?genero=masculino`}>Masculino</a>
+        <a href={`${import.meta.env.BASE_URL}sites/volta/loja?genero=feminino`}>Feminino</a>
+        <a href={`${import.meta.env.BASE_URL}sites/volta/loja?linha=Corrida`}>Corrida</a>
+        <a href={`${import.meta.env.BASE_URL}sites/volta/loja`}>Todos os tênis</a>
         <a href="#tecnologia">Tecnologia</a>
       </nav>
-      <a class="icone" href="/sites/volta/loja" aria-label="Ir para a loja">
+      <a class="icone" href={`${import.meta.env.BASE_URL}sites/volta/loja`} aria-label="Ir para a loja">
         <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
         <span class="icone-n" data-carrinho-n hidden>0</span>
       </a>
@@ -138,10 +138,10 @@ const jsonLd = {
             </p>
 
             <div class="palco-acoes" data-anima>
-              <a class="btn btn-luz btn-g" href="/sites/volta/loja">
+              <a class="btn btn-luz btn-g" href={`${import.meta.env.BASE_URL}sites/volta/loja`}>
                 Ver todos os tênis <i class="fa-solid fa-arrow-right" aria-hidden="true" />
               </a>
-              <a class="btn btn-vidro btn-g" href="/sites/volta/loja?ver=noturno">Ver o Noturno</a>
+              <a class="btn btn-vidro btn-g" href={`${import.meta.env.BASE_URL}sites/volta/loja?ver=noturno`}>Ver o Noturno</a>
             </div>
 
             <dl class="palco-nums" data-anima>
@@ -165,9 +165,9 @@ const jsonLd = {
 
               <div class="tenis">
                 <picture>
-                  <source srcset="/img/volta/heroi-noturno.webp" type="image/webp" />
+                  <source srcset={`${import.meta.env.BASE_URL}img/volta/heroi-noturno.webp`} type="image/webp" />
                   <img
-                    src="/img/volta/heroi-noturno.png"
+                    src={`${import.meta.env.BASE_URL}img/volta/heroi-noturno.png`}
                     alt="Tênis VOLTA Noturno Reflex, preto iridescente, flutuando."
                     width="789"
                     height="741"
@@ -214,18 +214,18 @@ const jsonLd = {
               <p class="olho">Comprar por linha</p>
               <h2>Cada modelo existe para um uso</h2>
             </div>
-            <a class="btn btn-vaz" href="/sites/volta/loja">Ver os {PRODUTOS.length} modelos</a>
+            <a class="btn btn-vaz" href={`${import.meta.env.BASE_URL}sites/volta/loja`}>Ver os {PRODUTOS.length} modelos</a>
           </header>
 
           <ul class="categorias">
             {
               CATEGORIAS.map((c) => (
                 <li data-anima>
-                  <a href={`/sites/volta/loja?${c.q}`}>
+                  <a href={`${import.meta.env.BASE_URL}sites/volta/loja?${c.q}`}>
                     <span class="cat-foto">
                       <picture>
-                        <source srcset={`/img/volta/${c.f}-1.webp`} type="image/webp" />
-                        <img src={`/img/volta/${c.f}-1.jpg`} alt="" width="900" height="900" loading="lazy" decoding="async" />
+                        <source srcset={`${import.meta.env.BASE_URL}img/volta/${c.f}-1.webp`} type="image/webp" />
+                        <img src={`${import.meta.env.BASE_URL}img/volta/${c.f}-1.jpg`} alt="" width="900" height="900" loading="lazy" decoding="async" />
                       </picture>
                     </span>
                     <span class="cat-corpo">
@@ -249,19 +249,19 @@ const jsonLd = {
               <p class="olho">Em destaque</p>
               <h2>Lançamentos e o que está em oferta</h2>
             </div>
-            <a class="btn btn-vaz" href="/sites/volta/loja">Ver catálogo completo</a>
+            <a class="btn btn-vaz" href={`${import.meta.env.BASE_URL}sites/volta/loja`}>Ver catálogo completo</a>
           </header>
 
           <ul class="grade">
             {
               DESTAQUES.map((p) => (
                 <li class="prod" data-anima>
-                  <a class="prod-btn" href={`/sites/volta/loja?ver=${p.id}`}>
+                  <a class="prod-btn" href={`${import.meta.env.BASE_URL}sites/volta/loja?ver=${p.id}`}>
                     <span class="prod-foto">
                       <picture>
-                        <source srcset={`/img/volta/${p.id}-1.webp`} type="image/webp" />
+                        <source srcset={`${import.meta.env.BASE_URL}img/volta/${p.id}-1.webp`} type="image/webp" />
                         <img
-                          src={`/img/volta/${p.id}-1.jpg`}
+                          src={`${import.meta.env.BASE_URL}img/volta/${p.id}-1.jpg`}
                           alt={`${LOJA.nome} ${p.nome} na cor ${p.cor.toLowerCase()}, vista lateral.`}
                           width="900"
                           height="900"
@@ -270,8 +270,8 @@ const jsonLd = {
                         />
                       </picture>
                       <picture class="prod-hover">
-                        <source srcset={`/img/volta/${p.id}-2.webp`} type="image/webp" />
-                        <img src={`/img/volta/${p.id}-2.jpg`} alt="" width="900" height="900" loading="lazy" decoding="async" />
+                        <source srcset={`${import.meta.env.BASE_URL}img/volta/${p.id}-2.webp`} type="image/webp" />
+                        <img src={`${import.meta.env.BASE_URL}img/volta/${p.id}-2.jpg`} alt="" width="900" height="900" loading="lazy" decoding="async" />
                       </picture>
                       {p.novo && <span class="prod-selo">Lançamento</span>}
                       {p.de && <span class="prod-selo prod-selo-off">-{Math.round((1 - p.preco / p.de) * 100)}%</span>}
@@ -328,8 +328,8 @@ const jsonLd = {
         <div class="caixa dupla">
           <figure class="loja-foto" data-anima>
             <picture>
-              <source srcset="/img/volta/estilo.webp" type="image/webp" />
-              <img src="/img/volta/estilo.jpg" alt="Pessoa calçando um tênis branco, sentada." width="1200" height="800" loading="lazy" decoding="async" />
+              <source srcset={`${import.meta.env.BASE_URL}img/volta/estilo.webp`} type="image/webp" />
+              <img src={`${import.meta.env.BASE_URL}img/volta/estilo.jpg`} alt="Pessoa calçando um tênis branco, sentada." width="1200" height="800" loading="lazy" decoding="async" />
             </picture>
           </figure>
           <div data-anima>
@@ -389,7 +389,7 @@ const jsonLd = {
             Catálogo inteiro com filtro por numeração, cor e preço. Frete grátis
             acima de R$ {LOJA.freteGratis}.
           </p>
-          <a class="btn btn-claro btn-g" href="/sites/volta/loja">Ir para a loja</a>
+          <a class="btn btn-claro btn-g" href={`${import.meta.env.BASE_URL}sites/volta/loja`}>Ir para a loja</a>
         </div>
       </section>
     </main>
@@ -425,10 +425,10 @@ const jsonLd = {
         <nav aria-label="Comprar">
           <p class="rodape-t">Comprar</p>
           <ul>
-            <li><a href="/sites/volta/loja?genero=masculino">Masculino</a></li>
-            <li><a href="/sites/volta/loja?genero=feminino">Feminino</a></li>
-            {LINHAS.map((l) => <li><a href={`/sites/volta/loja?linha=${l}`}>{l}</a></li>)}
-            <li><a href="/sites/volta/loja">Todos os tênis</a></li>
+            <li><a href={`${import.meta.env.BASE_URL}sites/volta/loja?genero=masculino`}>Masculino</a></li>
+            <li><a href={`${import.meta.env.BASE_URL}sites/volta/loja?genero=feminino`}>Feminino</a></li>
+            {LINHAS.map((l) => <li><a href={`${import.meta.env.BASE_URL}sites/volta/loja?linha=${l}`}>{l}</a></li>)}
+            <li><a href={`${import.meta.env.BASE_URL}sites/volta/loja`}>Todos os tênis</a></li>
           </ul>
         </nav>
 
@@ -457,7 +457,7 @@ const jsonLd = {
       <div class="caixa rodape-fim">
         <span>© 2026 {LOJA.nome} Calçados · CNPJ {LOJA.cnpj}</span>
         <span class="rodape-cred">Demonstração fictícia · fotos do <a href="https://pixabay.com" rel="noopener">Pixabay</a></span>
-        <a href="/">← Voltar ao portfolio</a>
+        <a href={import.meta.env.BASE_URL}>← Voltar ao portfolio</a>
       </div>
     </footer>
   </div>

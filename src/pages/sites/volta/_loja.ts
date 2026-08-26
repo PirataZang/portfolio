@@ -271,15 +271,15 @@ function abrirProduto(id: string) {
     trilho.style.translate = '0% 0';
     trilho.innerHTML = [1, 2, 3]
       .map((n) => `<picture>
-          <source srcset="/img/volta/${p.id}-${n}.webp" type="image/webp" />
-          <img src="/img/volta/${p.id}-${n}.jpg" alt="${p.nome}: ${n === 1 ? 'vista lateral' : n === 2 ? 'detalhe do cabedal' : 'detalhe da entressola'}" width="900" height="900" />
+          <source srcset="${import.meta.env.BASE_URL}img/volta/${p.id}-${n}.webp" type="image/webp" />
+          <img src="${import.meta.env.BASE_URL}img/volta/${p.id}-${n}.jpg" alt="${p.nome}: ${n === 1 ? 'vista lateral' : n === 2 ? 'detalhe do cabedal' : 'detalhe da entressola'}" width="900" height="900" />
         </picture>`)
       .join('');
   }
   if (miniaturas) {
     miniaturas.innerHTML = [1, 2, 3]
       .map((n) => `<button type="button" class="${n === 1 ? 'ativo' : ''}" data-mini="${n - 1}" aria-label="Foto ${n}">
-          <img src="/img/volta/${p.id}-${n}.jpg" alt="" width="900" height="900" />
+          <img src="${import.meta.env.BASE_URL}img/volta/${p.id}-${n}.jpg" alt="" width="900" height="900" />
         </button>`)
       .join('');
     miniaturas.querySelectorAll<HTMLButtonElement>('[data-mini]').forEach((b) => {
@@ -408,7 +408,7 @@ function pintarSacola() {
   if (!cesta) return;
   cesta.innerHTML = sacola
     .map((i, n) => `<li>
-      <img src="/img/volta/${i.id}-1.jpg" alt="" width="900" height="900" loading="lazy" />
+      <img src="${import.meta.env.BASE_URL}img/volta/${i.id}-1.jpg" alt="" width="900" height="900" loading="lazy" />
       <div>
         <p class="cesta-nome">${i.nome}</p>
         <p class="cesta-meta">Numeração ${i.tam} · ${brl(i.preco)}</p>

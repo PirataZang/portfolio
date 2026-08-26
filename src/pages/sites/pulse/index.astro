@@ -303,7 +303,7 @@ const jsonLd = {
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Anton&family=Bai+Jamjuree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
     />
-    <link rel="preload" as="image" href="/img/pulse/palco.webp" type="image/webp" />
+    <link rel="preload" as="image" href={`${import.meta.env.BASE_URL}img/pulse/palco.webp`} type="image/webp" />
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     <script is:inline>
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -316,7 +316,7 @@ const jsonLd = {
 
     <header class="topo" data-topo>
       <div class="topo-barra" data-progresso aria-hidden="true"></div>
-      <a class="marca" href="/">
+      <a class="marca" href={import.meta.env.BASE_URL}>
         <span class="marca-txt">{EVENTO.nome}</span>
         <span class="marca-ed">{EVENTO.edicao}</span>
       </a>
@@ -355,8 +355,8 @@ const jsonLd = {
       <section class="heroi" id="inicio">
         <div class="heroi-fundo" aria-hidden="true">
           <picture>
-            <source srcset="/img/pulse/local.webp" type="image/webp" />
-            <img src="/img/pulse/local.jpg" alt="" width="1200" height="675" />
+            <source srcset={`${import.meta.env.BASE_URL}img/pulse/local.webp`} type="image/webp" />
+            <img src={`${import.meta.env.BASE_URL}img/pulse/local.jpg`} alt="" width="1200" height="675" />
           </picture>
         </div>
         <div class="heroi-veu" aria-hidden="true"></div>
@@ -413,9 +413,9 @@ const jsonLd = {
 
           <figure class="cartaz" data-anima>
             <picture>
-              <source srcset="/img/pulse/palco.webp" type="image/webp" />
+              <source srcset={`${import.meta.env.BASE_URL}img/pulse/palco.webp`} type="image/webp" />
               <img
-                src="/img/pulse/palco.jpg"
+                src={`${import.meta.env.BASE_URL}img/pulse/palco.jpg`}
                 alt="Feixes de laser abertos sobre a pista em uma edição anterior do PULSE."
                 width="1600"
                 height="900"
@@ -451,9 +451,9 @@ const jsonLd = {
                 <article class:list={['art', a.principal && 'art-head']} data-art data-anima>
                   <div class="art-foto">
                     <picture>
-                      <source srcset={`/img/pulse/art-${a.id}.webp`} type="image/webp" />
+                      <source srcset={`${import.meta.env.BASE_URL}img/pulse/art-${a.id}.webp`} type="image/webp" />
                       <img
-                        src={`/img/pulse/art-${a.id}.jpg`}
+                        src={`${import.meta.env.BASE_URL}img/pulse/art-${a.id}.jpg`}
                         alt={a.alt}
                         width="760"
                         height="950"
@@ -497,8 +497,8 @@ const jsonLd = {
               [...GALERIA, ...GALERIA].map((g, i) => (
                 <figure class="trilho-i" aria-hidden={i >= GALERIA.length ? 'true' : undefined}>
                   <picture>
-                    <source srcset={`/img/pulse/${g.a}.webp`} type="image/webp" />
-                    <img src={`/img/pulse/${g.a}.jpg`} alt={i < GALERIA.length ? g.alt : ''} width="1000" height="666" loading="lazy" decoding="async" />
+                    <source srcset={`${import.meta.env.BASE_URL}img/pulse/${g.a}.webp`} type="image/webp" />
+                    <img src={`${import.meta.env.BASE_URL}img/pulse/${g.a}.jpg`} alt={i < GALERIA.length ? g.alt : ''} width="1000" height="666" loading="lazy" decoding="async" />
                   </picture>
                 </figure>
               ))
@@ -509,8 +509,8 @@ const jsonLd = {
               [...GALERIA].reverse().concat([...GALERIA].reverse()).map((g) => (
                 <figure class="trilho-i">
                   <picture>
-                    <source srcset={`/img/pulse/${g.a}.webp`} type="image/webp" />
-                    <img src={`/img/pulse/${g.a}.jpg`} alt="" width="1000" height="666" loading="lazy" decoding="async" />
+                    <source srcset={`${import.meta.env.BASE_URL}img/pulse/${g.a}.webp`} type="image/webp" />
+                    <img src={`${import.meta.env.BASE_URL}img/pulse/${g.a}.jpg`} alt="" width="1000" height="666" loading="lazy" decoding="async" />
                   </picture>
                 </figure>
               ))
@@ -544,9 +544,9 @@ const jsonLd = {
           <div class="show-dupla">
             <figure class="show-foto" data-anima>
               <picture>
-                <source srcset="/img/pulse/local.webp" type="image/webp" />
+                <source srcset={`${import.meta.env.BASE_URL}img/pulse/local.webp`} type="image/webp" />
                 <img
-                  src="/img/pulse/local.jpg"
+                  src={`${import.meta.env.BASE_URL}img/pulse/local.jpg`}
                   alt="Interior da Usina Hangar durante um show, com estrutura de luz no teto."
                   width="1200"
                   height="675"
@@ -982,7 +982,7 @@ const jsonLd = {
         <span class="rodape-cred">
           Demonstração fictícia · fotos do <a href="https://pixabay.com" rel="noopener">Pixabay</a>
         </span>
-        <a href="/">← Voltar ao portfolio</a>
+        <a href={import.meta.env.BASE_URL}>← Voltar ao portfolio</a>
       </div>
     </footer>
   </div>

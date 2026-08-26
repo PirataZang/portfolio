@@ -3,6 +3,8 @@ services:
     build:
       context: .
       target: dev
+      args:
+        VITE_BASE_URL: ${VITE_BASE_URL:-}
     ports:
       - "4322:4322"
     volumes:

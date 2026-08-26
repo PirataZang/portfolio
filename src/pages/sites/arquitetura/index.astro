@@ -438,7 +438,7 @@ const jsonLd = {
     </p>
 
     <header class="topo">
-      <a class="marca" href="/">
+      <a class="marca" href={import.meta.env.BASE_URL}>
         <span class="marca-simbolo" aria-hidden="true"></span>
         <span class="marca-txt">{EMPRESA.nome}<small>{EMPRESA.sub}</small></span>
       </a>
@@ -1155,7 +1155,7 @@ const jsonLd = {
 
       <p class="caixa rodape-fim">
         <span>© 2026 {EMPRESA.nome} · {EMPRESA.bairro}, {EMPRESA.cidade}/{EMPRESA.uf}</span>
-        <a href="/">← Voltar ao portfolio</a>
+        <a href={import.meta.env.BASE_URL}>← Voltar ao portfolio</a>
       </p>
     </footer>
   </div>

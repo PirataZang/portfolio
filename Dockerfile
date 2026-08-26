@@ -13,6 +13,8 @@ CMD ["sh", "-c", "rm -f .astro/dev.json && npm run dev"]
 
 # ---- build: static output ----
 FROM deps AS build
+ARG VITE_BASE_URL=""
+ENV VITE_BASE_URL=$VITE_BASE_URL
 COPY . .
 RUN npm run build
 
