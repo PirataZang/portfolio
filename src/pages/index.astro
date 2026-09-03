@@ -27,7 +27,7 @@ import Base from '../layouts/Base.astro';
 /* ────────────── troque estes quatro valores ────────────── */
 const EU = {
   nome: 'Igor Fronza',
-  papel: 'Desenvolvedor Fullstack',
+  papel: 'Engenheiro de software · Full stack',
   gh: 'PirataZang',
   email: 'igorfronza20@gmail.com',
   zap: '5547989022030',
@@ -282,8 +282,8 @@ const numeros = [
     `??` pararia nele e o herói anunciaria "0 repositórios públicos".
   */
   { v: perfil?.public_repos || projetos.length, l: 'repositórios públicos' },
-  { v: linguagens.length, l: 'linguagens em produção' },
-  { v: DESTAQUES.length, l: 'projetos em destaque' },
+  { v: linguagens.length, l: 'linguagens usadas em produção' },
+  { v: DESTAQUES.length, l: 'projetos em destaque, com código aberto' },
   { v: desde, ano: true, l: 'publicando código desde' },
 ];
 
@@ -304,18 +304,18 @@ const SERVICOS = [
     ],
     icone: 'fa-solid fa-laptop-code',
     t: 'Criação de Site',
-    sub: 'Landing, institucional ou loja',
-    de: 'R$ 300',
+    sub: 'Landing, institucional ou página de produto',
+    de: 'R$ 500',
     unidade: 'uma página, escopo fechado',
-    extra: '+ R$ 100 por página adicional',
+    extra: 'R$ 250 por página adicional.',
     prazo: '1 a 2 semanas',
-    d: 'Do rascunho ao ar. Você recebe o site publicado, com domínio configurado e um painel para trocar texto e foto sem me chamar.',
+    d: 'Do rascunho ao ar. Você recebe o site publicado, com domínio apontado, HTTPS e o código no seu repositório — sem ficar preso a mim para subir de novo.',
     itens: [
       'Design sob medida, sem tema comprado',
       'Responsivo de 320 px a 4K',
       'SEO técnico, dados estruturados e Open Graph',
       'Formulário que cai no seu WhatsApp',
-      'Deploy, domínio e HTTPS inclusos',
+      'Deploy, configuração de domínio e HTTPS',
       '30 dias de ajuste sem custo',
     ],
     destaque: true,
@@ -329,9 +329,10 @@ const SERVICOS = [
     ],
     icone: 'fa-solid fa-project-diagram',
     t: 'Sistema sob medida',
-    sub: 'Painel, ERP leve, integração',
+    sub: 'Painel, ERP, integrações e sistemas internos',
     de: 'R$ 3.000',
     unidade: 'escopo fechado, por módulo',
+    extra: 'Projeto maior sai por módulo, com escopo fechado antes de cada etapa. Hosting não incluído.',
     prazo: '4 a 12 semanas',
     d: 'Quando a planilha não dá mais conta. Sistema que nasce do seu processo, não de um molde que você tem que aprender.',
     itens: [
@@ -354,8 +355,9 @@ const SERVICOS = [
     icone: 'fa-solid fa-drafting-compass',
     t: 'Consultoria técnica',
     sub: 'Arquitetura, revisão, performance',
-    de: 'R$ 220',
+    de: 'R$ 280',
     unidade: 'por hora · pacotes de 10 h',
+    extra: 'Pacote de 10 h por R$ 2.500.',
     prazo: 'agenda na semana',
     d: 'Seu time já constrói, mas travou. Entro para revisar, medir e destravar — e saio deixando a decisão documentada.',
     itens: [
@@ -379,18 +381,19 @@ const SERVICOS = [
     t: 'Hosting',
     sub: 'Só site estático, e é de propósito',
     de: 'R$ 50',
-    unidade: 'por mês, por site',
+    unidade: 'por mês · por site estático',
+    extra: 'Sistema com VPS dedicada: R$ 300 por mês.',
     prazo: 'no ar em 24 h',
-    d: 'Seu site publicado na minha infra, com HTTPS e domínio próprio. Estático apenas: HTML, CSS e JS. Sem banco, sem PHP, sem painel — e é justamente isso que faz não cair.',
+    d: 'Site estático na minha infra, com HTTPS e domínio próprio, por R$ 50/mês. Sistema que precisa de servidor sobe em VPS dedicada, por R$ 300/mês — banco, backup e monitoramento inclusos.',
     itens: [
       'Site estático: HTML, CSS e JavaScript',
+      'Sistema: VPS dedicada com banco de dados',
       'HTTPS com renovação automática',
       'Seu domínio apontado e configurado',
       'Deploy a cada atualização, sem custo',
       'Backup e histórico de versão',
-      'Sem limite de visita e sem taxa de banda',
     ],
-    naoEntra: 'WordPress, banco de dados, API, e-mail e qualquer coisa que precise rodar servidor. Para isso eu monto sua VPS e cobro o serviço uma vez.',
+    naoEntra: 'Hosting de site estático não roda WordPress, banco de dados ou API — para isso é o plano de sistema com VPS dedicada.',
     destaque: false,
   },
 ];
@@ -431,12 +434,12 @@ const POEIRA = Array.from({ length: 26 }, (_, i) => {
 
 /* as demos que moram neste repositório */
 const DEMOS = [
-  { slug: 'forno-antico', nome: 'Forno Antico', tag: 'Cantina italiana', nota: 'Cardápio, sacola e pedido no WhatsApp', pronto: true },
+  { slug: 'imobiliaria', nome: 'Meridiano', tag: 'Imobiliária', nota: 'Carteira com filtro, ficha em modal e visita no WhatsApp', pronto: true },
+  { slug: 'barbearia', nome: "Daniel's", tag: 'Barbearia', nota: 'Agendamento em quatro passos, calendário e tema escuro', pronto: true },
   { slug: 'arquitetura', nome: 'PRUMO', tag: 'Arquitetura e engenharia', nota: 'Planta interativa e cena dirigida por scroll', pronto: true },
   { slug: 'marmoraria', nome: 'Marmoraria', tag: 'Mármores e granitos', nota: 'Comparador de acabamento e orçamento', pronto: true },
   { slug: 'nova', nome: 'Vereda', tag: 'Psicologia clínica', nota: 'Fundo em WebGL, planos e agendamento no WhatsApp', pronto: true },
   { slug: 'pulse', nome: 'PULSE', tag: 'Festival de eletrônica', nota: 'Carrinho, compra simulada e ingresso com QR', pronto: true },
-  { slug: 'volta', nome: 'VOLTA', tag: 'Loja de tênis', nota: 'Catálogo com filtros, ficha em modal e checkout com CEP', pronto: true },
 ];
 
 const PROCESSO = [
@@ -631,9 +634,9 @@ const CAMPO_CONTATO: Forma[] = [
   { f: 'canto', x: 876, y: 556, s: 72 },
 ];
 
-const titulo = `${EU.nome} — Criação de sites, sistemas e consultoria em ${EU.local}`;
+const titulo = `${EU.nome} — Engenheiro de software: sites, sistemas sob medida e consultoria`;
 const descricao =
-  'Desenvolvedor fullstack. Sites sob medida a partir de R$ 300, sistemas por módulo e consultoria técnica por hora. Vue, Go, Astro e Docker. Projetos abertos no GitHub.';
+  'Engenheiro de software full stack em Rio do Sul (SC). Sites a partir de R$ 500, sistemas sob medida por módulo, consultoria técnica por hora e hosting. Entrega em container, código no seu repositório e projetos abertos no GitHub.';
 
 /*
   As perguntas que chegam por WhatsApp antes de qualquer orçamento. Estão aqui
@@ -643,7 +646,7 @@ const descricao =
 const DUVIDAS = [
   {
     p: 'Quanto custa um site?',
-    r: 'A partir de R$ 300 para uma página com escopo fechado, e R$ 100 por página adicional. Sistema começa em R$ 3.000 e é cotado por módulo. O valor de referência serve para você calibrar o orçamento agora; o preço final fecha depois da conversa, por escrito, e não muda no meio do projeto.',
+    r: 'A partir de R$ 500 para uma página com escopo fechado, e R$ 250 por página adicional. Sistema sob medida começa em R$ 3.000, é cotado por módulo e não inclui hosting. São pontos de partida, não teto: o preço final depende do que o projeto precisa fazer, fecha depois da conversa, por escrito, e não muda no meio.',
   },
   {
     p: 'Em quanto tempo fica pronto?',
@@ -651,15 +654,15 @@ const DUVIDAS = [
   },
   {
     p: 'O que eu preciso ter pronto antes de começar?',
-    r: 'Textos, fotos e logo, se existirem. Se não existirem, eu escrevo a estrutura e indico onde a foto faz falta — projeto não trava esperando conteúdo perfeito. Domínio pode ser comprado depois: o registro e o HTTPS entram no pacote.',
+    r: 'Textos, fotos e logo, se existirem. Se não existirem, eu escrevo a estrutura e indico onde a foto faz falta — projeto não trava esperando conteúdo perfeito. O domínio é comprado por você, no seu nome: o registro fica na sua mão, e eu faço a configuração e o HTTPS, que entram no pacote.',
   },
   {
     p: 'O código fica comigo?',
-    r: 'Fica. O repositório é seu desde o primeiro commit e a entrega é em container, então roda em qualquer provedor. Não uso plataforma fechada que prende o projeto: se um dia você quiser trocar de desenvolvedor, leva tudo junto.',
+    r: 'Fica. O repositório é seu desde o primeiro commit e a entrega é em container, então roda em qualquer provedor. Não uso plataforma fechada que prende o projeto: se um dia você quiser trocar de desenvolvedor, leva tudo junto. A hospedagem na minha infra é um serviço opcional e à parte — contratando ou não, o código é seu do mesmo jeito.',
   },
   {
     p: 'E depois que o site está no ar?',
-    r: 'Os 30 primeiros dias de ajuste vão inclusos, sem custo. Depois disso, manutenção mensal é opcional e cotada separada, conforme o tamanho do site. Se você quiser só o site publicado na minha infra, com HTTPS e domínio próprio, o hosting sai por R$ 50 por mês. E dá para me chamar pontualmente por hora quando aparecer alguma coisa.',
+    r: 'Os 30 primeiros dias de ajuste vão inclusos, sem custo. Depois disso, manutenção mensal é opcional e cotada separada, conforme o tamanho do site. Se quiser o site publicado na minha infra, com HTTPS e domínio apontado, o hosting sai por R$ 50 por mês — só site estático, e o tráfego não gera cobrança adicional. E dá para me chamar pontualmente por hora quando aparecer alguma coisa.',
   },
   {
     p: 'Você atende fora de Rio do Sul?',
@@ -671,7 +674,7 @@ const DUVIDAS = [
   },
   {
     p: 'Já tenho um site. Dá para aproveitar?',
-    r: 'Quase sempre dá. Começo por uma consultoria técnica — R$ 220 a hora, em pacotes de 10 h — para olhar o que existe e dizer o que vale manter, o que vale reescrever e quanto custa cada caminho. Se depois disso virar projeto, as horas da análise entram como crédito.',
+    r: 'Quase sempre dá. Começo por uma consultoria técnica — R$ 280 a hora, ou 10 h por R$ 2.500 — para olhar o que existe e dizer o que vale manter, o que vale reescrever e quanto custa cada caminho. Se depois disso virar projeto, as horas da análise entram como crédito.',
   },
 ];
 
@@ -935,11 +938,18 @@ const jsonLd = {
             <span class="linha" data-linha>feitos <em>sob medida</em>,</span>
             <span class="linha" data-linha>não sobre molde.</span>
           </h1>
+          {/*
+            A copy é fixa, e não mais a bio do GitHub: a bio muda quando eu
+            mexo no perfil e a primeira frase do site é justamente a que não
+            pode variar. A stack continua no site inteiro — só não abre a
+            conversa, porque quem contrata compra problema resolvido.
+          */}
           <p class="lead" data-anima>
-            {perfil?.bio ?? '💻 Fullstack Developer | Criador de Soluções Inteligentes'} —
-            escrevo Vue, Go e TypeScript, entrego em container e deixo o
-            código aberto para você conferir.
+            Transformo ideias, processos e problemas em software que funciona —
+            do primeiro rascunho ao servidor. Do site de uma página ao sistema
+            que a sua equipe usa todo dia.
           </p>
+          <p class="heroi-esp" data-anima>Full stack · Sistemas · Automação · IA</p>
           <div class="acoes" data-anima>
             <a class="btn btn-p btn-g" href="#servicos">
               <i class="fa-solid fa-tags" aria-hidden="true"></i> Ver serviços e preços
@@ -1184,8 +1194,9 @@ const jsonLd = {
             <p class="olho">Demonstrações</p>
             <h2>Sites completos, para você abrir e clicar</h2>
             <p class="lead">
-              Cada demo é um site de verdade, com conteúdo escrito e fluxo que
-              funciona. É o que eu entrego, não um print.
+              Não são templates: são demonstrações funcionais. Cada uma tem
+              conteúdo escrito, fluxo que roda de ponta a ponta e o mesmo
+              cuidado técnico de um projeto pago.
             </p>
           </header>
 
@@ -1284,10 +1295,11 @@ const jsonLd = {
         <div class="caixa caixa-larga">
           <header class="cab" data-anima>
             <p class="olho">Serviços</p>
-            <h2>Três formas de trabalhar junto</h2>
+            <h2>Quatro formas de trabalhar junto</h2>
             <p class="lead">
-              Preço de referência para você calibrar orçamento agora. O valor
-              fecha depois da conversa, por escrito, e não muda no meio.
+              Todo valor aqui é ponto de partida, para você calibrar orçamento
+              agora. O preço fecha depois da conversa, por escrito, e não muda
+              no meio do projeto.
             </p>
           </header>
 
@@ -1412,9 +1424,9 @@ const jsonLd = {
               <p class="olho">Contato</p>
               <h2>Me conte o que precisa resolver</h2>
               <p class="lead">
-                Responda em três campos e eu volto com uma faixa de preço e um
-                prazo no mesmo dia. Se não for meu tipo de projeto, eu digo — e
-                indico quem faz.
+                Explique o problema, não a solução — eu volto com uma faixa de
+                preço e um prazo no mesmo dia. Se não for meu tipo de projeto,
+                eu digo na hora e indico quem faz.
               </p>
               <ul class="contato-links">
                 <li>
@@ -1459,10 +1471,16 @@ const jsonLd = {
                 <label>
                   Orçamento previsto
                   <select name="verba">
-                    <option>Até R$ 1.500</option>
-                    <option selected>R$ 1.500 a R$ 3.000</option>
-                    <option>R$ 3.000 a R$ 8.000</option>
-                    <option>Acima de R$ 8.000</option>
+                    {/*
+                      As faixas acompanham o piso dos serviços: a primeira cobre
+                      o site de uma página, a terceira é onde o sistema começa.
+                      O padrão fica na faixa do meio de propósito — ancorar no
+                      degrau mais baixo puxa todo orçamento para baixo.
+                    */}
+                    <option>Até R$ 2.000</option>
+                    <option selected>R$ 2.000 a R$ 5.000</option>
+                    <option>R$ 5.000 a R$ 15.000</option>
+                    <option>Acima de R$ 15.000</option>
                     <option>Prefiro que você me diga</option>
                   </select>
                 </label>
@@ -1809,6 +1827,17 @@ const jsonLd = {
   }
   .heroi-txt { max-width: 1200px; margin: 0 auto; width: 100%; }
 
+  /*
+    A linha de especialidades. Mono, versal e espaçada — o mesmo tratamento do
+    `.olho` das seções, para ela ler como rótulo e não competir com o lead.
+  */
+  .heroi-esp {
+    margin-top: 0.9rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gelo-40);
+  }
+
   .fita {
     display: inline-flex; align-items: center; gap: 0.6rem;
     padding: 0.42rem 0.95rem 0.42rem 0.75rem; margin-bottom: 1.7rem;
@@ -1968,9 +1997,14 @@ const jsonLd = {
     display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem;
     margin: 1.3rem 0 0; padding: 1rem 0; border-block: 1px solid var(--borda);
   }
+  /*
+    O "a partir de" é a diferença entre âncora e promessa: em `--gelo-40` ele
+    sumia ao lado de um número de 2rem, e o visitante lia só o valor. Um degrau
+    de contraste e de corpo resolve sem mexer no peso do preço.
+  */
   .serv-preco small {
     width: 100%; font-family: 'JetBrains Mono', monospace;
-    font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gelo-40);
+    font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gelo-60);
   }
   .serv-preco b { font-size: clamp(1.6rem, 2.4vw, 1.95rem); font-weight: 800; letter-spacing: -0.04em; }
   .serv-d .serv-preco b { color: var(--roxo-luz); }

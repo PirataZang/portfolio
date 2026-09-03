@@ -1,0 +1,52 @@
+{
+  "_nota": "Ingressos de demonstração. Este arquivo é o 'banco' temporário da tela Meus ingressos — nada aqui foi comprado de verdade. O prefixo _ mantém o arquivo fora das rotas do Astro.",
+  "titular": {
+    "nome": "Igor Menezes",
+    "email": "igor@email.com",
+    "cpf": "412.908.771-05"
+  },
+  "ingressos": [
+    {
+      "codigo": "PLS-4KDQ7XMA",
+      "setor": "Pista Premium",
+      "tipo": "Inteira",
+      "lote": "2º lote",
+      "preco": 320,
+      "portao": "Portaria B",
+      "compradoEm": "2026-08-19",
+      "status": "valido"
+    },
+    {
+      "codigo": "PLS-9RTBH2WE",
+      "setor": "Pista Premium",
+      "tipo": "Meia",
+      "lote": "2º lote",
+      "preco": 160,
+      "portao": "Portaria B",
+      "compradoEm": "2026-08-19",
+      "status": "valido"
+    },
+    {
+      "codigo": "PLS-2MWZQ8KY",
+      "setor": "Front Stage",
+      "tipo": "Inteira",
+      "lote": "lote único",
+      "preco": 480,
+      "portao": "Portaria A · entrada 21h30",
+      "compradoEm": "2026-07-02",
+      "status": "transferido",
+      "transferidoPara": "Marina Alencar"
+    },
+    {
+      "codigo": "PLS-6HNVJ3PD",
+      "setor": "Pista",
+      "tipo": "Inteira",
+      "lote": "1º lote",
+      "preco": 150,
+      "portao": "Portaria C",
+      "compradoEm": "2025-11-08",
+      "status": "usado",
+      "edicao": "2025"
+    }
+  ]
+}

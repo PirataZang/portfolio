@@ -1,0 +1,1717 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  DANIEL'S — BARBAS E CABELOS. Barbearia com agendamento.
+
+  Segunda direção da demo. A primeira era taverna: madeira, âmbar, ornamento de
+  rótulo. Esta é o oposto — concreto, aço e quase preto, sem nenhum marrom em
+  lugar nenhum. A referência é a barbearia-conceito de parede cinza e cadeira
+  preta, e o que sustenta o "premium" aqui não é enfeite, é profundidade:
+
+    · fundo quase preto neutro (#08080A), nunca preto puro, que achata em OLED;
+    · cada superfície elevada ganha sombra E um fio de luz na borda de cima —
+      é o par sombra/realce que faz o cartão parecer estar acima da página;
+    · a foto de capa escurece nas bordas até sumir no fundo, sem emenda visível;
+    · aço polido nos objetos 3D: metal só existe pelo que reflete.
+
+  A reserva continua sendo o produto: quatro passos, calendário em modal e
+  comprovante. Roda inteira no navegador, e os horários ocupados saem de um
+  hash do dia para a grade não mudar a cada carregamento.
+*/
+
+const LOJA = {
+  nome: "Daniel's",
+  sub: 'Barbas e Cabelos',
+  desde: 1998,
+  rua: 'Rua Aurora, 447',
+  bairro: 'Santa Cecília',
+  cidade: 'São Paulo',
+  uf: 'SP',
+  cep: '01209-001',
+  fone: '(99) 9999-9999',
+  foneLink: '+559999999999',
+  zap: '5599999999999',
+  zapFmt: '(99) 99999-9999',
+  email: 'contato@danielsbarbearia.com.br',
+  insta: 'danielsbarbearia',
+  site: 'https://danielsbarbearia.com.br',
+};
+
+const mapaQuery = encodeURIComponent(
+  `${LOJA.rua}, ${LOJA.bairro}, ${LOJA.cidade} - ${LOJA.uf}, ${LOJA.cep}`,
+);
+
+const HORARIOS = [
+  { d: 'Segunda', abre: null },
+  { d: 'Terça a sexta', abre: '09h', fecha: '20h' },
+  { d: 'Sábado', abre: '09h', fecha: '18h' },
+  { d: 'Domingo', abre: null },
+];
+
+/*
+  Serviços. `min` é a duração real na cadeira — é ela que monta a grade de
+  horários, então mudar aqui muda o agendamento inteiro, sem tocar em mais nada.
+*/
+const SERVICOS = [
+  { id: 'corte', nome: 'Corte clássico', preco: 70, min: 45, icone: 'fa-solid fa-scissors',
+    d: 'Tesoura e máquina, acabamento na navalha e finalização com pomada. Inclui lavagem.' },
+  { id: 'barba', nome: 'Barba na navalha', preco: 55, min: 30, icone: 'fa-solid fa-brush',
+    d: 'Toalha quente, óleo, duas passadas na navalha e bálsamo gelado no fim.' },
+  { id: 'combo', nome: 'Corte + barba', preco: 110, min: 75, icone: 'fa-solid fa-crown', destaque: true,
+    d: 'O serviço completo, com quinze minutos a mais de acabamento. Sai 15 reais mais barato que separado.' },
+  { id: 'pezinho', nome: 'Pezinho e contorno', preco: 30, min: 15, icone: 'fa-solid fa-wand-magic-sparkles',
+    d: 'Manutenção entre um corte e outro. Nuca, costeletas e contorno na navalha.' },
+  { id: 'infantil', nome: 'Corte infantil', preco: 55, min: 40, icone: 'fa-solid fa-child-reaching',
+    d: 'Até 10 anos, com banquinho na cadeira e a paciência que a idade pede.' },
+  { id: 'pigmento', nome: 'Pigmentação de barba', preco: 65, min: 40, icone: 'fa-solid fa-palette',
+    d: 'Preenche falha e uniformiza o tom. Dura de duas a três semanas.' },
+];
+
+const BARBEIROS = [
+  { id: 'daniel', nome: 'Daniel', papel: 'Mestre barbeiro', desde: 1998, especial: 'Navalha e barba desenhada' },
+  { id: 'rui', nome: 'Rui', papel: 'Barbeiro', desde: 2011, especial: 'Degradê e social clássico' },
+  { id: 'tiao', nome: 'Tião', papel: 'Barbeiro', desde: 2016, especial: 'Infantil e pigmentação' },
+];
+
+const SOBRE = [
+  { n: '01', t: 'Uma cadeira, um cliente',
+    d: 'Não trabalhamos com duas cabeças ao mesmo tempo. O horário que você marcou é seu inteiro — se atrasarmos, o café é por nossa conta.' },
+  { n: '02', t: 'Navalha é descartável',
+    d: 'Lâmina nova aberta na sua frente a cada atendimento, e ferramenta em autoclave. É o mínimo, mas nem todo mundo faz.' },
+  { n: '03', t: 'Preço na parede',
+    d: 'A tabela é a mesma para todo mundo, em qualquer dia e com qualquer barbeiro. Sem preço de sábado, sem preço de cliente novo.' },
+];
+
+const NUMEROS = [
+  { v: '27', u: 'anos', d: 'na mesma esquina' },
+  { v: '3', u: 'cadeiras', d: 'uma pessoa por vez' },
+  { v: '15', u: 'min', d: 'de tolerância no atraso' },
+  { v: '4,9', u: '/5', d: 'em 380 avaliações' },
+];
+
+const titulo = `${LOJA.nome} ${LOJA.sub} — barbearia em ${LOJA.bairro}, ${LOJA.cidade}`;
+const descricao =
+  'Barbearia clássica em Santa Cecília, São Paulo. Corte na tesoura, barba na navalha com toalha quente e agendamento online. Desde 1998.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HairSalon',
+  name: `${LOJA.nome} ${LOJA.sub}`,
+  description: descricao,
+  url: LOJA.site,
+  telephone: LOJA.foneLink,
+  email: LOJA.email,
+  priceRange: 'R$ 30 – R$ 110',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: LOJA.rua, addressLocality: LOJA.cidade,
+    addressRegion: LOJA.uf, postalCode: LOJA.cep, addressCountry: 'BR',
+  },
+  openingHoursSpecification: [
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '09:00', closes: '20:00' },
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Saturday', opens: '09:00', closes: '18:00' },
+  ],
+  makesOffer: SERVICOS.map((s) => ({
+    '@type': 'Offer', itemOffered: { '@type': 'Service', name: s.nome },
+    price: s.preco, priceCurrency: 'BRL',
+  })),
+};
+
+const IMG = `${import.meta.env.BASE_URL}img/barbearia/salao`;
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta name="theme-color" content="#08080a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,700&family=Jost:wght@300;400;500;600&display=swap"
+    />
+    <link rel="preload" as="image" href={`${IMG}.webp`} type="image/webp" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    {/*
+      Só esconde o que vai ser revelado se houver movimento para revelar. Sem
+      JS, ou com movimento reduzido, `anima-on` nunca entra e o conteúdo nasce
+      visível — o texto é o produto, a entrada é enfeite.
+    */}
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="db">
+    <a class="pular" href="#reserva">Pular para a reserva</a>
+
+    <script type="application/json" data-servicos set:html={JSON.stringify(SERVICOS)}></script>
+    <script type="application/json" data-barbeiros set:html={JSON.stringify(BARBEIROS)}></script>
+    {/* o zap sai daqui: repetido à mão no script, ele ficaria para trás numa troca */}
+    <span hidden data-zap={LOJA.zap}></span>
+
+    {/* ═════════════════ CABEÇALHO ═════════════════ */}
+    <header class="topo" data-topo>
+      <div class="topo-caixa">
+        <a class="marca" href="#inicio" aria-label={`${LOJA.nome} ${LOJA.sub} — início`}>
+          <span class="marca-selo" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <path d="M12 8v24M28 8v24M12 20h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="marca-txt">
+            <b>{LOJA.nome}</b>
+            <i>{LOJA.sub}</i>
+          </span>
+        </a>
+
+        <nav class="topo-nav" aria-label="Seções">
+          <a href="#servicos">Serviços</a>
+          <a href="#reserva">Reserva</a>
+          <a href="#sobre">Sobre</a>
+          <a href="#visita">Onde estamos</a>
+        </nav>
+
+        <a class="btn btn-claro btn-min" href="#reserva">
+          <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+          <span>Reservar</span>
+        </a>
+      </div>
+    </header>
+
+    <main id="conteudo">
+      {/* ═════════════════ CAPA ═════════════════ */}
+      <section class="capa" id="inicio">
+        <div class="capa-foto">
+          <picture>
+            <source srcset={`${IMG}.webp`} type="image/webp" />
+            <img
+              src={`${IMG}.jpg`}
+              alt="Salão da barbearia: parede de concreto com painel verde, cadeiras pretas de barbeiro e luminárias pendentes."
+              width="600" height="600"
+              fetchpriority="high" decoding="async"
+            />
+          </picture>
+        </div>
+        {/*
+          A vinheta é uma camada só, com dois gradientes: um radial que apaga os
+          quatro cantos e um linear que leva o pé da foto até o fundo da página.
+          Sem ela a foto termina numa linha reta e denuncia o recorte.
+        */}
+        <div class="capa-vinheta" aria-hidden="true"></div>
+        <div class="capa-grao" aria-hidden="true"></div>
+
+        <div class="capa-conteudo">
+          <p class="olho" data-capa><span aria-hidden="true"></span>Desde {LOJA.desde} · {LOJA.bairro}</p>
+          <h1>
+            <span class="h1-l" data-capa>Barbearia</span>
+            <span class="h1-marca" data-capa>{LOJA.nome}</span>
+            <span class="h1-sub" data-capa>{LOJA.sub}</span>
+          </h1>
+          <p class="capa-d" data-capa>
+            Corte na tesoura, barba na navalha e toalha quente. Uma cadeira por
+            vez, hora marcada e a mesma tabela para todo mundo.
+          </p>
+          <div class="capa-acoes" data-capa>
+            <a class="btn btn-claro btn-g" href="#reserva">
+              <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+              Reservar horário
+            </a>
+            <a class="btn btn-vidro btn-g" href="#servicos">
+              <i class="fa-solid fa-list" aria-hidden="true"></i>
+              Serviços e preços
+            </a>
+          </div>
+        </div>
+
+        <a class="capa-desce" href="#numeros" aria-label="Ir para o conteúdo">
+          <span aria-hidden="true"></span>
+        </a>
+      </section>
+
+      {/* ═════════════════ NÚMEROS ═════════════════ */}
+      <section class="faixa" id="numeros">
+        <div class="caixa">
+          <ul class="numeros">
+            {NUMEROS.map((n) => (
+              <li data-anima>
+                <p class="num-v">{n.v}<small>{n.u}</small></p>
+                <p class="num-d">{n.d}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════════════ SERVIÇOS ═════════════════ */}
+      <section class="secao" id="servicos">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho"><span aria-hidden="true"></span>A tabela</p>
+            <h2>O que fazemos, quanto custa<br />e quanto demora</h2>
+            <p class="lead">
+              O tempo é o da cadeira, não o do relógio da recepção. Quem marca
+              corte e barba sai daqui em uma hora e quinze — e é isso que a
+              agenda reserva.
+            </p>
+          </header>
+
+          <ul class="grade-serv">
+            {
+              SERVICOS.map((s) => (
+                <li class:list={['serv', s.destaque && 'serv-destaque']} data-anima>
+                  {s.destaque && <p class="serv-fita">Mais pedido</p>}
+                  <span class="serv-i" aria-hidden="true"><i class={s.icone} /></span>
+                  <h3>{s.nome}</h3>
+                  <p class="serv-d">{s.d}</p>
+                  <p class="serv-pe">
+                    <span class="serv-preco">R$ {s.preco}</span>
+                    <span class="serv-min"><i class="fa-regular fa-clock" aria-hidden="true" /> {s.min} min</span>
+                  </p>
+                  <button class="btn btn-vidro btn-cheio" type="button" data-marcar={s.id}>
+                    Marcar este
+                  </button>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════════════ RESERVA ═════════════════ */}
+      <section class="secao reserva" id="reserva">
+        <div class="caixa">
+          <header class="cab cab-centro" data-anima>
+            <p class="olho"><span aria-hidden="true"></span>Reserva</p>
+            <h2>Marque em quatro passos</h2>
+            <p class="lead">
+              Sem cadastro e sem pagamento antecipado. Você escolhe, confirma e
+              recebe o comprovante na hora.
+            </p>
+          </header>
+
+          <div class="agenda" data-agenda data-anima>
+            <ol class="trilha" data-trilha aria-label="Passos da reserva">
+              {['Serviço', 'Barbeiro', 'Dia', 'Horário'].map((t, i) => (
+                <li data-passo={i}>
+                  <span class="trilha-n">{i + 1}</span>
+                  <span class="trilha-t">{t}</span>
+                </li>
+              ))}
+            </ol>
+
+            <div class="agenda-corpo">
+              <fieldset class="campo" data-campo="servico">
+                <legend><span class="campo-n">1</span> Qual serviço?</legend>
+                <div class="opcoes" role="radiogroup" aria-label="Serviço">
+                  {SERVICOS.map((s) => (
+                    <button type="button" class="op" data-op-servico={s.id} role="radio" aria-checked="false">
+                      <i class={s.icone} aria-hidden="true" />
+                      <span class="op-t">{s.nome}</span>
+                      <span class="op-d">R$ {s.preco} · {s.min} min</span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset class="campo" data-campo="barbeiro">
+                <legend><span class="campo-n">2</span> Com quem?</legend>
+                <div class="opcoes" role="radiogroup" aria-label="Barbeiro">
+                  <button type="button" class="op" data-op-barbeiro="qualquer" role="radio" aria-checked="false">
+                    <i class="fa-solid fa-people-group" aria-hidden="true" />
+                    <span class="op-t">Tanto faz</span>
+                    <span class="op-d">Pega quem estiver livre</span>
+                  </button>
+                  {BARBEIROS.map((b) => (
+                    <button type="button" class="op" data-op-barbeiro={b.id} role="radio" aria-checked="false">
+                      <span class="op-ini" aria-hidden="true">{b.nome[0]}</span>
+                      <span class="op-t">{b.nome}</span>
+                      <span class="op-d">{b.especial}</span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset class="campo" data-campo="dia">
+                <legend><span class="campo-n">3</span> Que dia?</legend>
+                <button type="button" class="escolhe" data-abrir-cal aria-haspopup="dialog">
+                  <span class="escolhe-i" aria-hidden="true"><i class="fa-regular fa-calendar"></i></span>
+                  <span class="escolhe-txt">
+                    <b data-dia-rotulo>Escolher o dia</b>
+                    <small data-dia-nota>De terça a sábado</small>
+                  </span>
+                  <i class="fa-solid fa-chevron-right escolhe-seta" aria-hidden="true"></i>
+                </button>
+              </fieldset>
+
+              <fieldset class="campo" data-campo="hora">
+                <legend><span class="campo-n">4</span> Que horas?</legend>
+                <div class="horas" data-horas role="radiogroup" aria-label="Horário"></div>
+                <p class="campo-nota" data-horas-vazio hidden>
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                  Escolha o serviço e o dia para ver os horários livres.
+                </p>
+              </fieldset>
+            </div>
+
+            {/*
+              O calendário mora num <dialog> nativo: foco preso, Esc fecha e
+              fundo escuro de graça, sem uma linha de JS para nada disso.
+            */}
+            <dialog class="cal" data-cal aria-label="Escolher o dia da reserva">
+              <div class="cal-cab">
+                <button type="button" class="cal-seta" data-mes="-1" aria-label="Mês anterior">
+                  <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                </button>
+                <p class="cal-mes" data-cal-mes aria-live="polite">—</p>
+                <button type="button" class="cal-seta" data-mes="1" aria-label="Próximo mês">
+                  <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="cal-semana" aria-hidden="true">
+                <span>dom</span><span>seg</span><span>ter</span><span>qua</span>
+                <span>qui</span><span>sex</span><span>sáb</span>
+              </div>
+              <div class="cal-grade" data-cal-grade role="group" aria-label="Dias do mês"></div>
+              <p class="campo-nota">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                Fechado às segundas e aos domingos.
+              </p>
+              <button type="button" class="btn btn-vidro btn-cheio" data-cal-fechar>Fechar</button>
+            </dialog>
+
+            <div class="resumo">
+              <dl class="resumo-linhas">
+                <div><dt>Serviço</dt><dd data-r-servico>—</dd></div>
+                <div><dt>Barbeiro</dt><dd data-r-barbeiro>—</dd></div>
+                <div><dt>Quando</dt><dd data-r-quando>—</dd></div>
+                <div class="resumo-total"><dt>Total</dt><dd data-r-total>R$ 0</dd></div>
+              </dl>
+              <button class="btn btn-claro btn-cheio btn-g" type="button" data-confirmar disabled>
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                Confirmar reserva
+              </button>
+              <p class="resumo-nota">
+                Demonstração: nada é cobrado e nenhum dado sai do seu navegador.
+              </p>
+            </div>
+          </div>
+
+          <div class="ficha" data-ficha hidden>
+            <div class="ficha-cartao">
+              <p class="ficha-topo">
+                <span class="ficha-marca">{LOJA.nome}</span>
+                <span class="ficha-selo">Reserva</span>
+              </p>
+              <div class="ficha-serrilha" aria-hidden="true"></div>
+              <p class="ficha-ok">
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                Reserva confirmada
+              </p>
+              <dl class="ficha-dados">
+                <div><dt>Serviço</dt><dd data-f-servico>—</dd></div>
+                <div><dt>Barbeiro</dt><dd data-f-barbeiro>—</dd></div>
+                <div><dt>Dia e hora</dt><dd data-f-quando>—</dd></div>
+                <div><dt>Duração</dt><dd data-f-duracao>—</dd></div>
+                <div><dt>Valor</dt><dd data-f-total>—</dd></div>
+                <div><dt>Código</dt><dd class="ficha-cod" data-f-cod>—</dd></div>
+              </dl>
+              <p class="ficha-endereco">
+                <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                {LOJA.rua} · {LOJA.bairro}
+              </p>
+              <div class="ficha-acoes">
+                <a class="btn btn-claro btn-cheio" data-f-zap href="#" rel="noopener">
+                  <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                  Avisar no WhatsApp
+                </a>
+                <button class="btn btn-vidro btn-cheio" type="button" data-nova>
+                  Marcar outro horário
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════════ SOBRE ═════════════════ */}
+      <section class="secao sobre" id="sobre">
+        <div class="caixa">
+          <div class="sobre-grade">
+            <div>
+              <header class="cab" data-anima>
+                <p class="olho"><span aria-hidden="true"></span>A casa</p>
+                <h2>Vinte e sete anos<br />na mesma esquina</h2>
+              </header>
+              <div class="sobre-texto" data-anima>
+                <p>
+                  O {LOJA.nome} abriu em {LOJA.desde} com uma cadeira alugada nos fundos de
+                  uma alfaiataria da {LOJA.bairro}. Hoje são três cadeiras, a mesma
+                  calçada e boa parte dos mesmos clientes — alguns já trazem os
+                  filhos, o único indicador de qualidade em que a gente acredita.
+                </p>
+                <p>
+                  Não seguimos moda de corte. Seguimos o formato da sua cabeça, o
+                  seu cabelo e o quanto de manutenção você está disposto a ter. Se
+                  o corte que você pediu não vai ficar bom em você, a gente diz —
+                  e propõe outro.
+                </p>
+              </div>
+
+              <ul class="sobre-lista">
+                {SOBRE.map((s) => (
+                  <li data-anima>
+                    <span class="sobre-n">{s.n}</span>
+                    <div>
+                      <h3>{s.t}</h3>
+                      <p>{s.d}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <aside class="equipe" data-anima>
+              <p class="equipe-t">Quem está na cadeira</p>
+              <ul>
+                {BARBEIROS.map((b) => (
+                  <li>
+                    <span class="equipe-ini" aria-hidden="true">{b.nome[0]}</span>
+                    <div>
+                      <p class="equipe-nome">{b.nome}</p>
+                      <p class="equipe-papel">{b.papel} · desde {b.desde}</p>
+                      <p class="equipe-esp">{b.especial}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p class="equipe-pe">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                Lâmina descartável aberta na sua frente e ferramenta em autoclave.
+              </p>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════════ ONDE ESTAMOS ═════════════════ */}
+      <section class="secao visita" id="visita">
+        <div class="caixa">
+          <header class="cab cab-centro" data-anima>
+            <p class="olho"><span aria-hidden="true"></span>Onde estamos</p>
+            <h2>{LOJA.rua}</h2>
+            <p class="lead">
+              {LOJA.bairro}, {LOJA.cidade}/{LOJA.uf} — {LOJA.cep}. Duas quadras
+              da estação Marechal Deodoro, com estacionamento conveniado na esquina.
+            </p>
+          </header>
+
+          <ul class="visita-cartoes">
+            <li data-anima>
+              <span class="vc-i" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span>
+              <h3>Endereço</h3>
+              <address>
+                {LOJA.rua}<br />
+                {LOJA.bairro} · {LOJA.cidade}/{LOJA.uf}<br />
+                CEP {LOJA.cep}
+              </address>
+              <a class="vc-link" href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+                Traçar rota <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </a>
+            </li>
+            <li data-anima>
+              <span class="vc-i" aria-hidden="true"><i class="fa-regular fa-clock"></i></span>
+              <h3>Horário</h3>
+              <dl class="vc-horas">
+                {HORARIOS.map((h) => (
+                  <div class:list={[!h.abre && 'vc-fechado']}>
+                    <dt>{h.d}</dt>
+                    <dd>{h.abre ? `${h.abre}–${h.fecha}` : 'Fechado'}</dd>
+                  </div>
+                ))}
+              </dl>
+            </li>
+            <li data-anima>
+              <span class="vc-i" aria-hidden="true"><i class="fa-solid fa-phone"></i></span>
+              <h3>Contato</h3>
+              <ul class="vc-contato">
+                <li><a href={`tel:${LOJA.foneLink}`}>{LOJA.fone}</a></li>
+                <li><a href={`https://wa.me/${LOJA.zap}`} rel="noopener">{LOJA.zapFmt}</a></li>
+                <li><a href={`mailto:${LOJA.email}`}>{LOJA.email}</a></li>
+              </ul>
+              <a class="vc-link" href="#reserva">
+                Reservar horário <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </a>
+            </li>
+          </ul>
+
+          {/*
+            Mapa do Google, carregado só quando chega perto da tela. Atrás dele
+            fica o endereço em texto: bloqueador de rastreio barra mapa de
+            terceiro com frequência, e o que sobraria seria um retângulo vazio.
+          */}
+          <figure class="mapa" data-anima>
+            <div class="mapa-fundo" aria-hidden="true">
+              <i class="fa-solid fa-map-location-dot"></i>
+              <p>{LOJA.rua} · {LOJA.bairro}</p>
+              <span>Se o mapa não abrir, use o botão “Traçar rota” acima.</span>
+            </div>
+            <iframe
+              title={`Mapa da localização: ${LOJA.rua}, ${LOJA.bairro}, ${LOJA.cidade}`}
+              src={`https://www.google.com/maps?q=${mapaQuery}&hl=pt-BR&z=17&output=embed`}
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allowfullscreen
+            ></iframe>
+          </figure>
+        </div>
+      </section>
+    </main>
+
+    {/* ═════════════════ RODAPÉ ═════════════════ */}
+    <footer class="rodape">
+      <div class="caixa">
+        <div class="rodape-grade">
+          <div>
+            <p class="rodape-marca">
+              <b>{LOJA.nome}</b>
+              <i>{LOJA.sub}</i>
+            </p>
+            <p class="rodape-d">
+              Barbearia clássica na {LOJA.bairro} desde {LOJA.desde}. Corte na
+              tesoura, barba na navalha, hora marcada.
+            </p>
+            <ul class="redes">
+              <li><a href={`https://instagram.com/${LOJA.insta}`} rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a></li>
+              <li><a href={`https://wa.me/${LOJA.zap}`} rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a></li>
+              <li><a href={`tel:${LOJA.foneLink}`} aria-label="Telefone"><i class="fa-solid fa-phone" aria-hidden="true"></i></a></li>
+              <li><a href={`mailto:${LOJA.email}`} aria-label="E-mail"><i class="fa-regular fa-envelope" aria-hidden="true"></i></a></li>
+            </ul>
+          </div>
+
+          <div>
+            <p class="rodape-t">Endereço</p>
+            <address class="rodape-end">
+              {LOJA.rua}<br />{LOJA.bairro}<br />{LOJA.cidade}/{LOJA.uf} — {LOJA.cep}
+            </address>
+            <a class="rodape-link" href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+              <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Como chegar
+            </a>
+          </div>
+
+          <div>
+            <p class="rodape-t">Horário</p>
+            <dl class="rodape-horas">
+              {HORARIOS.map((h) => (
+                <div><dt>{h.d}</dt><dd>{h.abre ? `${h.abre} às ${h.fecha}` : 'Fechado'}</dd></div>
+              ))}
+            </dl>
+          </div>
+
+          <div>
+            <p class="rodape-t">Contato</p>
+            <ul class="rodape-contato">
+              <li><i class="fa-solid fa-phone" aria-hidden="true"></i><a href={`tel:${LOJA.foneLink}`}>{LOJA.fone}</a></li>
+              <li><i class="fa-brands fa-whatsapp" aria-hidden="true"></i><a href={`https://wa.me/${LOJA.zap}`} rel="noopener">{LOJA.zapFmt}</a></li>
+              <li><i class="fa-regular fa-envelope" aria-hidden="true"></i><a href={`mailto:${LOJA.email}`}>{LOJA.email}</a></li>
+              <li><i class="fa-brands fa-instagram" aria-hidden="true"></i><a href={`https://instagram.com/${LOJA.insta}`} rel="noopener">@{LOJA.insta}</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="rodape-legal">
+          Demonstração de portfólio. {LOJA.nome} {LOJA.sub} é uma barbearia
+          fictícia: endereço, telefone e agenda são de exemplo, e nenhuma
+          reserva é registrada de verdade.
+        </p>
+      </div>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  /*
+    Escuro premium, neutro. Nenhum marrom: os cinzas são frios de propósito,
+    para casar com concreto e aço em vez de madeira.
+
+    O que faz parecer caro aqui é o par sombra + realce. Toda superfície
+    elevada leva sombra embaixo E um fio de luz de 1px na borda de cima
+    (`inset 0 1px 0`): é assim que o olho lê "está acima da página" no escuro,
+    onde só sombra não basta porque sombra preta sobre preto não aparece.
+  */
+  .db {
+    --breu: #08080a;
+    --fundo: #0c0c0f;
+    --carta: #131318;
+    --carta-2: #1a1a21;
+    --linha: #23232c;
+    --linha-viva: #33333f;
+
+    --branco: #f4f4f6;
+    --c60: #a3a3ae;
+    --c40: #8a8a96;
+    --platina: #d6dae2;
+    --aco: #9aa3b2;
+
+    --raio: 6px;
+    --raio-g: 14px;
+    --t: 0.45s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --topo-h: 4.4rem;
+
+    /* a escada de sombras: cada degrau é o dobro de distância da página */
+    --s1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
+    --s2: 0 4px 14px rgba(0, 0, 0, 0.5), 0 14px 36px -10px rgba(0, 0, 0, 0.6);
+    --s3: 0 10px 28px rgba(0, 0, 0, 0.55), 0 34px 68px -24px rgba(0, 0, 0, 0.75);
+    --realce: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+    position: relative;
+    background: var(--breu);
+    color: var(--branco);
+    font-family: 'Jost', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: clip;
+  }
+  :global(body) { background: #08080a; color: #f4f4f6; }
+  :global(html) { scrollbar-color: #33333f #0c0c0f; }
+  :global(::selection) { background: #d6dae2; color: #08080a; }
+
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--platina); color: var(--breu); padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0; font-weight: 600;
+  }
+  .pular:focus { left: 0; }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 400; }
+  h2 {
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: clamp(1.9rem, 4.6vw, 3.1rem); line-height: 1.08; letter-spacing: -0.01em;
+  }
+  h3 { font-size: 1.02rem; font-weight: 500; line-height: 1.35; letter-spacing: 0.01em; }
+  p { margin: 0; text-wrap: pretty; }
+  .lead { font-size: 1rem; color: var(--c60); max-width: 54ch; }
+
+  .olho {
+    display: flex; align-items: center; gap: 0.8rem;
+    font-size: 0.65rem; font-weight: 500;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--aco); margin-bottom: 1.1rem;
+  }
+  .olho span {
+    width: 2.4rem; height: 1px; flex: none;
+    background: linear-gradient(90deg, transparent, var(--aco));
+  }
+
+  .caixa { max-width: 1180px; margin: 0 auto; padding-inline: clamp(1.1rem, 4vw, 2.4rem); }
+  .secao { position: relative; padding-block: clamp(3.6rem, 9vw, 7rem); }
+  .cab { margin-bottom: clamp(2.2rem, 5vw, 3.4rem); max-width: 58ch; }
+  .cab-centro { margin-inline: auto; text-align: center; }
+  .cab-centro .olho { justify-content: center; }
+  .cab-centro .lead { margin-inline: auto; }
+  .cab .lead { margin-top: 1rem; }
+  .db section[id] { scroll-margin-top: calc(var(--topo-h) + 0.6rem); }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    min-height: 46px; padding: 0.75rem 1.5rem;
+    border: 1px solid transparent; border-radius: var(--raio);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.88rem; font-weight: 500; letter-spacing: 0.03em;
+    text-decoration: none; white-space: nowrap; cursor: pointer;
+    transition: background var(--t) var(--e), color var(--t) var(--e),
+      border-color var(--t) var(--e), box-shadow var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .btn-g { padding: 0.95rem 1.8rem; font-size: 0.95rem; }
+  .btn-min { padding: 0.55rem 1.1rem; font-size: 0.82rem; min-height: 40px; }
+  .btn-cheio { width: 100%; }
+  /* o CTA é claro sobre escuro: o maior contraste da página vai para a ação */
+  .btn-claro {
+    background: var(--platina); color: var(--breu); font-weight: 600;
+    box-shadow: var(--s2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  .btn-claro:hover { background: #fff; translate: 0 -2px; box-shadow: var(--s3), inset 0 1px 0 #fff; }
+  .btn-claro:disabled { opacity: 0.3; cursor: not-allowed; translate: 0; box-shadow: none; }
+  .btn-vidro {
+    background: rgba(255, 255, 255, 0.04); color: var(--branco);
+    border-color: var(--linha-viva);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--s1), var(--realce);
+  }
+  .btn-vidro:hover { border-color: var(--aco); background: rgba(255, 255, 255, 0.08); translate: 0 -2px; box-shadow: var(--s2), var(--realce); }
+  .db :is(a, button):focus-visible { outline: 2px solid var(--platina); outline-offset: 3px; }
+
+  /* ---------- cabeçalho ---------- */
+  .topo {
+    position: sticky; top: 0; z-index: 60;
+    background: rgba(8, 8, 10, 0.72);
+    backdrop-filter: blur(18px) saturate(1.2);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t) var(--e), background var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .topo[data-topo='rolou'] {
+    border-bottom-color: var(--linha);
+    background: rgba(8, 8, 10, 0.9);
+    box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+  }
+  .topo-caixa {
+    max-width: 1180px; margin: 0 auto;
+    padding: 0.5rem clamp(1.1rem, 4vw, 2.4rem); min-height: var(--topo-h);
+    display: flex; align-items: center; gap: clamp(0.7rem, 2vw, 1.6rem);
+  }
+  .marca { display: inline-flex; align-items: center; gap: 0.7rem; text-decoration: none; color: var(--branco); margin-right: auto; }
+  .marca-selo {
+    width: 2.2rem; height: 2.2rem; flex: none; display: grid; place-items: center;
+    border: 1px solid var(--linha-viva); border-radius: 50%; color: var(--platina);
+    box-shadow: var(--realce);
+  }
+  .marca-selo svg { width: 66%; height: 66%; display: block; }
+  .marca-txt { display: grid; line-height: 1; }
+  .marca-txt b { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.3rem; font-weight: 500; }
+  .marca-txt i {
+    font-style: normal; font-size: 0.54rem; font-weight: 500;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--aco); margin-top: 0.32rem;
+  }
+  .topo-nav { display: none; gap: clamp(1rem, 2.4vw, 2.2rem); }
+  .topo-nav a {
+    position: relative; color: var(--c60); text-decoration: none;
+    font-size: 0.85rem; padding-block: 0.3rem;
+    transition: color var(--t) var(--e);
+  }
+  .topo-nav a::after {
+    content: ''; position: absolute; inset: auto 0 0 0; height: 1px;
+    background: var(--platina); scale: 0 1; transition: scale var(--t) var(--e);
+  }
+  .topo-nav a:hover { color: var(--branco); }
+  .topo-nav a:hover::after { scale: 1 1; }
+  @media (min-width: 900px) { .topo-nav { display: flex; } }
+
+  /* ---------- capa ---------- */
+  .capa {
+    position: relative; overflow: hidden;
+    min-height: min(100svh, 54rem);
+    display: grid; align-items: end;
+    padding-block: clamp(4rem, 14vh, 8rem) clamp(4.5rem, 12vh, 7rem);
+  }
+  .capa-foto { position: absolute; inset: 0; }
+  .capa-foto img {
+    width: 100%; height: 100%; object-fit: cover; object-position: center 42%;
+    /*
+      A foto é de 600px e aqui ela abre em tela cheia. Contraste e dessaturação
+      leves fazem a imagem ler como cena, não como foto ampliada — e a vinheta
+      por cima come justamente a borda, que é onde a ampliação mais aparece.
+    */
+    filter: contrast(1.06) saturate(0.55) brightness(0.52);
+    animation: capaZoom 22s var(--e) forwards;
+  }
+  /* entrada da capa: a imagem abre devagar, e só uma vez */
+  @keyframes capaZoom {
+    from { scale: 1.14; }
+    to { scale: 1; }
+  }
+  .capa-vinheta {
+    position: absolute; inset: 0;
+    background:
+      /*
+        A camada do meio não é vinheta, é supressão: a parede da foto tem a
+        placa de outra barbearia bem atrás de onde o nome entra. Escurecer o
+        miolo deixa a cena como textura e devolve a marca ao texto, que é quem
+        tem que ser lido primeiro.
+      */
+      radial-gradient(66% 46% at 50% 62%, rgba(8, 8, 10, 0.82) 0%, rgba(8, 8, 10, 0.36) 60%, rgba(8, 8, 10, 0) 100%),
+      radial-gradient(120% 82% at 50% 38%, rgba(8, 8, 10, 0.28) 20%, rgba(8, 8, 10, 0.72) 66%, rgba(8, 8, 10, 0.98) 100%),
+      linear-gradient(180deg, rgba(8, 8, 10, 0.9) 0%, rgba(8, 8, 10, 0.5) 24%, rgba(8, 8, 10, 0.8) 64%, var(--breu) 98%);
+  }
+  /* grão fino: cola a foto ampliada no fundo e tira o aspecto de banner */
+  .capa-grao {
+    position: absolute; inset: 0; opacity: 0.5; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  }
+  .capa-conteudo {
+    position: relative; z-index: 3; text-align: center;
+    max-width: 1180px; width: 100%; margin: 0 auto;
+    padding-inline: clamp(1.1rem, 4vw, 2.4rem);
+  }
+  .capa .olho { justify-content: center; color: var(--platina); }
+  .capa .olho span { background: linear-gradient(90deg, transparent, var(--platina)); }
+
+  h1 { display: grid; gap: 0.35rem; line-height: 1; }
+  .h1-l {
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.5em;
+    text-transform: uppercase; color: var(--c60); padding-left: 0.5em;
+  }
+  .h1-marca {
+    font-family: 'Bodoni Moda', Georgia, serif; font-weight: 500;
+    font-size: clamp(3.4rem, 15vw, 8.5rem); line-height: 0.94;
+    text-shadow: 0 10px 60px rgba(0, 0, 0, 0.9), 0 2px 10px rgba(0, 0, 0, 0.7);
+  }
+  .h1-sub {
+    font-size: clamp(0.78rem, 2.4vw, 1.05rem); font-weight: 300;
+    letter-spacing: 0.34em; text-transform: uppercase; color: var(--platina);
+  }
+  .capa-d {
+    margin: 1.7rem auto 0; max-width: 44ch; color: var(--c60); font-size: 0.96rem;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  }
+  .capa-acoes { margin-top: 2.2rem; display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
+  .capa-acoes .btn { flex: 1 1 14rem; max-width: 19rem; }
+
+  /* o traço que desce e pulsa, no lugar de uma seta */
+  .capa-desce {
+    position: absolute; z-index: 3; left: 50%; translate: -50% 0; bottom: 1.6rem;
+    width: 44px; height: 44px; display: grid; place-items: center;
+  }
+  .capa-desce span {
+    width: 1px; height: 2rem; background: linear-gradient(180deg, transparent, var(--platina));
+    animation: desce 2.4s var(--e) infinite;
+  }
+  @keyframes desce {
+    0%, 100% { opacity: 0.2; scale: 1 0.5; transform-origin: 50% 0; }
+    50% { opacity: 1; scale: 1 1; }
+  }
+
+  /* ---------- faixa de números ---------- */
+  .faixa { position: relative; border-block: 1px solid var(--linha); background: var(--fundo); }
+  .numeros {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: 1fr 1fr;
+  }
+  @media (min-width: 760px) { .numeros { grid-template-columns: repeat(4, 1fr); } }
+  .numeros li {
+    padding: clamp(1.4rem, 3.5vw, 2.4rem) 1rem; text-align: center;
+    border-right: 1px solid var(--linha); border-bottom: 1px solid var(--linha);
+  }
+  .numeros li:nth-child(2n) { border-right: 0; }
+  @media (min-width: 760px) {
+    .numeros li { border-bottom: 0; }
+    .numeros li:nth-child(2n) { border-right: 1px solid var(--linha); }
+    .numeros li:last-child { border-right: 0; }
+  }
+  .num-v {
+    font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1; color: var(--branco);
+  }
+  .num-v small { font-size: 0.36em; margin-left: 0.25em; color: var(--aco); letter-spacing: 0.06em; }
+  .num-d { margin-top: 0.5rem; font-size: 0.78rem; color: var(--c40); letter-spacing: 0.04em; }
+
+  /* ---------- serviços ---------- */
+  .grade-serv {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(0.9rem, 2vw, 1.2rem);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr));
+  }
+  .serv {
+    position: relative; display: flex; flex-direction: column; gap: 0.6rem;
+    padding: 1.6rem 1.5rem;
+    background: linear-gradient(180deg, var(--carta-2), var(--carta));
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    box-shadow: var(--s2), var(--realce);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .serv:hover { border-color: var(--linha-viva); box-shadow: var(--s3), var(--realce); translate: 0 -4px; }
+  .serv-destaque { border-color: var(--aco); }
+  .serv-fita {
+    position: absolute; top: -0.72rem; left: 1.5rem;
+    padding: 0.22rem 0.7rem; border-radius: 999px;
+    background: var(--platina); color: var(--breu);
+    font-size: 0.58rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+    box-shadow: var(--s1);
+  }
+  .serv-i {
+    width: 2.7rem; height: 2.7rem; display: grid; place-items: center;
+    border-radius: 50%; background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--linha-viva); color: var(--platina);
+    font-size: 0.98rem; margin-bottom: 0.3rem; box-shadow: var(--realce);
+  }
+  .serv h3 { font-family: 'Bodoni Moda', Georgia, serif; font-weight: 500; font-size: 1.32rem; }
+  .serv-d { font-size: 0.86rem; color: var(--c60); flex: 1; }
+  .serv-pe {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem;
+    padding-top: 0.85rem; border-top: 1px solid var(--linha);
+  }
+  .serv-preco { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.5rem; color: var(--branco); }
+  .serv-min { font-size: 0.76rem; color: var(--c40); display: inline-flex; align-items: center; gap: 0.35rem; }
+
+  /* ---------- reserva ---------- */
+  .reserva { background: var(--fundo); border-block: 1px solid var(--linha); }
+  .agenda {
+    background: linear-gradient(180deg, var(--carta-2), var(--carta));
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    overflow: hidden; box-shadow: var(--s3), var(--realce);
+  }
+  .trilha {
+    list-style: none; margin: 0; padding: 0.95rem clamp(0.9rem, 3vw, 1.6rem);
+    display: flex; gap: 0.4rem; align-items: center;
+    border-bottom: 1px solid var(--linha); background: rgba(0, 0, 0, 0.28);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .trilha::-webkit-scrollbar { display: none; }
+  .trilha li {
+    display: flex; align-items: center; gap: 0.45rem; flex: none;
+    font-size: 0.74rem; color: var(--c40); transition: color var(--t) var(--e);
+  }
+  .trilha li + li::before {
+    content: ''; width: clamp(0.8rem, 3vw, 2rem); height: 1px;
+    background: var(--linha-viva); margin-right: 0.45rem;
+  }
+  .trilha-n {
+    width: 1.55rem; height: 1.55rem; flex: none; display: grid; place-items: center;
+    border-radius: 50%; border: 1px solid var(--linha-viva);
+    font-size: 0.68rem; font-weight: 500;
+    transition: background var(--t) var(--e), border-color var(--t) var(--e), color var(--t) var(--e);
+  }
+  .trilha li.feito .trilha-n { background: var(--platina); border-color: var(--platina); color: var(--breu); }
+  .trilha li.feito { color: var(--c60); }
+  .trilha li.agora .trilha-n { border-color: var(--platina); color: var(--platina); box-shadow: 0 0 0 3px rgba(214, 218, 226, 0.12); }
+  .trilha li.agora { color: var(--branco); font-weight: 500; }
+
+  .agenda-corpo { padding: clamp(1.2rem, 3vw, 2rem); display: grid; gap: clamp(1.5rem, 3vw, 2.2rem); }
+  .campo { border: 0; margin: 0; padding: 0; min-width: 0; }
+  .campo legend {
+    display: flex; align-items: center; gap: 0.65rem; padding: 0;
+    font-size: 1rem; font-weight: 500; margin-bottom: 0.9rem;
+  }
+  .campo-n {
+    width: 1.65rem; height: 1.65rem; flex: none; display: grid; place-items: center;
+    border-radius: 50%; background: var(--platina); color: var(--breu);
+    font-size: 0.72rem; font-weight: 600;
+  }
+  .campo-nota {
+    margin-top: 0.75rem; font-size: 0.78rem; color: var(--c40);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .campo-nota i { color: var(--aco); }
+  .campo-nota[hidden] { display: none; }
+
+  .opcoes { display: grid; gap: 0.6rem; grid-template-columns: 1fr; }
+  @media (min-width: 560px) { .opcoes { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 880px) { .opcoes { grid-template-columns: repeat(3, 1fr); } }
+
+  .op {
+    display: grid; gap: 0.18rem; text-align: left;
+    min-height: 46px; padding: 0.9rem 1.05rem;
+    border: 1px solid var(--linha); border-radius: var(--raio);
+    background: rgba(255, 255, 255, 0.025); color: var(--branco); cursor: pointer;
+    font-family: inherit; box-shadow: var(--s1), var(--realce);
+    transition: border-color var(--t) var(--e), background var(--t) var(--e),
+      box-shadow var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .op:hover { border-color: var(--linha-viva); translate: 0 -2px; box-shadow: var(--s2), var(--realce); }
+  .op > i, .op-ini { color: var(--aco); font-size: 0.95rem; margin-bottom: 0.28rem; }
+  .op-ini {
+    width: 1.7rem; height: 1.7rem; display: grid; place-items: center;
+    border-radius: 50%; background: rgba(255, 255, 255, 0.06);
+    font-size: 0.78rem; font-weight: 500;
+  }
+  .op-t { font-size: 0.92rem; font-weight: 500; }
+  .op-d { font-size: 0.76rem; color: var(--c40); }
+  /* selecionado inverte para claro: no escuro, só borda não se lê de relance */
+  .op[aria-checked='true'] {
+    background: var(--platina); color: var(--breu); border-color: var(--platina);
+    box-shadow: var(--s2), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .op[aria-checked='true'] .op-d { color: #4a4a52; }
+  .op[aria-checked='true'] :is(i, .op-ini) { color: var(--breu); background: rgba(8, 8, 10, 0.1); }
+
+  /* botão que abre o calendário */
+  .escolhe {
+    width: 100%; min-height: 70px;
+    display: grid; grid-template-columns: 2.9rem 1fr auto; align-items: center; gap: 0.95rem;
+    padding: 0.9rem 1.05rem; text-align: left;
+    border: 1px solid var(--linha); border-radius: var(--raio);
+    background: rgba(255, 255, 255, 0.025); color: var(--branco); cursor: pointer;
+    font-family: inherit; box-shadow: var(--s1), var(--realce);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .escolhe:hover { border-color: var(--linha-viva); box-shadow: var(--s2), var(--realce); }
+  .escolhe-i {
+    width: 2.9rem; height: 2.9rem; display: grid; place-items: center;
+    border-radius: 50%; background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--linha-viva); color: var(--platina); font-size: 1.05rem;
+  }
+  .escolhe-txt { display: grid; gap: 0.15rem; min-width: 0; }
+  .escolhe-txt b { font-size: 0.98rem; font-weight: 500; }
+  .escolhe-txt small { font-size: 0.78rem; color: var(--c40); }
+  .escolhe-seta { color: var(--c40); font-size: 0.8rem; }
+  .escolhe.tem { border-color: var(--platina); }
+  .escolhe.tem .escolhe-i { background: var(--platina); border-color: var(--platina); color: var(--breu); }
+
+  /* ---------- modal do calendário ---------- */
+  .cal {
+    /*
+      O <dialog> modal centraliza sozinho por `margin: auto` da folha do
+      navegador — e o preflight do Tailwind, que este projeto importa, zera a
+      margem de todo elemento. Sem repor, o calendário encosta no canto
+      superior esquerdo. `inset: 0` + `margin: auto` centraliza nos dois eixos.
+    */
+    position: fixed; inset: 0; margin: auto;
+    height: max-content; max-height: calc(100dvh - 2rem); overflow: auto;
+    width: min(23rem, calc(100vw - 2rem)); padding: 1.3rem;
+    border: 1px solid var(--linha-viva); border-radius: var(--raio-g);
+    background: linear-gradient(180deg, var(--carta-2), var(--carta));
+    color: var(--branco); box-shadow: var(--s3), var(--realce);
+  }
+  .cal::backdrop { background: rgba(4, 4, 6, 0.8); backdrop-filter: blur(5px); }
+  .cal-cab { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 1.1rem; }
+  .cal-mes { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.2rem; text-align: center; flex: 1; }
+  .cal-seta {
+    width: 44px; height: 44px; flex: none; display: grid; place-items: center;
+    border: 1px solid var(--linha); border-radius: var(--raio);
+    background: rgba(255, 255, 255, 0.03); color: var(--branco); cursor: pointer; font-size: 0.8rem;
+    transition: border-color var(--t) var(--e), color var(--t) var(--e);
+  }
+  .cal-seta:hover:not(:disabled) { border-color: var(--platina); color: var(--platina); }
+  .cal-seta:disabled { opacity: 0.25; cursor: not-allowed; }
+  .cal-semana, .cal-grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
+  .cal-semana {
+    margin-bottom: 0.45rem; font-size: 0.6rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--c40); text-align: center;
+  }
+  .cal .btn { margin-top: 0.9rem; }
+
+  /*
+    ---------- o que nasce de JS ----------
+
+    Dias do calendário e horários são criados com `createElement`, e o escopo do
+    Astro só alcança o que estava no template na hora do build: sem `:global`
+    esses elementos saem na tela sem estilo nenhum, como texto solto. O
+    `:global` fica ancorado dentro de `.agenda`, então continua sendo escopo —
+    só que um escopo que o JS também alcança.
+  */
+  .agenda :global(.cal-dia) {
+    aspect-ratio: 1; min-height: 40px; width: 100%;
+    display: grid; place-items: center;
+    border: 1px solid transparent; border-radius: var(--raio);
+    background: transparent; color: var(--branco); cursor: pointer;
+    font-family: inherit; font-size: 0.9rem; font-variant-numeric: tabular-nums;
+    transition: background var(--t) var(--e), color var(--t) var(--e), border-color var(--t) var(--e);
+  }
+  .agenda :global(.cal-dia:hover:not(:disabled)) { border-color: var(--linha-viva); background: rgba(255, 255, 255, 0.04); }
+  .agenda :global(.cal-dia:disabled) { color: #4d4d57; cursor: not-allowed; }
+  .agenda :global(.cal-dia.hoje) { border-color: var(--linha-viva); font-weight: 600; }
+  .agenda :global(.cal-dia[aria-checked='true']) {
+    background: var(--platina); border-color: var(--platina); color: var(--breu); font-weight: 600;
+  }
+  .agenda :global(.cal-vazio) { pointer-events: none; }
+
+  .horas { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); }
+  .agenda :global(.hora) {
+    min-height: 46px; padding: 0.6rem 0.4rem;
+    border: 1px solid var(--linha); border-radius: var(--raio);
+    background: rgba(255, 255, 255, 0.025); color: var(--branco); cursor: pointer;
+    font-family: inherit; font-size: 0.88rem; font-weight: 500;
+    font-variant-numeric: tabular-nums; box-shadow: var(--realce);
+    transition: border-color var(--t) var(--e), background var(--t) var(--e), color var(--t) var(--e);
+  }
+  .agenda :global(.hora:hover:not(:disabled)) { border-color: var(--linha-viva); background: rgba(255, 255, 255, 0.06); }
+  .agenda :global(.hora[aria-checked='true']) {
+    background: var(--platina); border-color: var(--platina); color: var(--breu); font-weight: 600;
+    box-shadow: var(--s2);
+  }
+  /* ocupado não é só apagado: risca, para não parecer que o botão quebrou */
+  .agenda :global(.hora:disabled) {
+    color: #55555f; cursor: not-allowed; text-decoration: line-through;
+    background: rgba(0, 0, 0, 0.25); box-shadow: none;
+  }
+
+  .resumo { padding: clamp(1.2rem, 3vw, 1.7rem); border-top: 1px solid var(--linha); background: rgba(0, 0, 0, 0.28); }
+  .resumo-linhas { margin: 0 0 1.1rem; display: grid; gap: 0.5rem; }
+  .resumo-linhas > div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.86rem; }
+  .resumo-linhas dt { color: var(--c40); }
+  .resumo-linhas dd { margin: 0; text-align: right; font-weight: 500; }
+  .resumo-total { padding-top: 0.6rem; border-top: 1px solid var(--linha); }
+  .resumo-total dd { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.4rem; font-weight: 500; }
+  .resumo-nota { margin-top: 0.8rem; font-size: 0.72rem; color: var(--c40); text-align: center; }
+
+  /* ---------- comprovante ---------- */
+  .ficha { margin-top: 1.5rem; }
+  .ficha[hidden] { display: none; }
+  .ficha-cartao {
+    max-width: 26rem; margin: 0 auto; overflow: hidden;
+    background: linear-gradient(180deg, var(--carta-2), var(--carta));
+    border: 1px solid var(--linha-viva); border-radius: var(--raio-g);
+    box-shadow: var(--s3), var(--realce);
+  }
+  .ficha-topo {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 1.2rem 1.35rem; border-bottom: 1px solid var(--platina);
+  }
+  .ficha-marca { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.55rem; }
+  .ficha-selo {
+    font-size: 0.62rem; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--breu); background: var(--platina); border-radius: 999px; padding: 0.24rem 0.7rem;
+  }
+  /* a serrilha do canhoto: o recorte que diz "isto é um comprovante" */
+  .ficha-serrilha {
+    height: 12px;
+    background: radial-gradient(circle at 6px 0, transparent 6px, var(--carta-2) 6.5px) repeat-x;
+    background-size: 16px 12px;
+  }
+  .ficha-ok {
+    display: flex; align-items: center; gap: 0.6rem; padding: 0.2rem 1.35rem 1rem;
+    color: var(--platina); font-weight: 500; font-size: 0.94rem;
+  }
+  .ficha-dados { margin: 0; padding: 0 1.35rem; display: grid; gap: 0.55rem; }
+  .ficha-dados > div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.84rem; }
+  .ficha-dados dt { color: var(--c40); }
+  .ficha-dados dd { margin: 0; text-align: right; color: var(--branco); }
+  .ficha-cod { font-family: ui-monospace, monospace; letter-spacing: 0.1em; color: var(--platina) !important; }
+  .ficha-endereco {
+    margin: 1.1rem 1.35rem 0; padding-top: 0.9rem; border-top: 1px solid var(--linha);
+    font-size: 0.78rem; color: var(--c60); display: flex; align-items: center; gap: 0.5rem;
+  }
+  .ficha-endereco i { color: var(--aco); }
+  .ficha-acoes { padding: 1.2rem 1.35rem 1.4rem; display: grid; gap: 0.6rem; }
+
+  /* ---------- sobre ---------- */
+  .sobre-grade { display: grid; gap: clamp(2rem, 5vw, 3.4rem); }
+  @media (min-width: 900px) { .sobre-grade { grid-template-columns: 1.35fr 0.65fr; align-items: start; } }
+  .sobre-texto { display: grid; gap: 1.1rem; color: var(--c60); font-size: 0.96rem; max-width: 58ch; }
+  .sobre-lista { list-style: none; margin: 2.4rem 0 0; padding: 0; display: grid; gap: 1.5rem; }
+  .sobre-lista li { display: grid; grid-template-columns: 2.8rem 1fr; gap: 1rem; align-items: start; }
+  .sobre-n { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.5rem; color: var(--aco); line-height: 1; }
+  .sobre-lista p { margin-top: 0.4rem; font-size: 0.88rem; color: var(--c60); }
+
+  .equipe {
+    padding: 1.6rem 1.5rem;
+    background: linear-gradient(180deg, var(--carta-2), var(--carta));
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    box-shadow: var(--s2), var(--realce);
+  }
+  .equipe-t {
+    font-size: 0.63rem; font-weight: 500; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--aco); margin-bottom: 1.3rem;
+  }
+  .equipe ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.2rem; }
+  .equipe li { display: grid; grid-template-columns: 2.7rem 1fr; gap: 0.9rem; align-items: start; }
+  .equipe-ini {
+    width: 2.7rem; height: 2.7rem; display: grid; place-items: center;
+    border-radius: 50%; border: 1px solid var(--linha-viva);
+    background: rgba(255, 255, 255, 0.04);
+    font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.1rem; color: var(--platina);
+    box-shadow: var(--realce);
+  }
+  .equipe-nome { font-weight: 500; font-size: 0.95rem; }
+  .equipe-papel { font-size: 0.74rem; color: var(--aco); }
+  .equipe-esp { font-size: 0.8rem; color: var(--c60); margin-top: 0.2rem; }
+  .equipe-pe {
+    margin-top: 1.5rem; padding-top: 1.2rem; border-top: 1px solid var(--linha);
+    font-size: 0.78rem; color: var(--c60);
+    display: grid; grid-template-columns: 1rem 1fr; gap: 0.6rem; align-items: start;
+  }
+  .equipe-pe i { color: var(--aco); margin-top: 0.28rem; }
+
+  /* ---------- onde estamos ---------- */
+  .visita { background: var(--fundo); border-top: 1px solid var(--linha); }
+  .visita-cartoes {
+    list-style: none; margin: 0 0 clamp(1.6rem, 4vw, 2.4rem); padding: 0;
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  }
+  .visita-cartoes > li {
+    padding: 1.6rem 1.5rem;
+    background: linear-gradient(180deg, var(--carta-2), var(--carta));
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    box-shadow: var(--s2), var(--realce);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .visita-cartoes > li:hover { border-color: var(--linha-viva); box-shadow: var(--s3), var(--realce); translate: 0 -4px; }
+  .vc-i {
+    width: 2.7rem; height: 2.7rem; display: grid; place-items: center;
+    border-radius: 50%; border: 1px solid var(--linha-viva);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--platina); font-size: 0.95rem; margin-bottom: 1.1rem; box-shadow: var(--realce);
+  }
+  .visita-cartoes h3 {
+    font-size: 0.63rem; font-weight: 500; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--aco); margin-bottom: 0.9rem;
+  }
+  .visita-cartoes address { font-style: normal; font-size: 0.9rem; color: var(--branco); line-height: 1.85; }
+  .vc-horas { margin: 0; display: grid; gap: 0.45rem; font-size: 0.86rem; }
+  .vc-horas > div { display: flex; justify-content: space-between; gap: 0.8rem; }
+  .vc-horas dt { color: var(--c60); }
+  .vc-horas dd { margin: 0; color: var(--branco); font-variant-numeric: tabular-nums; }
+  /* dia fechado não some da lista: some do destaque, que é diferente */
+  .vc-fechado dd { color: var(--c40); }
+  .vc-contato { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; font-size: 0.88rem; }
+  .vc-contato a { color: var(--branco); text-decoration: none; transition: color var(--t) var(--e); }
+  .vc-contato a:hover { color: var(--platina); }
+  .vc-link {
+    display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1.2rem;
+    color: var(--platina); text-decoration: none; font-size: 0.82rem; font-weight: 500;
+  }
+  /* quem anda é a seta, em transform: animar `gap` remexeria a linha inteira */
+  .vc-link i { font-size: 0.7rem; transition: translate var(--t) var(--e); }
+  .vc-link:hover i { translate: 4px 0; }
+
+  .mapa { margin: 0; position: relative; border-radius: var(--raio-g); overflow: hidden; box-shadow: var(--s3); }
+  .mapa-fundo {
+    position: absolute; inset: 0; z-index: 0;
+    display: grid; place-content: center; justify-items: center; gap: 0.6rem;
+    padding: 1.5rem; text-align: center; background: var(--carta);
+  }
+  .mapa-fundo i { font-size: 1.8rem; color: var(--aco); }
+  .mapa-fundo p { font-size: 0.95rem; color: var(--branco); }
+  .mapa-fundo span { font-size: 0.78rem; color: var(--c40); max-width: 28ch; }
+  .mapa iframe {
+    position: relative; z-index: 1;
+    display: block; width: 100%; height: clamp(17rem, 42vw, 26rem);
+    border: 0;
+    /* o Google devolve mapa claro: dessaturar casa com o resto sem matar a leitura */
+    filter: grayscale(0.55) contrast(1.06) brightness(0.72);
+  }
+
+  /* ---------- rodapé ---------- */
+  .rodape { background: var(--fundo); border-top: 1px solid var(--linha); }
+  .rodape .caixa { padding-block: clamp(2.6rem, 6vw, 4.2rem) 1.7rem; }
+  .rodape-grade { display: grid; gap: 2.2rem; }
+  @media (min-width: 640px) { .rodape-grade { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 980px) { .rodape-grade { grid-template-columns: 1.6fr 1fr 1fr 1.2fr; } }
+  .rodape-marca { display: grid; line-height: 1; margin-bottom: 1rem; }
+  .rodape-marca b { font-family: 'Bodoni Moda', Georgia, serif; font-size: 2rem; font-weight: 500; }
+  .rodape-marca i {
+    font-style: normal; font-size: 0.58rem; font-weight: 500;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--aco); margin-top: 0.5rem;
+  }
+  .rodape-d { font-size: 0.84rem; color: var(--c60); max-width: 32ch; }
+  .redes { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.3rem 0 0; padding: 0; }
+  .redes a {
+    display: grid; place-items: center; width: 44px; height: 44px;
+    border: 1px solid var(--linha); border-radius: var(--raio);
+    background: rgba(255, 255, 255, 0.03); color: var(--c60);
+    text-decoration: none; font-size: 0.95rem; box-shadow: var(--realce);
+    transition: color var(--t) var(--e), border-color var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .redes a:hover { color: var(--platina); border-color: var(--linha-viva); translate: 0 -2px; }
+  .rodape-t {
+    font-size: 0.61rem; font-weight: 500; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--aco); margin-bottom: 1rem;
+  }
+  .rodape-end { font-style: normal; font-size: 0.86rem; color: var(--c60); line-height: 1.85; }
+  .rodape-link {
+    display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1rem;
+    color: var(--branco); font-size: 0.84rem; text-decoration: none;
+    border-bottom: 1px solid var(--linha-viva); padding-bottom: 0.2rem;
+    transition: color var(--t) var(--e), border-color var(--t) var(--e);
+  }
+  .rodape-link:hover { color: var(--platina); border-color: var(--platina); }
+  .rodape-horas { margin: 0; display: grid; gap: 0.45rem; font-size: 0.84rem; }
+  .rodape-horas > div { display: flex; justify-content: space-between; gap: 0.8rem; }
+  .rodape-horas dt { color: var(--c60); }
+  .rodape-horas dd { margin: 0; color: var(--branco); text-align: right; }
+  .rodape-contato { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; font-size: 0.84rem; }
+  .rodape-contato li { display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.6rem; align-items: center; }
+  .rodape-contato i { color: var(--aco); font-size: 0.85rem; }
+  .rodape-contato a { color: var(--c60); text-decoration: none; transition: color var(--t) var(--e); }
+  .rodape-contato a:hover { color: var(--platina); }
+  .rodape-legal {
+    margin-top: clamp(2.2rem, 5vw, 3rem); padding-top: 1.4rem;
+    border-top: 1px solid var(--linha);
+    font-size: 0.74rem; color: var(--c40); max-width: 70ch;
+  }
+
+  /* ---------- entrada ---------- */
+  :global(.anima-on) [data-anima], :global(.anima-on) [data-capa] { opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .db *, .db *::before, .db *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    :global(.anima-on) [data-anima], :global(.anima-on) [data-capa] { opacity: 1; }
+    .capa-foto img { animation: none; scale: 1; }
+  }
+</style>
+
+<script>
+  /*
+    Duas coisas rodam aqui: a agenda e as entradas por scroll.
+
+    Se qualquer import falhar, a página continua servindo — o conteúdo já veio
+    no HTML e o `catch` devolve tudo visível. Enfeite que derruba conteúdo não
+    é enfeite, é defeito.
+  */
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ═════════════ 1. a agenda ═════════════ */
+  type Servico = { id: string; nome: string; preco: number; min: number };
+  type Barbeiro = { id: string; nome: string };
+
+  const ler = <T,>(sel: string): T[] => {
+    const el = document.querySelector<HTMLElement>(sel);
+    try {
+      return el ? JSON.parse(el.textContent || '[]') : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const SERVICOS = ler<Servico>('[data-servicos]');
+  const BARBEIROS = ler<Barbeiro>('[data-barbeiros]');
+
+  const ABRE = 9;         // primeira cadeira às 09h
+  const FECHA_SEM = 20;   // terça a sexta
+  const FECHA_SAB = 18;
+  const PASSO = 15;       // a grade anda de quinze em quinze minutos
+
+  const brl = (n: number) => `R$ ${n}`;
+  const dois = (n: number) => String(n).padStart(2, '0');
+  const chaveDia = (d: Date) => `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`;
+
+  /*
+    Ocupação. Sai de um hash do dia + barbeiro + horário, então a mesma grade
+    reaparece igual a cada carregamento. Sorteio de verdade faria o horário
+    livre virar ocupado ao recarregar, e ninguém confia numa agenda assim.
+  */
+  function ocupado(dia: string, barbeiro: string, minutos: number) {
+    let h = 2166136261;
+    for (const c of `${dia}|${barbeiro}|${minutos}`) {
+      h ^= c.charCodeAt(0);
+      h = Math.imul(h, 16777619);
+    }
+    return ((h >>> 0) % 100) < 38;
+  }
+
+  function agendar() {
+    const raiz = document.querySelector<HTMLElement>('[data-agenda]');
+    if (!raiz || !SERVICOS.length) return;
+
+    const estado = { servico: '', barbeiro: '', dia: '', hora: -1 };
+
+    const elHoras = raiz.querySelector<HTMLElement>('[data-horas]')!;
+    const elVazio = raiz.querySelector<HTMLElement>('[data-horas-vazio]')!;
+    const btnConfirmar = raiz.querySelector<HTMLButtonElement>('[data-confirmar]')!;
+    const passos = [...raiz.querySelectorAll<HTMLElement>('[data-passo]')];
+    const ficha = document.querySelector<HTMLElement>('[data-ficha]');
+
+    const acharServico = () => SERVICOS.find((s) => s.id === estado.servico);
+    const nomeBarbeiro = () =>
+      estado.barbeiro === 'qualquer'
+        ? 'Quem estiver livre'
+        : BARBEIROS.find((b) => b.id === estado.barbeiro)?.nome ?? '—';
+
+    /* ---------- calendário em modal ---------- */
+    const SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const MES_LONGO = [
+      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+    ];
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    /* a agenda abre três meses à frente e nem um dia para trás */
+    const LIMITE = new Date(hoje.getFullYear(), hoje.getMonth() + 3, 0);
+
+    const dialogo = raiz.querySelector<HTMLDialogElement>('[data-cal]')!;
+    const elGrade = raiz.querySelector<HTMLElement>('[data-cal-grade]')!;
+    const elMes = raiz.querySelector<HTMLElement>('[data-cal-mes]')!;
+    const btnEscolhe = raiz.querySelector<HTMLElement>('[data-abrir-cal]')!;
+    const rotuloDia = raiz.querySelector<HTMLElement>('[data-dia-rotulo]')!;
+    const notaDia = raiz.querySelector<HTMLElement>('[data-dia-nota]')!;
+    const setas = [...raiz.querySelectorAll<HTMLButtonElement>('[data-mes]')];
+
+    /* fecha segunda (1) e domingo (0), e não deixa marcar dia que já passou */
+    const fechado = (d: Date) => d.getDay() === 0 || d.getDay() === 1;
+    const foraDeFaixa = (d: Date) => d < hoje || d > LIMITE;
+
+    let mesAberto = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+    function pintarCalendario() {
+      const nome = MES_LONGO[mesAberto.getMonth()];
+      // só a inicial: `capitalize` no CSS maiúscula o "de" do meio também
+      elMes.textContent = `${nome[0].toUpperCase()}${nome.slice(1)} de ${mesAberto.getFullYear()}`;
+      elGrade.innerHTML = '';
+
+      /* casas vazias até cair no dia da semana certo */
+      const primeiro = new Date(mesAberto.getFullYear(), mesAberto.getMonth(), 1);
+      for (let i = 0; i < primeiro.getDay(); i++) {
+        const vazio = document.createElement('span');
+        vazio.className = 'cal-vazio';
+        elGrade.append(vazio);
+      }
+
+      const ultimo = new Date(mesAberto.getFullYear(), mesAberto.getMonth() + 1, 0).getDate();
+      for (let n = 1; n <= ultimo; n++) {
+        const d = new Date(mesAberto.getFullYear(), mesAberto.getMonth(), n);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'cal-dia';
+        b.textContent = String(n);
+        b.dataset.dia = chaveDia(d);
+        b.disabled = fechado(d) || foraDeFaixa(d);
+        if (d.getTime() === hoje.getTime()) b.classList.add('hoje');
+        b.setAttribute('aria-checked', String(estado.dia === chaveDia(d)));
+        b.setAttribute('aria-label', `${n} de ${MES_LONGO[d.getMonth()]}${b.disabled ? ', indisponível' : ''}`);
+        elGrade.append(b);
+      }
+
+      /* as setas param nos limites: mês sem dia livre não vale a viagem */
+      const anterior = new Date(mesAberto.getFullYear(), mesAberto.getMonth() - 1, 1);
+      const seguinte = new Date(mesAberto.getFullYear(), mesAberto.getMonth() + 1, 1);
+      setas[0].disabled = anterior < new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      setas[1].disabled = seguinte > LIMITE;
+    }
+
+    function pintarBotaoDia() {
+      if (!estado.dia) {
+        rotuloDia.textContent = 'Escolher o dia';
+        notaDia.textContent = 'De terça a sábado';
+        btnEscolhe.classList.remove('tem');
+        return;
+      }
+      const d = new Date(`${estado.dia}T12:00:00`);
+      rotuloDia.textContent = `${SEMANA[d.getDay()]}, ${d.getDate()} de ${MES_LONGO[d.getMonth()]}`;
+      notaDia.textContent = 'Toque para trocar o dia';
+      btnEscolhe.classList.add('tem');
+    }
+
+    btnEscolhe.addEventListener('click', () => {
+      // abre no mês do dia já escolhido, e não sempre no mês corrente
+      if (estado.dia) {
+        const d = new Date(`${estado.dia}T12:00:00`);
+        mesAberto = new Date(d.getFullYear(), d.getMonth(), 1);
+      }
+      pintarCalendario();
+      dialogo.showModal();
+    });
+    setas.forEach((b) =>
+      b.addEventListener('click', () => {
+        mesAberto = new Date(mesAberto.getFullYear(), mesAberto.getMonth() + Number(b.dataset.mes), 1);
+        pintarCalendario();
+      }),
+    );
+    raiz.querySelector('[data-cal-fechar]')?.addEventListener('click', () => dialogo.close());
+    /* clique no fundo escuro fecha: o <dialog> recebe o clique fora do conteúdo */
+    dialogo.addEventListener('click', (ev) => {
+      if (ev.target === dialogo) dialogo.close();
+    });
+
+    /* ---------- horários do dia escolhido ---------- */
+    function pintarHoras() {
+      const serv = acharServico();
+      const temBase = Boolean(serv && estado.dia && estado.barbeiro);
+      elVazio.hidden = temBase;
+      elHoras.innerHTML = '';
+      if (!temBase || !serv) return;
+
+      const d = new Date(`${estado.dia}T12:00:00`);
+      const fecha = d.getDay() === 6 ? FECHA_SAB : FECHA_SEM;
+      const ultimo = fecha * 60 - serv.min; // o serviço tem que caber antes de fechar
+
+      for (let m = ABRE * 60; m <= ultimo; m += PASSO) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'hora';
+        b.setAttribute('role', 'radio');
+        const rotulo = `${dois(Math.floor(m / 60))}:${dois(m % 60)}`;
+        b.textContent = rotulo;
+        b.dataset.hora = String(m);
+        const livre = !ocupado(estado.dia, estado.barbeiro, m);
+        b.disabled = !livre;
+        b.setAttribute('aria-checked', String(estado.hora === m));
+        b.setAttribute('aria-label', livre ? `${rotulo}, livre` : `${rotulo}, ocupado`);
+        elHoras.append(b);
+      }
+    }
+
+    /* ---------- resumo e trilha ---------- */
+    function pintarResumo() {
+      const serv = acharServico();
+      const set = (sel: string, v: string) => {
+        const el = raiz.querySelector<HTMLElement>(sel);
+        if (el) el.textContent = v;
+      };
+
+      set('[data-r-servico]', serv ? `${serv.nome} · ${serv.min} min` : '—');
+      set('[data-r-barbeiro]', estado.barbeiro ? nomeBarbeiro() : '—');
+
+      let quando = '—';
+      if (estado.dia && estado.hora >= 0) {
+        const d = new Date(`${estado.dia}T12:00:00`);
+        quando = `${SEMANA[d.getDay()]}, ${d.getDate()} ${MES[d.getMonth()]} · ${dois(
+          Math.floor(estado.hora / 60),
+        )}:${dois(estado.hora % 60)}`;
+      } else if (estado.dia) {
+        const d = new Date(`${estado.dia}T12:00:00`);
+        quando = `${SEMANA[d.getDay()]}, ${d.getDate()} ${MES[d.getMonth()]} · escolha a hora`;
+      }
+      set('[data-r-quando]', quando);
+      set('[data-r-total]', brl(serv?.preco ?? 0));
+
+      const feitos = [
+        Boolean(estado.servico),
+        Boolean(estado.barbeiro),
+        Boolean(estado.dia),
+        estado.hora >= 0,
+      ];
+      passos.forEach((p, i) => {
+        p.classList.toggle('feito', feitos[i]);
+        // a etapa "agora" é a primeira ainda em aberto
+        p.classList.toggle('agora', !feitos[i] && feitos.slice(0, i).every(Boolean));
+      });
+
+      btnConfirmar.disabled = !feitos.every(Boolean);
+    }
+
+    /*
+      Um só ouvinte para a agenda inteira. `closest` acha o botão mesmo quando
+      o clique cai no ícone dentro dele, e cada `data-*` diz o que mudou.
+    */
+    raiz.addEventListener('click', (ev) => {
+      const alvo = (ev.target as HTMLElement).closest<HTMLElement>(
+        '[data-op-servico],[data-op-barbeiro],[data-dia],[data-hora]',
+      );
+      if (!alvo || (alvo as HTMLButtonElement).disabled) return;
+
+      const marcar = (grupo: string, el: HTMLElement) => {
+        raiz.querySelectorAll(grupo).forEach((o) => o.setAttribute('aria-checked', 'false'));
+        el.setAttribute('aria-checked', 'true');
+      };
+
+      if (alvo.dataset.opServico) {
+        estado.servico = alvo.dataset.opServico;
+        marcar('[data-op-servico]', alvo);
+        estado.hora = -1;      // mudou a duração: a grade não vale mais
+        pintarHoras();
+      } else if (alvo.dataset.opBarbeiro) {
+        estado.barbeiro = alvo.dataset.opBarbeiro;
+        marcar('[data-op-barbeiro]', alvo);
+        estado.hora = -1;      // outra agenda, outros horários ocupados
+        pintarHoras();
+      } else if (alvo.dataset.dia) {
+        estado.dia = alvo.dataset.dia;
+        marcar('[data-dia]', alvo);
+        estado.hora = -1;
+        pintarBotaoDia();
+        pintarHoras();
+        dialogo.close();
+      } else if (alvo.dataset.hora) {
+        estado.hora = Number(alvo.dataset.hora);
+        marcar('[data-hora]', alvo);
+      }
+      pintarResumo();
+    });
+
+    /* atalho dos cards de serviço: escolhe e desce para a agenda */
+    document.querySelectorAll<HTMLElement>('[data-marcar]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const id = b.dataset.marcar!;
+        raiz.querySelector<HTMLElement>(`[data-op-servico="${id}"]`)?.click();
+        document.querySelector('#reserva')?.scrollIntoView({
+          behavior: reduz ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      });
+    });
+
+    /* ---------- confirmar ---------- */
+    btnConfirmar.addEventListener('click', () => {
+      const serv = acharServico();
+      if (!serv || !ficha) return;
+
+      const d = new Date(`${estado.dia}T12:00:00`);
+      const quando = `${SEMANA[d.getDay()]}, ${d.getDate()} de ${MES[d.getMonth()]} às ${dois(
+        Math.floor(estado.hora / 60),
+      )}:${dois(estado.hora % 60)}`;
+      const cod =
+        'DB-' +
+        Array.from({ length: 6 }, () => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 31)]).join('');
+
+      const set = (sel: string, v: string) => {
+        const el = ficha.querySelector<HTMLElement>(sel);
+        if (el) el.textContent = v;
+      };
+      set('[data-f-servico]', serv.nome);
+      set('[data-f-barbeiro]', nomeBarbeiro());
+      set('[data-f-quando]', quando);
+      set('[data-f-duracao]', `${serv.min} minutos`);
+      set('[data-f-total]', brl(serv.preco));
+      set('[data-f-cod]', cod);
+
+      const zap = ficha.querySelector<HTMLAnchorElement>('[data-f-zap]');
+      if (zap) {
+        const msg = `Olá! Confirmei uma reserva pelo site: ${serv.nome} com ${nomeBarbeiro()}, ${quando}. Código ${cod}.`;
+        const numero = document.querySelector<HTMLElement>('[data-zap]')?.dataset.zap ?? '';
+        zap.href = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
+      }
+
+      ficha.hidden = false;
+      raiz.hidden = true;
+      ficha.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'center' });
+    });
+
+    document.querySelector('[data-nova]')?.addEventListener('click', () => {
+      if (!ficha) return;
+      ficha.hidden = true;
+      raiz.hidden = false;
+      estado.hora = -1;
+      raiz.querySelectorAll('[data-hora]').forEach((o) => o.setAttribute('aria-checked', 'false'));
+      pintarResumo();
+      raiz.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'start' });
+    });
+
+    pintarBotaoDia();
+    pintarHoras();
+    pintarResumo();
+  }
+
+  /* ═════════════ 2. entradas ═════════════ */
+  async function ligarMovimento() {
+    if (reduz) return;
+    const { animate, inView, stagger } = await import('motion');
+    const SAIDA = [0.22, 0.61, 0.36, 1] as const;
+
+    /* a capa entra na carga, sem esperar scroll: ela já está na tela */
+    animate(
+      '[data-capa]',
+      { opacity: [0, 1], transform: ['translateY(26px)', 'translateY(0px)'] },
+      { duration: 1, delay: stagger(0.13, { startDelay: 0.2 }), ease: SAIDA },
+    );
+
+    /*
+      O resto entra agrupado por pai: assim o stagger corre entre irmãos, e não
+      entre elementos que só por acaso estão na mesma altura da página.
+    */
+    const grupos = new Map<Element, HTMLElement[]>();
+    document.querySelectorAll<HTMLElement>('[data-anima]').forEach((el) => {
+      const pai = el.parentElement!;
+      grupos.set(pai, [...(grupos.get(pai) ?? []), el]);
+    });
+
+    for (const [pai, filhos] of grupos) {
+      inView(
+        pai,
+        () => {
+          animate(
+            filhos,
+            { opacity: [0, 1], transform: ['translateY(22px)', 'translateY(0px)'] },
+            { duration: 0.75, delay: stagger(0.08), ease: SAIDA },
+          );
+        },
+        { amount: 0.15, margin: '0px 0px -10% 0px' },
+      );
+    }
+  }
+
+  /* o topo ganha borda e sombra quando a página sai do início */
+  const topo = document.querySelector<HTMLElement>('[data-topo]');
+  if (topo) {
+    const marcar = () => { topo.dataset.topo = scrollY > 12 ? 'rolou' : ''; };
+    marcar();
+    addEventListener('scroll', marcar, { passive: true });
+  }
+
+  agendar();
+  ligarMovimento().catch(() => {
+    document.querySelectorAll<HTMLElement>('[data-anima],[data-capa]').forEach((el) => (el.style.opacity = '1'));
+  });
+</script>

@@ -95,6 +95,25 @@ const POR_AGUA = COLS * LINHAS;
 const CAIXA = new THREE.BoxGeometry(1, 1, 1);
 const CONCRETO = new THREE.Color(0xc4bfb6);
 
+/*
+  Enquadramento. A casa é um retângulo de 10,40 × 8,00 com 60 cm de beiral em
+  volta, e ela gira 360°: a largura que precisa caber na tela vai de 9,2 m
+  (fachada de frente) a 14,8 m (na diagonal). Com distância fixa é preciso
+  reservar sempre o pior caso — e no celular, onde a largura é o gargalo, isso
+  deixa a casa pequena e sobrando céu por todo lado.
+
+  Então a câmera recua conforme o giro. Não até o ajuste exato, que faria a
+  casa "respirar" de tamanho a cada volta: mistura com o pior caso, o quadro
+  fica cheio e o tamanho aparente quase constante.
+*/
+const MEIA_X = LARG / 2 + BEIRAL;
+const MEIA_Z = PROF / 2 + BEIRAL;
+const MEIA_MAX = Math.hypot(MEIA_X, MEIA_Z);
+const AJUSTE = 0.85;                            // 0 = distância fixa, 1 = ajuste exato
+const FOV = 32;
+const TG = Math.tan((FOV * Math.PI) / 360);     // tangente da meia-abertura vertical
+const ALTURA = 5.4;                             // casa com telhado, já com folga
+
 /** cresce da base para cima, como parede subindo fiada por fiada */
 function erguer(m: THREE.Object3D, base: number, alt: number, k: number) {
   const kk = Math.max(0.0015, k);
@@ -118,7 +137,7 @@ export function criarCasa(canvas: HTMLCanvasElement): Cena | null {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const cena = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 200);
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   const amb = pmrem.fromScene(new RoomEnvironment(), 0.04);
@@ -429,25 +448,53 @@ export function criarCasa(canvas: HTMLCanvasElement): Cena | null {
     erguer(calcada, -0.42, 0.1, suave(faixa(pr, 0.88, 0.98)));
 
     // giro de 360° e câmera que vai abrindo conforme a casa cresce
-    grupo.rotation.y = -0.55 + pr * Math.PI * 2;
-    camera.position.y = 4.2 + suave(pr) * 4.4;
-    camera.lookAt(desloc, 1.2 + suave(pr) * 0.6, 0);
+    const giro = -0.55 + pr * Math.PI * 2;
+    grupo.rotation.y = giro;
+    camera.position.y = alturaOlho + suave(pr) * (alturaOlho * 1.05);
+    camera.position.z = distancia(giro);
+    camera.lookAt(desloc, mira + suave(pr) * 0.6, 0);
   };
 
-  let dist = 28;
+  /* recuo necessário para o giro atual caber no quadro, com a folga do formato */
+  let folga = 1.74;
+  let alturaOlho = 4.2;
+  let mira = 1.2;      // ponto que fica no centro da tela: mais baixo, casa mais alta no quadro
   let desloc = 0;   // no desktop o card cobre a esquerda: joga a casa para a direita
+  const distancia = (giro: number) => {
+    const c = Math.abs(Math.cos(giro));
+    const s = Math.abs(Math.sin(giro));
+    const meiaL = MEIA_X * c + MEIA_Z * s;   // meia-largura da pegada girada
+    const meiaP = MEIA_Z * c + MEIA_X * s;   // meia-profundidade: o quanto a quina vem para a frente
+    // amortece o vaivém do recuo: mistura o giro atual com o pior caso
+    const enq = MEIA_MAX + (meiaL - MEIA_MAX) * AJUSTE;
+    /*
+      O `+ meiaP` é a perspectiva. A conta de enquadramento vale para um plano
+      na distância medida, mas a quina da frente está meiaP mais perto da
+      câmera e projeta maior — sem isso o beiral estoura a borda da tela.
+    */
+    const porLargura = (enq * folga) / (TG * camera.aspect) + meiaP;
+    const porAltura = (ALTURA * folga) / (2 * TG) + meiaP;
+    return Math.max(porLargura, porAltura, 14);
+  };
+
   const redimensionar = () => {
-    const pai = canvas.parentElement;
-    if (!pai) return;
-    const w = pai.clientWidth;
-    const h = pai.clientHeight;
+    // mede a própria caixa: no celular o canvas ocupa só a faixa de cima do sticky
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    // retrato: a casa é larga, precisa de mais recuo para caber
-    dist = camera.aspect < 0.8 ? 42 : camera.aspect < 1.3 ? 33 : 28;
+    /*
+      Retrato é o quadro da casa: enquadra apertado, porque ela é o assunto.
+      Paisagem sobra céu — o card do HUD mora ali na esquerda e a prancha
+      precisa do ar em volta para continuar parecendo prancha.
+    */
+    folga = camera.aspect < 0.95 ? 0.99 : camera.aspect < 1.3 ? 1.12 : 1.3;
+    alturaOlho = camera.aspect < 0.95 ? 3.4 : 4.2;
+    // retrato: mira mais baixa sobe a casa no quadro e tira o vazio entre ela e a folha
+    mira = camera.aspect < 0.95 ? 0.35 : 1.2;
     desloc = camera.aspect > 1.4 ? -1.4 : 0;
-    camera.position.z = dist;
+    camera.position.z = distancia(grupo.rotation.y);
     camera.updateProjectionMatrix();
   };
 
@@ -470,7 +517,7 @@ export function criarCasa(canvas: HTMLCanvasElement): Cena | null {
   };
 
   redimensionar();
-  camera.position.set(0, 4.2, dist);
+  camera.position.set(0, alturaOlho, distancia(-0.55));
   atualizar(0);
 
   return { atualizar, render: () => renderer.render(cena, camera), redimensionar, destruir };

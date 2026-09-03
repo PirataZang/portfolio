@@ -38,10 +38,10 @@ const EVENTO = {
   palcos: 2,
   site: 'https://pulse.fest',
   email: 'contato@pulse.fest',
-  fone: '+55 11 4000-2026',
-  foneLink: '+551140002026',
-  zap: '5511940002026',
-  zapFmt: '(11) 94000-2026',
+  fone: '(99) 9999-9999',
+  foneLink: '+559999999999',
+  zap: '5599999999999',
+  zapFmt: '(99) 99999-9999',
   insta: 'pulsefest',
   tiktok: 'pulsefest',
   spotify: 'playlist/pulse2026',
@@ -121,9 +121,9 @@ const SETORES = [
     esgotado: false,
     destaque: false,
     inclui: [
-      'Acesso à pista dos dois palcos',
-      'Guarda-volumes com fila própria',
-      'Bar e praça de alimentação',
+      { i: 'fa-solid fa-tower-broadcast', t: 'Acesso à pista dos dois palcos' },
+      { i: 'fa-solid fa-box-archive', t: 'Guarda-volumes com fila própria' },
+      { i: 'fa-solid fa-utensils', t: 'Bar e praça de alimentação' },
     ],
   },
   {
@@ -136,10 +136,10 @@ const SETORES = [
     esgotado: false,
     destaque: true,
     inclui: [
-      'Setor elevado, visão direta do palco',
-      'Banheiro e bar exclusivos',
-      'Entrada por portaria separada',
-      'Guarda-volumes incluso',
+      { i: 'fa-solid fa-eye', t: 'Setor elevado, visão direta do palco' },
+      { i: 'fa-solid fa-restroom', t: 'Banheiro e bar exclusivos' },
+      { i: 'fa-solid fa-door-open', t: 'Entrada por portaria separada' },
+      { i: 'fa-solid fa-box-archive', t: 'Guarda-volumes incluso' },
     ],
   },
   {
@@ -152,10 +152,10 @@ const SETORES = [
     esgotado: false,
     destaque: false,
     inclui: [
-      'Grade do Palco Principal',
-      'Entrada antecipada, 21h30',
-      'Copo oficial da edição',
-      'Guarda-volumes incluso',
+      { i: 'fa-solid fa-grip-lines-vertical', t: 'Grade do Palco Principal' },
+      { i: 'fa-regular fa-clock', t: 'Entrada antecipada, 21h30' },
+      { i: 'fa-solid fa-martini-glass-citrus', t: 'Copo oficial da edição' },
+      { i: 'fa-solid fa-box-archive', t: 'Guarda-volumes incluso' },
     ],
   },
   {
@@ -168,10 +168,10 @@ const SETORES = [
     esgotado: true,
     destaque: false,
     inclui: [
-      'Mezanino com vista dos dois palcos',
-      'Open bar das 22h às 05h',
-      'Meet and greet com o line-up',
-      'Estacionamento e guarda-volumes',
+      { i: 'fa-solid fa-binoculars', t: 'Mezanino com vista dos dois palcos' },
+      { i: 'fa-solid fa-champagne-glasses', t: 'Open bar das 22h às 05h' },
+      { i: 'fa-solid fa-handshake', t: 'Meet and greet com o line-up' },
+      { i: 'fa-solid fa-square-parking', t: 'Estacionamento e guarda-volumes' },
     ],
   },
 ];
@@ -188,8 +188,18 @@ const DETALHES = [
 ];
 
 const LEVAR = {
-  pode: ['Documento com foto', 'Cartão e celular', 'Protetor auricular', 'Garrafa vazia de plástico mole'],
-  naoPode: ['Bebida e comida de fora', 'Guarda-chuva e objeto pontiagudo', 'Câmera profissional sem credencial', 'Qualquer coisa de vidro'],
+  pode: [
+    { i: 'fa-regular fa-id-card', t: 'Documento com foto' },
+    { i: 'fa-solid fa-mobile-screen-button', t: 'Cartão e celular' },
+    { i: 'fa-solid fa-ear-listen', t: 'Protetor auricular' },
+    { i: 'fa-solid fa-bottle-water', t: 'Garrafa vazia de plástico mole' },
+  ],
+  naoPode: [
+    { i: 'fa-solid fa-burger', t: 'Bebida e comida de fora' },
+    { i: 'fa-solid fa-umbrella', t: 'Guarda-chuva e objeto pontiagudo' },
+    { i: 'fa-solid fa-camera', t: 'Câmera profissional sem credencial' },
+    { i: 'fa-solid fa-wine-glass', t: 'Qualquer coisa de vidro' },
+  ],
 };
 
 const GALERIA = [
@@ -204,34 +214,42 @@ const GALERIA = [
 const DUVIDAS = [
   {
     p: 'Como eu recebo o ingresso?',
+    i: 'fa-solid fa-qrcode',
     r: 'Na hora, por e-mail, e ele também fica no seu painel aqui no site. Cada ingresso tem um QR único e nominal, gerado no seu nome e CPF — é ele que a portaria lê. Não existe ingresso impresso na bilheteria física.',
   },
   {
     p: 'Quem tem direito a meia-entrada?',
+    i: 'fa-solid fa-percent',
     r: 'Estudante com carteirinha válida, pessoa de 18 a 20 anos, pessoa com deficiência mais um acompanhante, professor da rede pública e doador regular de sangue. O documento é conferido na portaria: sem comprovação, a diferença é cobrada na hora ou a entrada é negada.',
   },
   {
     p: 'Posso transferir o ingresso para outra pessoa?',
+    i: 'fa-solid fa-right-left',
     r: 'Pode, até 48 horas antes do evento, pelo painel. A transferência é gratuita, gera um QR novo no nome de quem recebeu e invalida o anterior na mesma hora. Depois desse prazo o nome fica travado.',
   },
   {
     p: 'Perdi o QR code. E agora?',
+    i: 'fa-solid fa-rotate',
     r: 'Entra no painel com o CPF da compra e reemite. O QR antigo é invalidado automaticamente, então não existe risco de alguém entrar com a versão perdida.',
   },
   {
     p: 'Dá para cancelar e receber o dinheiro de volta?',
+    i: 'fa-solid fa-money-bill-transfer',
     r: 'Dá, dentro de sete dias da compra e desde que falte mais de 48 horas para o evento — é o direito de arrependimento do Código de Defesa do Consumidor. O estorno cai no mesmo meio de pagamento em até dois ciclos de fatura. Se o evento for cancelado por nós, o reembolso é integral e automático, taxa inclusa.',
   },
   {
     p: 'Tem estacionamento?',
+    i: 'fa-solid fa-square-parking',
     r: 'O galpão tem 400 vagas conveniadas por R$ 45 a diária, que só dá para garantir comprando junto com o ingresso. Também tem ponto oficial de aplicativo na Rua Vitorino Carmilo, sinalizado, com equipe até as 07h.',
   },
   {
     p: 'O que não pode entrar?',
+    i: 'fa-solid fa-ban',
     r: 'Nada de vidro, bebida ou comida de fora, guarda-chuva, objeto pontiagudo, spray e câmera profissional sem credencial. Garrafa de plástico mole e vazia entra. Protetor auricular não só entra como é distribuído de graça no guarda-volumes.',
   },
   {
     p: 'Menor de 18 entra acompanhado?',
+    i: 'fa-regular fa-id-card',
     r: 'Não entra de jeito nenhum, nem com os pais, nem com alvará. É evento com venda de bebida alcoólica e classificação etária de 18 anos definida em portaria — a portaria confere documento com foto de todo mundo.',
   },
 ];
@@ -325,6 +343,7 @@ const jsonLd = {
         <a href="#show">O show</a>
         <a href="#ingressos">Ingressos</a>
         <a href="#conta">Minha conta</a>
+        <a href={`${import.meta.env.BASE_URL}sites/pulse/meus-ingressos`}>Meus ingressos</a>
         <a href="#duvidas">Dúvidas</a>
       </nav>
       <button type="button" class="btn btn-carrinho" data-abrir-carrinho aria-haspopup="dialog">
@@ -345,6 +364,7 @@ const jsonLd = {
         </summary>
         <div class="usuario-menu">
           <a href="#conta">Minha conta</a>
+          <a href={`${import.meta.env.BASE_URL}sites/pulse/meus-ingressos`}>Meus ingressos</a>
           <button type="button" data-sair-topo>Sair</button>
         </div>
       </details>
@@ -436,7 +456,7 @@ const jsonLd = {
       <section class="secao lineup" id="lineup">
         <div class="caixa">
           <header class="cab" data-anima>
-            <p class="olho">Line-up</p>
+            <p class="olho"><i class="fa-solid fa-record-vinyl" aria-hidden="true" />Line-up</p>
             <h2>Quatro sets, nenhum convidado surpresa</h2>
             <p class="lead">
               A grade sai fechada e não muda: você compra sabendo quem toca, a que
@@ -467,14 +487,15 @@ const jsonLd = {
                   <div class="art-corpo">
                     <h3>{a.nome}</h3>
                     <p class="art-meta">
-                      <span>{a.genero}</span>
-                      <span class="ponto" aria-hidden="true">·</span>
-                      <span>{a.origem}</span>
+                      <span><i class="fa-solid fa-sliders" aria-hidden="true" />{a.genero}</span>
+                      <span><i class="fa-solid fa-earth-americas" aria-hidden="true" />{a.origem}</span>
                     </p>
                     <p class="art-sobre">{a.sobre}</p>
                     <p class="art-palco mono">
                       <i class="fa-solid fa-location-arrow" aria-hidden="true" />
-                      {a.palco} · set de {a.set}
+                      {a.palco}
+                      <i class="fa-regular fa-clock" aria-hidden="true" />
+                      set de {a.set}
                     </p>
                   </div>
                 </article>
@@ -487,7 +508,7 @@ const jsonLd = {
       {/* ═══════════════════ GALERIA EM TRILHO ═══════════════════ */}
       <section class="galeria" aria-labelledby="galeria-t">
         <div class="caixa">
-          <p class="olho" data-anima>Edições anteriores</p>
+          <p class="olho" data-anima><i class="fa-solid fa-camera-retro" aria-hidden="true" />Edições anteriores</p>
           <h2 id="galeria-t" data-anima>Como foi em 2024 e 2025</h2>
         </div>
         {/* duas fileiras correndo em sentidos opostos conforme a página desce */}
@@ -523,7 +544,7 @@ const jsonLd = {
       <section class="secao show" id="show">
         <div class="caixa">
           <header class="cab" data-anima>
-            <p class="olho">O show</p>
+            <p class="olho"><i class="fa-solid fa-circle-info" aria-hidden="true" />O show</p>
             <h2>Tudo que você precisa saber antes de sair de casa</h2>
           </header>
 
@@ -563,11 +584,11 @@ const jsonLd = {
             <div class="levar" data-anima>
               <div class="levar-col">
                 <p class="levar-t levar-sim"><i class="fa-solid fa-circle-check" aria-hidden="true" /> Pode entrar</p>
-                <ul>{LEVAR.pode.map((i) => <li>{i}</li>)}</ul>
+                <ul>{LEVAR.pode.map((o) => <li><i class={o.i} aria-hidden="true" />{o.t}</li>)}</ul>
               </div>
               <div class="levar-col">
                 <p class="levar-t levar-nao"><i class="fa-solid fa-circle-xmark" aria-hidden="true" /> Não entra</p>
-                <ul>{LEVAR.naoPode.map((i) => <li>{i}</li>)}</ul>
+                <ul>{LEVAR.naoPode.map((o) => <li><i class={o.i} aria-hidden="true" />{o.t}</li>)}</ul>
               </div>
               <a
                 class="btn btn-vaz btn-cheio"
@@ -584,7 +605,7 @@ const jsonLd = {
       <section class="secao ingressos" id="ingressos">
         <div class="caixa">
           <header class="cab" data-anima>
-            <p class="olho">Ingressos</p>
+            <p class="olho"><i class="fa-solid fa-ticket" aria-hidden="true" />Ingressos</p>
             <h2>Escolha o setor, escolha o tipo, jogue no carrinho</h2>
             <p class="lead">
               O preço mostrado é por ingresso, sem a taxa de serviço de
@@ -618,8 +639,8 @@ const jsonLd = {
                   </p>
 
                   <ul class="ing-inclui">
-                    {s.inclui.map((i) => (
-                      <li><i class="fa-solid fa-check" aria-hidden="true" />{i}</li>
+                    {s.inclui.map((b) => (
+                      <li><i class={b.i} aria-hidden="true" />{b.t}</li>
                     ))}
                   </ul>
 
@@ -666,7 +687,7 @@ const jsonLd = {
       <section class="secao conta" id="conta">
         <div class="caixa conta-grade">
           <div data-anima>
-            <p class="olho">Minha conta</p>
+            <p class="olho"><i class="fa-regular fa-user" aria-hidden="true" />Minha conta</p>
             <h2>Crie sua conta PULSE</h2>
             <p class="lead">
               A conta guarda seus ingressos, permite reemitir o QR e transferir para
@@ -745,7 +766,7 @@ const jsonLd = {
       <section class="secao duvidas" id="duvidas">
         <div class="caixa duvidas-grade">
           <header class="cab" data-anima>
-            <p class="olho">Dúvidas</p>
+            <p class="olho"><i class="fa-regular fa-circle-question" aria-hidden="true" />Dúvidas</p>
             <h2>O que sempre perguntam na véspera</h2>
             <p class="lead">
               Se a sua não estiver aqui, o direct do Instagram responde em minutos
@@ -761,8 +782,9 @@ const jsonLd = {
               DUVIDAS.map((d) => (
                 <details name="duvidas-pulse">
                   <summary>
+                    <i class:list={['fq-i', d.i]} aria-hidden="true" />
                     <span>{d.p}</span>
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    <i class="fa-solid fa-plus fq-mais" aria-hidden="true" />
                   </summary>
                   <p>{d.r}</p>
                 </details>
@@ -878,6 +900,9 @@ const jsonLd = {
           QR ilustrativo. Nenhum ingresso real foi emitido — isto é uma demonstração
           de fluxo de compra.
         </p>
+        <a class="btn btn-vaz btn-cheio" href={`${import.meta.env.BASE_URL}sites/pulse/meus-ingressos`}>
+          <i class="fa-solid fa-wallet" aria-hidden="true"></i> Ver meus ingressos
+        </a>
         <button class="btn btn-vaz btn-cheio" type="button" data-fechar>Fechar</button>
       </div>
     </dialog>
@@ -1065,6 +1090,8 @@ const jsonLd = {
     content: ''; width: 1.6rem; height: 1px;
     background: linear-gradient(90deg, transparent, var(--ciano));
   }
+  /* o fio já marcava o rótulo; o ícone diz de que seção ele é */
+  .olho i { font-size: 0.86rem; letter-spacing: 0; margin-right: -0.1rem; }
 
   .caixa { max-width: 1220px; margin: 0 auto; padding-inline: clamp(1.1rem, 4vw, 2.6rem); }
   .secao { position: relative; padding-block: clamp(3.6rem, 7.5vw, 6.5rem); }
@@ -1325,17 +1352,20 @@ const jsonLd = {
   .art-corpo { padding: 1.2rem 1.3rem 1.4rem; margin-top: -3.2rem; position: relative; z-index: 1; }
   .art-corpo h3 { font-size: 1.22rem; font-weight: 700; letter-spacing: -0.01em; }
   .art-meta {
-    margin-top: 0.3rem; display: flex; flex-wrap: wrap; gap: 0.4rem;
+    margin-top: 0.3rem; display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem;
     font-size: 0.78rem; color: var(--ciano);
   }
-  .art-meta .ponto { color: var(--c40); }
+  /* o ponto separador virou ícone: gênero e origem se distinguem sem legenda */
+  .art-meta span { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .art-meta i { font-size: 0.72rem; opacity: 0.75; }
   .art-sobre { margin-top: 0.85rem; font-size: 0.87rem; color: var(--c60); }
   .art-palco {
     margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--linha);
     font-size: 0.72rem; color: var(--c40);
     display: flex; align-items: center; gap: 0.5rem;
   }
-  .art-palco i { color: var(--neon); }
+  .art-palco i { color: var(--neon); flex: none; }
+  .art-palco i + i, .art-palco :is(i:nth-of-type(2)) { margin-left: 0.35rem; }
 
   /* ---------- galeria em trilho ---------- */
   .galeria {
@@ -1405,8 +1435,12 @@ const jsonLd = {
   .levar-sim { color: var(--lima); }
   .levar-nao { color: var(--neon-2); }
   .levar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; font-size: 0.87rem; color: var(--c60); }
-  .levar li { padding-left: 0.9rem; position: relative; }
-  .levar li::before { content: ''; position: absolute; left: 0; top: 0.72em; width: 5px; height: 1px; background: var(--c40); }
+  /* o tracinho genérico virou o ícone do próprio item — a lista passa a ser
+     lida de relance, que é como alguém confere o que pode levar */
+  .levar li { display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.6rem; align-items: start; }
+  .levar li i { width: 1.1rem; text-align: center; font-size: 0.8rem; margin-top: 0.2rem; }
+  .levar-col:first-child li i { color: var(--lima); }
+  .levar-col + .levar-col li i { color: var(--neon-2); }
 
   /* ---------- ingressos ---------- */
   .ingressos { background: var(--breu-2); border-block: 1px solid var(--linha); }
@@ -1446,8 +1480,13 @@ const jsonLd = {
     border-top: 1px solid var(--linha);
     display: grid; gap: 0.55rem; font-size: 0.85rem; color: var(--c60);
   }
-  .ing-inclui li { display: grid; grid-template-columns: 1rem 1fr; gap: 0.55rem; align-items: start; }
-  .ing-inclui i { color: var(--ciano); font-size: 0.7rem; margin-top: 0.4rem; }
+  .ing-inclui li { display: grid; grid-template-columns: 1.15rem 1fr; gap: 0.6rem; align-items: start; }
+  /* eram oito checks iguais; agora cada linha tem o ícone do que ela entrega.
+     Largura fixa e centrado: glifos de larguras diferentes na mesma coluna */
+  .ing-inclui i {
+    width: 1.15rem; text-align: center;
+    color: var(--ciano); font-size: 0.82rem; margin-top: 0.24rem;
+  }
   .ing-restam {
     margin-top: 1.2rem; font-size: 0.76rem; color: var(--neon-2);
     display: flex; align-items: center; gap: 0.4rem;
@@ -1589,22 +1628,34 @@ const jsonLd = {
     transition: border-color 0.3s ease;
   }
   .fq details[open] { border-color: var(--linha-viva); }
+  /* recuo do texto da pergunta: a resposta abre alinhada com ela, não com a caixa */
+  .fq { --fq-pad: 1.3rem; --fq-icone: 1.2rem; --fq-vao: 0.8rem; }
   .fq summary {
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    padding: 1rem 1.3rem; cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: var(--fq-vao);
+    padding: 1rem var(--fq-pad); cursor: pointer; list-style: none;
     font-weight: 600; font-size: 0.94rem;
     transition: color 0.3s ease;
   }
   .fq summary::-webkit-details-marker { display: none; }
+  .fq summary span { flex: 1; }
   .fq summary:hover { color: var(--ciano); }
-  .fq summary i {
+  /* o ícone do assunto: dá para varrer a lista sem ler pergunta por pergunta */
+  .fq-i {
+    flex: none; width: var(--fq-icone); text-align: center;
+    color: var(--ciano); font-size: 0.86rem;
+  }
+  .fq details[open] .fq-i { color: var(--neon-2); }
+  .fq-mais {
     flex: none; width: 1.7rem; height: 1.7rem; display: grid; place-items: center;
     border-radius: 50%; background: rgba(0, 224, 255, 0.1); color: var(--ciano);
     font-size: 0.64rem;
     transition: rotate 0.3s ease, background 0.3s ease, color 0.3s ease;
   }
-  .fq details[open] summary i { rotate: 135deg; background: var(--neon); color: #fff; }
-  .fq details p { padding: 0 1.3rem 1.25rem; font-size: 0.89rem; color: var(--c60); max-width: 68ch; }
+  .fq details[open] .fq-mais { rotate: 135deg; background: var(--neon); color: #fff; }
+  .fq details p {
+    padding: 0 var(--fq-pad) 1.25rem calc(var(--fq-pad) + var(--fq-icone) + var(--fq-vao));
+    font-size: 0.89rem; color: var(--c60); max-width: 68ch;
+  }
   @media (prefers-reduced-motion: no-preference) {
     .fq details::details-content {
       block-size: 0; overflow: hidden;
@@ -1669,12 +1720,26 @@ const jsonLd = {
   }
   .cesta :global(.cesta-ctrl button:hover) { border-color: var(--ciano); color: var(--ciano); }
   .cesta :global(.cesta-q) { font-family: 'DM Mono', monospace; min-width: 1.4rem; text-align: center; }
+  /*
+    O "remover" era texto sublinhado dentro do seletor acima, que trava todo
+    button da linha em 1,8rem quadrado: a palavra vazava da caixa e passava por
+    cima do preço. Agora é lixeira, no mesmo tamanho dos passos de quantidade,
+    e a área de toque cresce para os 44px que o dedo pede.
+  */
   .cesta :global(.cesta-tira) {
-    margin-left: auto; border: 0; background: transparent; cursor: pointer;
-    color: var(--c40); font-size: 0.76rem; text-decoration: underline;
-    transition: color 0.3s ease;
+    margin-left: auto;
+    width: 2.4rem; height: 2.4rem; display: grid; place-items: center;
+    border: 1px solid transparent; border-radius: 10px;
+    background: transparent; color: var(--c40); cursor: pointer;
+    font-size: 0.9rem; line-height: 1;
+    transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
   }
-  .cesta :global(.cesta-tira:hover) { color: var(--neon-2); }
+  .cesta :global(.cesta-tira:hover),
+  .cesta :global(.cesta-tira:focus-visible) {
+    color: var(--neon-2);
+    border-color: color-mix(in srgb, var(--neon-2) 45%, transparent);
+    background: color-mix(in srgb, var(--neon-2) 12%, transparent);
+  }
   .cesta-vazia {
     display: grid; gap: 0.7rem; justify-items: center; text-align: center;
     padding: 2.5rem 1rem; color: var(--c40); font-size: 0.88rem;
@@ -1914,10 +1979,12 @@ const jsonLd = {
         </div>
         <p class="cesta-v">${brl(item.preco * item.qtd)}</p>
         <div class="cesta-ctrl">
-          <button type="button" data-c-menos="${n}" aria-label="Menos um">−</button>
+          <button type="button" data-c-menos="${n}" aria-label="Menos um ${item.nome}">−</button>
           <span class="cesta-q">${item.qtd}</span>
-          <button type="button" data-c-mais="${n}" aria-label="Mais um">+</button>
-          <button type="button" class="cesta-tira" data-c-tira="${n}">remover</button>
+          <button type="button" data-c-mais="${n}" aria-label="Mais um ${item.nome}">+</button>
+          <button type="button" class="cesta-tira" data-c-tira="${n}" title="Remover" aria-label="Remover ${item.nome} do carrinho">
+            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+          </button>
         </div>`;
       cesta.append(li);
     }

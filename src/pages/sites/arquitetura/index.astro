@@ -32,10 +32,10 @@ import {
 const EMPRESA = {
   nome: 'PRUMO',
   sub: 'Arquitetura e Engenharia',
-  fone: '+55 11 4000-2200',
-  foneLink: '+551140002200',
-  zap: '5511940002200',
-  zapFmt: '(11) 94000-2200',
+  fone: '(99) 9999-9999',
+  foneLink: '+559999999999',
+  zap: '5599999999999',
+  zapFmt: '(99) 99999-9999',
   email: 'projetos@prumoae.com.br',
   rua: 'Rua Girassol, 480 — conj. 92',
   bairro: 'Vila Madalena',
@@ -630,7 +630,7 @@ const jsonLd = {
               {peitoris.map((b, i) => (
                 <>
                   <line class="pl-jan-caixa" x1={px(b.ax)} y1={py(b.az)} x2={px(b.bx)} y2={py(b.bz)} stroke-width={ESP * S} />
-                  <line class="pl-jan-vidro" data-risca style={`--i:${i + 24}`} pathLength="1"
+                  <line class="pl-jan-vidro" data-risca style={`--i:${i}`} pathLength="1"
                         x1={px(b.ax)} y1={py(b.az)} x2={px(b.bx)} y2={py(b.bz)} />
                 </>
               ))}
@@ -640,9 +640,9 @@ const jsonLd = {
             <g class="pl-porta">
               {portas.map((p, i) => (
                 <>
-                  <line data-risca style={`--i:${i + 30}`} pathLength="1"
+                  <line data-risca style={`--i:${i}`} pathLength="1"
                         x1={p.folha.x1} y1={p.folha.y1} x2={p.folha.x2} y2={p.folha.y2} class="pl-folha" />
-                  <path d={p.arco} class="pl-arco" data-risca style={`--i:${i + 32}`} pathLength="1" />
+                  <path d={p.arco} class="pl-arco" data-risca style={`--i:${i}`} pathLength="1" />
                 </>
               ))}
             </g>
@@ -717,6 +717,12 @@ const jsonLd = {
           <canvas class="cena-canvas" data-canvas></canvas>
 
           <div class="cena-hud">
+            <p class="cena-conta">
+              <b data-etapa-n>01</b>
+              <span>/ {String(ETAPAS.length).padStart(2, '0')}</span>
+              <i aria-hidden="true"></i>
+              <em>Etapa de obra</em>
+            </p>
             <h2 data-etapa-t>{ETAPAS[0].t}</h2>
             <p class="cena-d" data-etapa-d>{ETAPAS[0].d}</p>
             <p class="cena-det" data-etapa-det>{ETAPAS[0].det}</p>
@@ -1871,6 +1877,25 @@ const jsonLd = {
     background: rgba(6, 22, 42, 0.5);
   }
   .svg-planta { display: block; width: 100%; height: auto; }
+  /*
+    A planta se desenha por CSS. Cada risca já traz `pathLength="1"`, então
+    tracejado e deslocamento valem 1 em qualquer traço — a conta é a mesma
+    para uma parede de 30 cm e uma de 10 m — e `--i`, também no markup,
+    escalona a entrada dentro do grupo.
+
+    Antes quem animava era o Motion, por `strokeDashoffset`. Ele roda a
+    animação pela WAAPI e não grava o valor final no elemento: a promessa
+    resolvia, o traço voltava para offset 1 e a planta ficava sem alvenaria
+    nenhuma — só os peitoris, que entram por opacidade, apareciam.
+
+    `.armada` é posta pelo JS. Sem script a planta nasce desenhada, que é o
+    estado certo para quem não recebeu o JS.
+  */
+  .svg-planta.armada [data-risca] {
+    stroke-dasharray: 1; stroke-dashoffset: 1;
+    transition: stroke-dashoffset 0.9s var(--e) calc(var(--i, 0) * 22ms);
+  }
+  .svg-planta.armada .desenha [data-risca] { stroke-dashoffset: 0; }
   .pl-piso rect { fill: rgba(255, 255, 255, 0.035); }
   .pl-parede line { stroke: #eaf3ff; stroke-linecap: butt; }
   .pl-jan-caixa { stroke: rgba(234, 243, 255, 0.22); stroke-linecap: butt; }
@@ -1924,6 +1949,139 @@ const jsonLd = {
     position: absolute; right: clamp(1rem, 4vw, 3rem); top: clamp(5rem, 9vw, 7rem);
     max-width: 15rem; text-align: right;
     font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--c40);
+  }
+
+  /*
+    Contador de etapa. No desktop é um rótulo discreto acima do título; no
+    celular vira o cabeçalho da folha, porque lá a trilha de oito nomes não
+    cabe e o "03 / 08" passa a ser a única pista de onde a obra está.
+  */
+  .cena-conta {
+    display: flex; align-items: baseline; gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .cena-conta b { font-size: 1.05rem; color: var(--acento); font-weight: 700; letter-spacing: 0; }
+  .cena-conta span { color: var(--c40); letter-spacing: 0; }
+  .cena-conta i { flex: none; width: 1px; height: 0.75rem; background: var(--linha); }
+  .cena-conta em { font-style: normal; color: var(--c40); }
+
+  /*
+    Trilha das oito etapas. O ponto acende conforme a obra passa por ele e a
+    etapa corrente ganha o halo — é o `:has(~ .ativo)` que a encontra: a
+    última acesa é a que não tem nenhuma acesa depois dela.
+  */
+  .trilha {
+    list-style: none; margin: 1rem 0 0; padding: 0.9rem 0 0;
+    border-top: 1px solid var(--linha);
+    display: grid; gap: 0.3rem;
+  }
+  .trilha li {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-size: 0.79rem; line-height: 1.35; color: var(--c40);
+    transition: color var(--t) var(--e);
+  }
+  .trilha li span {
+    flex: none; width: 7px; height: 7px; border-radius: 50%;
+    background: #fff; border: 1px solid var(--linha);
+    transition: background var(--t) var(--e), border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .trilha li.ativo { color: var(--c60); }
+  .trilha li.ativo span { background: var(--acento); border-color: var(--acento); }
+  .trilha li.ativo:not(:has(~ .ativo)) { color: var(--tinta); font-weight: 600; }
+  .trilha li.ativo:not(:has(~ .ativo)) span {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--acento) 20%, transparent);
+  }
+
+  /*
+    ---------- celular: a casa é o assunto ----------
+
+    No desktop o card flutua sobre a cena e sobra tela de sobra. No celular
+    esse mesmo card cobria mais da metade do retrato e a casa aparecia por
+    baixo dele, cortada — justamente o que a página tem de melhor.
+
+    Aqui o sticky vira duas faixas: a casa fica com todo o espaço que sobra em
+    cima e a folha de obra encosta embaixo, com altura própria. Nada se
+    sobrepõe. A trilha deita e vira barra de progresso: oito segmentos que
+    acendem, sem os oito nomes empilhados.
+  */
+  /*
+    O corte é a proporção da tela, não a largura. Quem manda aqui é o formato:
+    em retrato a casa não cabe embaixo de um card flutuante, seja num celular
+    de 390 ou num tablet de 768. Em paisagem — inclusive o celular deitado —
+    volta a valer o card, que é o layout certo para tela larga e baixa.
+  */
+  @media (max-aspect-ratio: 0.95) {
+    .cena-fixa {
+      height: 100svh;
+      display: grid; grid-template-rows: minmax(0, 1fr) auto;
+      padding-top: var(--topo-h);
+      /*
+        A casa é bege clara sobre papel branco: no celular, com ela grande na
+        tela, faltava contraste para ela descolar do fundo. Este céu de prancha
+        — azul de cópia heliográfica no alto, branco na linha do horizonte —
+        dá profundidade sem sujar o papel milimetrado que passa por trás.
+      */
+      background:
+        radial-gradient(72% 34% at 50% 74%, rgba(27, 79, 214, 0.09) 0%, rgba(27, 79, 214, 0) 100%),
+        linear-gradient(to bottom, rgba(27, 79, 214, 0.09) 0%, rgba(27, 79, 214, 0.03) 42%, rgba(255, 255, 255, 0) 66%);
+    }
+    .cena-canvas { position: relative; inset: auto; grid-area: 1 / 1; height: 100%; min-height: 0; }
+
+    .cena-hud {
+      position: relative; left: auto; bottom: auto; width: auto;
+      border-radius: var(--raio-g) var(--raio-g) 0 0;
+      border-bottom: 0;
+      background: rgba(255, 255, 255, 0.94);
+      padding: 0.9rem 1.1rem calc(0.95rem + env(safe-area-inset-bottom));
+      box-shadow: 0 -18px 40px -28px rgba(22, 24, 28, 0.5);
+    }
+    .cena-hud h2 { font-size: 1.18rem; margin-bottom: 0.3rem; }
+    /*
+      Três linhas bastam para situar a etapa; o resto é espaço para a casa.
+      `min-height` junto do clamp trava a folha em altura fixa: sem isso ela
+      encolhe numa etapa de texto curto, o canvas cresce, e a casa dá um pulo
+      de tamanho no meio da rolagem.
+    */
+    .cena-d {
+      font-size: 0.83rem; line-height: 1.45;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+      min-height: calc(3 * 1.45 * 0.83rem);
+    }
+    .cena-det { margin-top: 0.6rem; padding: 0.4rem 0.6rem; font-size: 0.64rem; }
+
+    .trilha {
+      margin-top: 0.75rem; padding-top: 0.75rem;
+      grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px;
+    }
+    /* o nome sai da folha, mas continua no acessível */
+    .trilha li {
+      display: block; font-size: 0; color: transparent;
+      overflow: hidden; white-space: nowrap;
+    }
+    .trilha li span {
+      display: block; width: auto; height: 3px; border: 0; border-radius: 2px;
+      background: var(--linha); box-shadow: none;
+    }
+    .trilha li.ativo span { background: var(--acento); }
+    .trilha li.ativo:not(:has(~ .ativo)) span {
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--acento) 35%, transparent);
+    }
+
+    /*
+      A nota vinha do canto superior direito e era cortada pela borda da tela.
+      Vira legenda do palco: mesma célula do canvas, encostada embaixo, logo
+      acima da folha — lida como legenda de foto, não como texto solto.
+    */
+    .cena-nota {
+      grid-area: 1 / 1; align-self: end; justify-self: center;
+      position: relative; right: auto; top: auto;
+      max-width: min(22rem, calc(100% - 2rem)); margin-bottom: 0.55rem;
+      text-align: center; font-size: 0.6rem; line-height: 1.4;
+      padding: 0.3rem 0.7rem; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(6px);
+    }
   }
 
   /* ---------- do tablet para cima ---------- */
@@ -2011,6 +2169,7 @@ const jsonLd = {
     const tEl = document.querySelector<HTMLElement>('[data-etapa-t]');
     const dEl = document.querySelector<HTMLElement>('[data-etapa-d]');
     const detEl = document.querySelector<HTMLElement>('[data-etapa-det]');
+    const nEl = document.querySelector<HTMLElement>('[data-etapa-n]');
     const passos = [...document.querySelectorAll<HTMLElement>('[data-passo]')];
 
     let etapa = -1;
@@ -2022,6 +2181,7 @@ const jsonLd = {
       if (tEl) tEl.textContent = ETAPAS[i].t;
       if (dEl) dEl.textContent = ETAPAS[i].d;
       if (detEl) detEl.textContent = ETAPAS[i].det;
+      if (nEl) nEl.textContent = String(i + 1).padStart(2, '0');
       passos.forEach((el, n) => el.classList.toggle('ativo', n <= i));
     };
 
@@ -2056,7 +2216,16 @@ const jsonLd = {
         montando = false;
         if (!cena) return;
         canvas.classList.add('pronto');
-        addEventListener('resize', () => cena?.redimensionar());
+        /*
+          No celular o canvas divide o sticky com a folha de obra e muda de
+          altura sem que a janela mude — barra do navegador entrando e saindo,
+          por exemplo. `resize` não cobre isso; observar a própria caixa cobre.
+        */
+        new ResizeObserver(() => {
+          if (!cena) return;
+          cena.redimensionar();
+          cena.render();   // o laço só desenha quando o scroll anda: sem isso fica quadro velho esticado
+        }).observe(canvas);
         if (reduz) {
           cena.atualizar(1);
           cena.render();
@@ -2142,7 +2311,24 @@ const jsonLd = {
       umaVez(
         desenho,
         () => {
-          animate(tracos, { strokeDashoffset: 0 }, { duration: 1.4, delay: stagger(0.02), ease: SAIDA });
+          /*
+            Transição inline, e não Motion: `animate` roda pela WAAPI e não
+            grava `stroke-dashoffset` de volta no elemento — a promessa
+            resolvia e o traço voltava escondido, deixando a elevação em
+            branco. Aqui o valor inicial já é inline, porque cada traço tem
+            comprimento próprio, então o destino também precisa ser: inline
+            vence a folha de estilo.
+
+            O `requestAnimationFrame` separa os dois quadros. Declarar a
+            transição e mudar o valor no mesmo tick faz o navegador saltar
+            direto para o fim, sem animar.
+          */
+          tracos.forEach((t, i) => {
+            t.style.transition = `stroke-dashoffset 1.4s var(--e) ${i * 20}ms`;
+          });
+          requestAnimationFrame(() => {
+            tracos.forEach((t) => (t.style.strokeDashoffset = '0'));
+          });
           animate(massas, { opacity: [0, 1] }, { duration: 0.6, delay: stagger(0.03, { startDelay: 0.5 }), ease: SAIDA });
         },
         { amount: 0.3 },
@@ -2208,17 +2394,23 @@ const jsonLd = {
     if (palco) {
       const camadas = [...palco.querySelectorAll<HTMLElement>('[data-camada]')];
       const g = (s: string) => palco.querySelectorAll(s);
-      const riscas = (s: string) => {
-        const els = [...palco.querySelectorAll<SVGGeometryElement>(s)];
-        els.forEach((e) => {
-          e.style.strokeDasharray = '1';
-          e.style.strokeDashoffset = '1';
-        });
-        return els;
+
+      /*
+        Quem desenha o traço é o CSS. Aqui só armamos (o que esconde as riscas)
+        e depois soltamos grupo por grupo. O passo de 22 ms tem que bater com o
+        `calc(var(--i) * 22ms)` da folha de estilo, senão a espera termina antes
+        da última parede subir.
+      */
+      const PASSO = 22;
+      palco.querySelector('.svg-planta')?.classList.add('armada');
+      const desenhar = (sel: string, ms = 900) => {
+        const grupo = palco.querySelector(sel);
+        if (!grupo) return Promise.resolve();
+        const n = grupo.querySelectorAll('[data-risca]').length;
+        grupo.classList.add('desenha');
+        return new Promise((ok) => setTimeout(ok, ms + n * PASSO));
       };
 
-      const paredes = riscas('.pl-parede [data-risca]');
-      const esquadrias = riscas('.pl-janela [data-risca], .pl-porta [data-risca]');
       const camadaFixa = [g('.pl-piso'), g('.pl-jan-caixa'), g('.pl-cota'), g('.pl-nome'), g('.pl-info')];
       camadaFixa.forEach((lista) =>
         (lista as NodeListOf<HTMLElement>).forEach((e) => (e.style.opacity = '0')),
@@ -2234,11 +2426,11 @@ const jsonLd = {
           await animate(g('.pl-piso'), { opacity: [0, 1] }, { duration: 0.5, ease: SAIDA }).finished;
           /* 2 · alvenaria, traço por traço */
           acende(1);
-          await animate(paredes, { strokeDashoffset: 0 }, { duration: 0.9, delay: stagger(0.02), ease: SAIDA }).finished;
+          await desenhar('.pl-parede');
           /* 3 · esquadrias: caixa da janela e depois o vidro e a folha */
           acende(2);
           animate(g('.pl-jan-caixa'), { opacity: [0, 1] }, { duration: 0.4, ease: SAIDA });
-          await animate(esquadrias, { strokeDashoffset: 0 }, { duration: 0.7, delay: stagger(0.03), ease: SAIDA }).finished;
+          await Promise.all([desenhar('.pl-janela', 700), desenhar('.pl-porta', 700)]);
           /* 4 · cotas */
           acende(3);
           await animate(g('.pl-cota'), { opacity: [0, 1] }, { duration: 0.5, ease: SAIDA }).finished;

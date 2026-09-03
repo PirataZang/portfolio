@@ -1,0 +1,569 @@
+---
+import Base from '../../../layouts/Base.astro';
+import dados from './_ingressos.json';
+
+/*
+  PULSE — Meus ingressos.
+
+  A tela que faltava no fluxo: a compra terminava no QR dentro da gaveta do
+  checkout e o ingresso não morava em lugar nenhum depois disso. Aqui ele mora.
+
+  O "banco" é `_ingressos.json`, lido no build — é uma vitrine, não um painel:
+  os ingressos são de mentira, ninguém entra em lugar nenhum com este QR e a
+  página diz isso em voz alta. Sem estado, sem localStorage, sem formulário.
+
+  O QR é o mesmo desenho da confirmação de compra: uma grade 25×25 derivada de
+  um hash do código, com os três olhos de canto por cima. Não decodifica nada;
+  existe para o bilhete parecer um bilhete.
+*/
+
+const EVENTO = {
+  nome: 'PULSE',
+  edicao: '2026',
+  dataFmt: 'Sábado, 14 de novembro de 2026',
+  dataCurta: '14 NOV 2026',
+  portoes: '22h00',
+  local: 'Usina Hangar',
+  rua: 'Av. Marquês de São Vicente, 1200',
+  bairro: 'Barra Funda',
+  cidade: 'São Paulo',
+  uf: 'SP',
+  insta: 'pulsefest',
+};
+
+const { titular, ingressos } = dados;
+
+/* o QR do bilhete: mesma função da confirmação de compra, rodando no build */
+function desenharQR(codigo: string) {
+  const N = 25;
+  let h = 2166136261;
+  for (const c of codigo) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const prox = () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
+
+  const olho = (x: number, y: number) =>
+    (x < 7 && y < 7) || (x >= N - 7 && y < 7) || (x < 7 && y >= N - 7);
+  const dentroOlho = (x: number, y: number) => {
+    const ox = x < 7 ? x : x - (N - 7);
+    const oy = y < 7 ? y : y - (N - 7);
+    const borda = ox === 0 || ox === 6 || oy === 0 || oy === 6;
+    const miolo = ox >= 2 && ox <= 4 && oy >= 2 && oy <= 4;
+    return borda || miolo;
+  };
+
+  let d = '';
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const preto = olho(x, y) ? dentroOlho(x, y) : prox() > 0.52;
+      if (preto) d += `M${x} ${y}h1v1h-1z`;
+    }
+  }
+  return `<svg viewBox="0 0 ${N} ${N}" xmlns="http://www.w3.org/2000/svg"><path d="${d}" fill="#05030a"/></svg>`;
+}
+
+/*
+  Cada status conta uma história diferente e por isso muda cor, ícone e o que
+  aparece no lugar do QR. Ingresso usado ou transferido não pode continuar
+  mostrando um código que a portaria leria.
+*/
+const ESTADO = {
+  valido: { r: 'Válido', i: 'fa-solid fa-circle-check', c: 'ok' },
+  transferido: { r: 'Transferido', i: 'fa-solid fa-right-left', c: 'trans' },
+  usado: { r: 'Utilizado', i: 'fa-solid fa-clock-rotate-left', c: 'velho' },
+} as const;
+
+type Status = keyof typeof ESTADO;
+
+const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const dataBr = (iso: string) =>
+  new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+
+const validos = ingressos.filter((i) => i.status === 'valido');
+const gasto = ingressos.reduce((s, i) => s + i.preco, 0);
+
+const titulo = `Meus ingressos — ${EVENTO.nome} ${EVENTO.edicao}`;
+const descricao =
+  'Painel de ingressos do PULSE 2026: QR de acesso, portaria de entrada, transferência e histórico das edições anteriores.';
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#05030a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Bai+Jamjuree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+    />
+  </Fragment>
+
+  <div class="pl">
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="topo">
+      <a class="marca" href={`${import.meta.env.BASE_URL}sites/pulse`}>
+        <span class="marca-txt">{EVENTO.nome}</span>
+        <span class="marca-ed">{EVENTO.edicao}</span>
+      </a>
+      <nav class="topo-nav" aria-label="Seções">
+        <a href={`${import.meta.env.BASE_URL}sites/pulse#lineup`}>Line-up</a>
+        <a href={`${import.meta.env.BASE_URL}sites/pulse#show`}>O show</a>
+        <a href={`${import.meta.env.BASE_URL}sites/pulse#ingressos`}>Ingressos</a>
+        <a class="agora" href="#conteudo" aria-current="page">Meus ingressos</a>
+      </nav>
+      <a class="btn btn-vaz btn-min" href={`${import.meta.env.BASE_URL}sites/pulse#ingressos`}>
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        <span class="so-larga">Voltar ao site</span>
+      </a>
+    </header>
+
+    <main id="conteudo">
+      {/* ═══════════════════ CABEÇALHO DA CARTEIRA ═══════════════════ */}
+      <section class="secao topo-carteira">
+        <div class="caixa">
+          <p class="olho"><i class="fa-solid fa-wallet" aria-hidden="true"></i>Minha carteira</p>
+
+          <div class="carteira-cab">
+            <div>
+              <h1>Meus ingressos</h1>
+              <p class="lead">
+                Este é o acesso de <b>{titular.nome}</b>. Cada QR é nominal e vale
+                para uma pessoa — a portaria confere o documento contra o CPF da
+                compra, então não adianta repassar print.
+              </p>
+            </div>
+
+            <dl class="resumo">
+              <div>
+                <dt><i class="fa-solid fa-ticket" aria-hidden="true"></i> Válidos</dt>
+                <dd class="mono">{validos.length}</dd>
+              </div>
+              <div>
+                <dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Próximo evento</dt>
+                <dd class="mono">{EVENTO.dataCurta}</dd>
+              </div>
+              <div>
+                <dt><i class="fa-solid fa-receipt" aria-hidden="true"></i> Total comprado</dt>
+                <dd class="mono">{brl(gasto)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <p class="demo-aviso">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <span>
+              <b>Demonstração.</b> Os ingressos desta tela vêm de um arquivo de
+              exemplo do próprio site. Nenhuma compra foi feita, nenhum QR abre
+              portaria nenhuma e nada é enviado para lugar algum.
+            </span>
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════════════ OS BILHETES ═══════════════════ */}
+      <section class="secao lista">
+        <div class="caixa">
+          <ul class="grade-bilhetes">
+            {
+              ingressos.map((ing) => {
+                const e = ESTADO[ing.status as Status];
+                const ativo = ing.status === 'valido';
+                return (
+                  <li>
+                    <article class:list={['bilhete', `bilhete-${e.c}`]}>
+                      <div class="bilhete-cima">
+                        <p class="bilhete-evento">
+                          {EVENTO.nome} <span>{ing.edicao ?? EVENTO.edicao}</span>
+                        </p>
+                        <p class="bilhete-data mono">
+                          {ing.edicao ? '14 NOV 2025' : EVENTO.dataCurta} · {EVENTO.portoes} ·{' '}
+                          {EVENTO.local.toUpperCase()}
+                        </p>
+                        <p class:list={['selo', `selo-${e.c}`]}>
+                          <i class={e.i} aria-hidden="true" />
+                          {e.r}
+                        </p>
+                      </div>
+
+                      <div class="bilhete-serrilha" aria-hidden="true" />
+
+                      <div class="bilhete-baixo">
+                        {
+                          ativo ? (
+                            <div class="bilhete-qr" set:html={desenharQR(ing.codigo)} aria-hidden="true" />
+                          ) : (
+                            /* sem QR: o código de um ingresso queimado não pode
+                               continuar parecendo que abre a catraca */
+                            <div class="bilhete-qr bilhete-qr-off" aria-hidden="true">
+                              <i class={e.i} />
+                            </div>
+                          )
+                        }
+
+                        <div class="bilhete-info">
+                          <p class="bilhete-nome">
+                            {ing.status === 'transferido' ? ing.transferidoPara : titular.nome}
+                          </p>
+                          <ul>
+                            <li>
+                              <i class="fa-solid fa-location-dot" aria-hidden="true" />
+                              {ing.setor} · {ing.tipo}
+                            </li>
+                            <li>
+                              <i class="fa-solid fa-door-open" aria-hidden="true" />
+                              {ing.portao}
+                            </li>
+                            <li>
+                              <i class="fa-solid fa-tag" aria-hidden="true" />
+                              {ing.lote} · {brl(ing.preco)}
+                            </li>
+                          </ul>
+                          <p class="bilhete-cod mono">{ing.codigo}</p>
+                        </div>
+                      </div>
+
+                      <footer class="bilhete-pe">
+                        <span class="mono">Comprado em {dataBr(ing.compradoEm)}</span>
+                        {
+                          ing.status === 'transferido' && (
+                            <span class="pe-nota">
+                              <i class="fa-solid fa-right-left" aria-hidden="true" />
+                              No nome de {ing.transferidoPara}
+                            </span>
+                          )
+                        }
+                        {
+                          ing.status === 'usado' && (
+                            <span class="pe-nota">
+                              <i class="fa-solid fa-check" aria-hidden="true" />
+                              Lido na portaria
+                            </span>
+                          )
+                        }
+                      </footer>
+                    </article>
+                  </li>
+                );
+              })
+            }
+          </ul>
+        </div>
+      </section>
+
+      {/* ═══════════════════ O QUE DÁ PARA FAZER ═══════════════════ */}
+      <section class="secao acoes">
+        <div class="caixa">
+          <h2>O que dá para fazer com um ingresso</h2>
+          <p class="lead">
+            No site de verdade cada cartão abre uma ação. Aqui eles ficam
+            desligados de propósito — é uma tela de demonstração.
+          </p>
+
+          <ul class="grade-acoes">
+            <li>
+              <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+              <h3>Reemitir o QR</h3>
+              <p>Gera um código novo e invalida o anterior na hora. Serve para print perdido ou celular trocado.</p>
+            </li>
+            <li>
+              <i class="fa-solid fa-right-left" aria-hidden="true"></i>
+              <h3>Transferir</h3>
+              <p>Até 48 h antes, sem custo. O ingresso sai do seu nome e entra no de quem recebeu, com QR novo.</p>
+            </li>
+            <li>
+              <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
+              <h3>Baixar em PDF</h3>
+              <p>Para quem prefere papel ou não confia no sinal de celular na fila da portaria.</p>
+            </li>
+            <li>
+              <i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i>
+              <h3>Pedir reembolso</h3>
+              <p>Sete dias da compra e mais de 48 h para o evento. Estorno no mesmo meio de pagamento, taxa inclusa.</p>
+            </li>
+          </ul>
+
+          <div class="acoes-pe">
+            <a class="btn btn-neon" href={`${import.meta.env.BASE_URL}sites/pulse#ingressos`}>
+              <i class="fa-solid fa-ticket" aria-hidden="true"></i> Comprar mais ingressos
+            </a>
+            <a class="btn btn-vaz" href={`https://instagram.com/${EVENTO.insta}`} rel="noopener">
+              <i class="fa-brands fa-instagram" aria-hidden="true"></i> Falar com a produção
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <div class="caixa">
+        <p class="rodape-marca">PULSE<span>2026</span></p>
+        <p class="rodape-d">
+          {EVENTO.local} · {EVENTO.rua}, {EVENTO.bairro} — {EVENTO.cidade}/{EVENTO.uf}.
+          {' '}{EVENTO.dataFmt}, portões às {EVENTO.portoes}.
+        </p>
+        <p class="rodape-legal">
+          Demonstração de portfólio. PULSE não existe, os ingressos desta página
+          são fictícios e nenhum dado é coletado.
+        </p>
+      </div>
+    </footer>
+  </div>
+</Base>
+
+<style>
+  /*
+    Página irmã da home do PULSE. Repete os tokens porque cada demo deste
+    repositório é um site fechado em si — o que muda aqui é só o que a
+    carteira precisa: o bilhete ganha estado, e estado tem cor.
+  */
+  .pl {
+    --breu: #05030a;
+    --breu-2: #0a0614;
+    --carta: #110b1e;
+    --carta-2: #170f28;
+    --linha: #251938;
+    --linha-viva: #3d2960;
+
+    --neon: #ff2d95;
+    --neon-2: #ff6ab5;
+    --ciano: #00e0ff;
+    --roxo: #8b2fff;
+    --lima: #c8ff36;
+
+    --branco: #f4f0fb;
+    --c60: #a99ec4;
+    --c40: #6f6690;
+
+    --raio: 14px;
+    --raio-g: 22px;
+    --t: 0.45s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --topo-h: 4.2rem;
+    --glow: 0 6px 18px -10px rgba(255, 45, 149, 0.75);
+
+    position: relative;
+    min-height: 100dvh;
+    background: var(--breu);
+    color: var(--branco);
+    font-family: 'Bai Jamjuree', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.65;
+    overflow-x: clip;
+  }
+  :global(body) { background: #05030a; color: #f4f0fb; }
+  :global(html) { scrollbar-color: #3d2960 #0a0614; }
+  :global(::selection) { background: #ff2d95; color: #fff; }
+
+  .pl a { text-underline-offset: 0.18em; }
+  .mono { font-family: 'DM Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--neon); color: #fff; padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0;
+  }
+  .pular:focus { left: 0; }
+
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 {
+    font-family: 'Anton', 'Arial Narrow', sans-serif;
+    font-weight: 400; text-transform: uppercase;
+    font-size: clamp(2.1rem, 5vw, 3.2rem); line-height: 1; letter-spacing: 0.01em;
+  }
+  h2 { font-size: clamp(1.4rem, 2.6vw, 1.95rem); font-weight: 700; letter-spacing: -0.015em; line-height: 1.18; }
+  h3 { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+  p { margin: 0; text-wrap: pretty; }
+  .lead { font-size: 0.99rem; color: var(--c60); max-width: 56ch; }
+  .lead b { color: var(--branco); font-weight: 600; }
+
+  .olho {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--ciano); margin-bottom: 0.9rem;
+    display: flex; align-items: center; gap: 0.65rem;
+  }
+  .olho::before {
+    content: ''; width: 1.6rem; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--ciano));
+  }
+  .olho i { font-size: 0.86rem; letter-spacing: 0; }
+
+  .caixa { max-width: 1220px; margin: 0 auto; padding-inline: clamp(1.1rem, 4vw, 2.6rem); }
+  .secao { position: relative; padding-block: clamp(2.4rem, 5vw, 3.8rem); }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+    padding: 0.78rem 1.5rem; border-radius: 999px;
+    font-family: inherit; font-size: 0.92rem; font-weight: 600;
+    text-decoration: none; border: 1px solid transparent;
+    white-space: nowrap; cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease,
+      box-shadow 0.3s ease, translate 0.3s ease;
+  }
+  .btn-min { padding: 0.52rem 1.1rem; font-size: 0.84rem; }
+  .btn-neon { background: var(--neon); color: #fff; box-shadow: var(--glow); }
+  .btn-neon:hover { translate: 0 -1px; box-shadow: 0 10px 22px -10px rgba(255, 45, 149, 0.8); }
+  .btn-vaz { border-color: var(--linha-viva); color: var(--branco); background: rgba(255, 255, 255, 0.03); }
+  .btn-vaz:hover { border-color: var(--ciano); color: var(--ciano); translate: 0 -2px; }
+
+  /* ---------- topo ---------- */
+  .topo {
+    position: sticky; top: 0; z-index: 60;
+    height: var(--topo-h);
+    display: flex; align-items: center; gap: clamp(0.6rem, 2vw, 1.5rem);
+    padding-inline: clamp(1.1rem, 4vw, 2.6rem);
+    background: rgba(5, 3, 10, 0.92);
+    backdrop-filter: blur(16px) saturate(1.4);
+    border-bottom: 1px solid var(--linha);
+  }
+  .marca {
+    display: inline-flex; align-items: baseline; gap: 0.45rem;
+    text-decoration: none; color: var(--branco); margin-right: auto;
+  }
+  .marca-txt { font-family: 'Anton', sans-serif; font-size: 1.45rem; letter-spacing: 0.04em; }
+  .marca-ed { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--ciano); letter-spacing: 0.1em; }
+  .topo-nav { display: none; gap: clamp(0.8rem, 2vw, 1.6rem); }
+  .topo-nav a {
+    color: var(--c60); text-decoration: none; font-size: 0.9rem;
+    transition: color 0.3s ease;
+  }
+  .topo-nav a:hover { color: var(--branco); }
+  .topo-nav .agora { color: var(--ciano); }
+  .so-larga { display: none; }
+  @media (min-width: 900px) {
+    .topo-nav { display: flex; }
+    .so-larga { display: inline; }
+  }
+
+  /* ---------- cabeçalho da carteira ---------- */
+  .topo-carteira { padding-top: clamp(1.8rem, 4vw, 3rem); }
+  .carteira-cab { display: grid; gap: clamp(1.4rem, 3vw, 2.2rem); align-items: start; }
+  @media (min-width: 900px) { .carteira-cab { grid-template-columns: 1.25fr 0.75fr; } }
+  .carteira-cab .lead { margin-top: 0.9rem; }
+
+  /* três números que respondem "quantos, quando e quanto" sem abrir bilhete */
+  .resumo {
+    margin: 0; display: grid; gap: 1px;
+    border: 1px solid var(--linha); border-radius: var(--raio-g);
+    background: var(--linha); overflow: hidden;
+  }
+  .resumo > div { background: var(--carta); padding: 0.95rem 1.15rem; display: grid; gap: 0.3rem; }
+  .resumo dt {
+    margin: 0; font-family: 'DM Mono', monospace;
+    font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .resumo dt i { color: var(--ciano); font-size: 0.78rem; width: 1rem; text-align: center; }
+  .resumo dd { margin: 0; font-size: 1.22rem; font-weight: 700; }
+
+  .demo-aviso {
+    margin-top: clamp(1.5rem, 3vw, 2.2rem);
+    display: grid; grid-template-columns: 1.2rem 1fr; gap: 0.8rem; align-items: start;
+    padding: 0.95rem 1.15rem; border-radius: var(--raio);
+    border: 1px dashed var(--linha-viva); background: rgba(139, 47, 255, 0.07);
+    font-size: 0.84rem; color: var(--c60); max-width: 76ch;
+  }
+  .demo-aviso i { color: var(--lima); margin-top: 0.25rem; }
+  .demo-aviso b { color: var(--branco); }
+
+  /* ---------- os bilhetes ---------- */
+  .lista { padding-top: 0; }
+  .grade-bilhetes {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2vw, 1.4rem);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+  }
+  .bilhete {
+    height: 100%; display: flex; flex-direction: column;
+    border-radius: var(--raio-g); overflow: hidden;
+    border: 1px solid var(--linha-viva);
+    background: linear-gradient(150deg, var(--carta-2), var(--carta));
+  }
+  /* a tarja de cima é o estado: rosa vale, roxo saiu do seu nome, cinza já foi */
+  .bilhete-cima { position: relative; padding: 1.1rem 1.2rem; background: var(--neon); }
+  .bilhete-trans .bilhete-cima { background: var(--roxo); }
+  .bilhete-velho .bilhete-cima { background: #3a3350; }
+  .bilhete-velho { opacity: 0.72; }
+  .bilhete-evento { font-family: 'Anton', sans-serif; font-size: 1.5rem; text-transform: uppercase; color: #fff; line-height: 1; }
+  .bilhete-evento span { opacity: 0.72; }
+  .bilhete-data { margin-top: 0.35rem; font-size: 0.64rem; letter-spacing: 0.09em; color: rgba(255, 255, 255, 0.88); }
+
+  .selo {
+    position: absolute; top: 1.1rem; right: 1.1rem;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.26rem 0.62rem; border-radius: 999px;
+    background: rgba(5, 3, 10, 0.42);
+    font-family: 'DM Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #fff;
+  }
+  .selo i { font-size: 0.66rem; }
+
+  /* serrilha do canhoto: o recorte que diz "isto é um ingresso" */
+  .bilhete-serrilha {
+    height: 14px;
+    background: radial-gradient(circle at 7px 0, transparent 7px, var(--carta) 7.5px) repeat-x;
+    background-size: 18px 14px;
+    border-bottom: 1px dashed var(--linha-viva);
+  }
+  .bilhete-baixo { display: flex; gap: 1rem; padding: 1.1rem 1.2rem; align-items: flex-start; }
+  .bilhete-qr { width: 92px; height: 92px; flex: none; background: #fff; border-radius: 8px; padding: 6px; }
+  .bilhete-qr :global(svg) { display: block; width: 100%; height: 100%; }
+  /* ingresso queimado não mostra código legível: mostra o motivo */
+  .bilhete-qr-off {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed var(--linha-viva);
+    display: grid; place-items: center; color: var(--c40); font-size: 1.5rem;
+  }
+  .bilhete-info { min-width: 0; flex: 1; }
+  .bilhete-nome { font-weight: 700; font-size: 0.95rem; }
+  .bilhete-info ul {
+    list-style: none; margin: 0.5rem 0 0; padding: 0;
+    display: grid; gap: 0.3rem; font-size: 0.78rem; color: var(--c60);
+  }
+  .bilhete-info li { display: grid; grid-template-columns: 0.95rem 1fr; gap: 0.5rem; align-items: start; }
+  .bilhete-info li i { width: 0.95rem; text-align: center; font-size: 0.72rem; color: var(--ciano); margin-top: 0.2rem; }
+  .bilhete-velho .bilhete-info li i, .bilhete-velho .bilhete-cod { color: var(--c40); }
+  .bilhete-cod { margin-top: 0.75rem; font-size: 0.72rem; color: var(--ciano); letter-spacing: 0.08em; }
+
+  .bilhete-pe {
+    margin-top: auto;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; justify-content: space-between;
+    padding: 0.7rem 1.2rem 0.9rem; border-top: 1px solid var(--linha);
+    font-size: 0.68rem; color: var(--c40);
+  }
+  .pe-nota { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--c60); }
+
+  /* ---------- o que dá para fazer ---------- */
+  .acoes { border-top: 1px solid var(--linha); background: var(--breu-2); }
+  .acoes .lead { margin-top: 0.9rem; }
+  .grade-acoes {
+    list-style: none; margin: clamp(1.6rem, 3vw, 2.4rem) 0 0; padding: 0;
+    display: grid; gap: clamp(0.8rem, 1.6vw, 1.1rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  }
+  .grade-acoes li {
+    padding: 1.2rem 1.25rem; border-radius: var(--raio-g);
+    border: 1px solid var(--linha); background: var(--carta);
+  }
+  .grade-acoes i {
+    display: grid; place-items: center; width: 2.3rem; height: 2.3rem;
+    border-radius: 12px; background: rgba(0, 224, 255, 0.1);
+    color: var(--ciano); font-size: 0.94rem; margin-bottom: 0.85rem;
+  }
+  .grade-acoes p { margin-top: 0.45rem; font-size: 0.84rem; color: var(--c60); }
+
+  .acoes-pe { margin-top: clamp(1.6rem, 3vw, 2.2rem); display: flex; flex-wrap: wrap; gap: 0.7rem; }
+
+  /* ---------- rodapé ---------- */
+  .rodape {
+    background: var(--breu-2); border-top: 1px solid var(--linha);
+    padding-block: clamp(2rem, 4vw, 3rem);
+  }
+  .rodape-marca { font-family: 'Anton', sans-serif; font-size: 1.8rem; text-transform: uppercase; line-height: 1; }
+  .rodape-marca span { color: var(--ciano); }
+  .rodape-d { margin-top: 0.8rem; font-size: 0.85rem; color: var(--c60); max-width: 46ch; }
+  .rodape-legal { margin-top: 1rem; font-size: 0.74rem; color: var(--c40); max-width: 60ch; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pl * { transition-duration: 0.01ms !important; }
+  }
+</style>

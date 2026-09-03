@@ -1,0 +1,1380 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { galeria } from '../../../scripts/imovel-arte';
+
+/*
+  MERIDIANO IMÓVEIS — carteira de imóveis com ficha em modal.
+
+  Claro, azul e arredondado: azul-claro nas superfícies, marinho no texto e no
+  vulto, branco no cartão. As formas soltas do fundo são um SVG fixo atrás de
+  tudo — dão o ar de folder de imobiliária sem virar ruído, porque ficam em
+  opacidade baixa e nunca cruzam texto.
+
+  Nenhuma foto: cada imóvel tem quatro ilustrações geradas em `imovel-arte.ts`
+  a partir do próprio código, no build. É o que casa com a direção flat pedida,
+  e evita a alternativa ruim de foto de banco genérica repetida dez vezes.
+
+  O modal é `<dialog>` nativo — foco preso, Esc fecha e fundo escuro de graça.
+  Dentro dele o carrossel anda por botão, seta do teclado, ponto e arrasto.
+
+  Mobile primeiro: uma coluna até 620px, duas até 1000, três acima. O modal
+  ocupa a tela quase inteira no celular e vira cartão centrado no desktop.
+*/
+
+const LOJA = {
+  nome: 'Meridiano',
+  sub: 'Imóveis',
+  creci: 'CRECI-J 99.999',
+  cidade: 'Porto Sereno',
+  uf: 'SC',
+  rua: 'Av. das Enseadas, 900',
+  bairro: 'Centro',
+  cep: '99999-000',
+  fone: '(99) 9999-9999',
+  foneLink: '+559999999999',
+  zap: '5599999999999',
+  zapFmt: '(99) 99999-9999',
+  email: 'contato@meridianoimoveis.com.br',
+  insta: 'meridianoimoveis',
+};
+
+/*
+  Carteira fictícia. Cidade, bairros e empreendimentos são inventados — nada
+  aqui corresponde a imóvel, endereço ou preço real.
+
+  `cod` é a semente do desenho: mudar o código muda as quatro ilustrações do
+  imóvel, e mantê-lo garante que ele desenhe igual em todo build.
+*/
+const IMOVEIS = [
+  {
+    cod: 'MR-1042', nome: 'Residencial Alvorada', tipo: 'Apartamento', negocio: 'Venda',
+    bairro: 'Vila Aurora', preco: 780000, area: 92, quartos: 3, suites: 1, banheiros: 2, vagas: 2,
+    andar: '8º andar', condominio: 720, iptu: 190, destaque: true,
+    resumo: 'Três dormitórios com suíte e varanda voltada para o parque.',
+    descricao:
+      'Apartamento de esquina no oitavo andar, com sol da manhã nos dormitórios e varanda integrada à sala. O prédio tem doze anos, fachada revitalizada em 2024 e apenas quatro unidades por andar — o que se nota no silêncio do corredor. Piso em porcelanato retificado, esquadrias de alumínio com vidro duplo na face da avenida e cozinha já com armários planejados.',
+    itens: ['Varanda integrada', 'Armários planejados', 'Vidro duplo na sala', 'Duas vagas cobertas', 'Portaria 24h', 'Salão de festas'],
+  },
+  {
+    cod: 'MR-1077', nome: 'Casa Jardim Meridiano', tipo: 'Casa', negocio: 'Venda',
+    bairro: 'Jardim Meridiano', preco: 1250000, area: 210, quartos: 4, suites: 2, banheiros: 4, vagas: 3,
+    andar: 'Térrea', condominio: 0, iptu: 340,
+    resumo: 'Casa térrea em terreno de 450 m², com piscina e churrasqueira.',
+    descricao:
+      'Casa térrea em terreno plano de 450 m², toda em um pavimento — sem escada em lugar nenhum, o que costuma decidir a compra para quem tem criança pequena ou pai idoso. Living em L com pé-direito de 3,10 m, quatro dormitórios sendo dois suítes e uma área gourmet coberta com churrasqueira e piscina de 6 × 3.',
+    itens: ['Terreno de 450 m²', 'Piscina 6 × 3', 'Área gourmet coberta', 'Pé-direito 3,10 m', 'Aquecimento solar', 'Três vagas'],
+  },
+  {
+    cod: 'MR-1103', nome: 'Studio Farol', tipo: 'Studio', negocio: 'Aluguel',
+    bairro: 'Bairro Farol', preco: 2400, area: 38, quartos: 1, suites: 0, banheiros: 1, vagas: 1,
+    andar: '14º andar', condominio: 480, iptu: 70,
+    resumo: 'Studio mobiliado no 14º andar, a duas quadras da orla.',
+    descricao:
+      'Studio de 38 m² entregue mobiliado e pronto para morar: cama box, sofá, mesa de trabalho, cooktop, coifa e geladeira já instalados. Prédio novo, com lavanderia coletiva, coworking no térreo e bicicletário. A duas quadras da orla e uma do ponto de ônibus da linha do centro.',
+    itens: ['Mobiliado', 'Coworking no prédio', 'Lavanderia coletiva', 'Bicicletário', 'Pet friendly', 'Uma vaga'],
+  },
+  {
+    cod: 'MR-1118', nome: 'Cobertura Enseada', tipo: 'Cobertura', negocio: 'Venda',
+    bairro: 'Alto da Enseada', preco: 2480000, area: 268, quartos: 4, suites: 3, banheiros: 5, vagas: 4,
+    andar: '19º e 20º', condominio: 1980, iptu: 640, destaque: true,
+    resumo: 'Cobertura duplex com terraço de 90 m² e vista para a baía.',
+    descricao:
+      'Cobertura duplex nos dois últimos andares, com terraço privativo de 90 m² e vista desimpedida para a baía — não há e não haverá construção à frente, por restrição de gabarito da orla. Piso inferior com living de 60 m², lavabo e três suítes; piso superior com master, closet e o terraço com spa, churrasqueira e pergolado.',
+    itens: ['Terraço de 90 m²', 'Vista permanente da baía', 'Spa no terraço', 'Master com closet', 'Elevador privativo', 'Quatro vagas'],
+  },
+  {
+    cod: 'MR-1126', nome: 'Sobrado Costa Nova', tipo: 'Sobrado', negocio: 'Venda',
+    bairro: 'Costa Nova', preco: 890000, area: 168, quartos: 3, suites: 1, banheiros: 3, vagas: 2,
+    andar: 'Dois pavimentos', condominio: 380, iptu: 220,
+    resumo: 'Sobrado em condomínio fechado, com quintal e área gourmet.',
+    descricao:
+      'Sobrado em condomínio fechado de 42 casas, com portaria, quadra e playground. Térreo com sala em dois ambientes, lavabo, cozinha americana e área gourmet aberta para o quintal; superior com três dormitórios, sendo um suíte com sacada. Quintal gramado nos fundos, murado, com espaço para piscina.',
+    itens: ['Condomínio fechado', 'Quintal murado', 'Área gourmet', 'Quadra e playground', 'Espaço para piscina', 'Duas vagas'],
+  },
+  {
+    cod: 'MR-1149', nome: 'Edifício Dunas', tipo: 'Apartamento', negocio: 'Aluguel',
+    bairro: 'Parque das Dunas', preco: 3200, area: 74, quartos: 2, suites: 1, banheiros: 2, vagas: 1,
+    andar: '5º andar', condominio: 610, iptu: 130,
+    resumo: 'Dois dormitórios com suíte, de frente para a praça.',
+    descricao:
+      'Apartamento de dois dormitórios com suíte, no quinto andar de frente para a praça do Parque das Dunas. Sala com varanda e churrasqueira, cozinha com armários, área de serviço separada. Condomínio com piscina, academia e salão de festas, e taxa que inclui água e gás.',
+    itens: ['Varanda com churrasqueira', 'Suíte', 'Academia no prédio', 'Piscina', 'Água e gás inclusos', 'Uma vaga'],
+  },
+  {
+    cod: 'MR-1155', nome: 'Loft Vila Bandeira', tipo: 'Loft', negocio: 'Venda',
+    bairro: 'Vila Bandeira', preco: 615000, area: 66, quartos: 1, suites: 1, banheiros: 2, vagas: 1,
+    andar: '2º andar', condominio: 420, iptu: 110,
+    resumo: 'Loft de pé-direito duplo em antiga fábrica restaurada.',
+    descricao:
+      'Loft em galpão fabril de 1948, restaurado e convertido em 18 unidades. Pé-direito duplo de 5,40 m, tijolo aparente original em duas paredes, estrutura metálica à vista e mezanino com o dormitório. Janela industrial de 3 m de largura, voltada para o pátio interno arborizado.',
+    itens: ['Pé-direito de 5,40 m', 'Tijolo aparente original', 'Mezanino', 'Janela industrial', 'Prédio tombado', 'Uma vaga'],
+  },
+  {
+    cod: 'MR-1168', nome: 'Residencial Morro Azul', tipo: 'Apartamento', negocio: 'Venda',
+    bairro: 'Morro Azul', preco: 445000, area: 58, quartos: 2, suites: 0, banheiros: 1, vagas: 1,
+    andar: '3º andar', condominio: 390, iptu: 85,
+    resumo: 'Dois dormitórios reformado, pronto para entrar.',
+    descricao:
+      'Apartamento de dois dormitórios com reforma concluída em 2025: elétrica refeita, hidráulica revisada, piso novo em todos os ambientes e banheiro completo. Prédio sem elevador, no terceiro andar. Boa opção de primeiro imóvel — aceita financiamento e o valor está dentro do teto do programa habitacional.',
+    itens: ['Reformado em 2025', 'Elétrica refeita', 'Aceita financiamento', 'Sem taxa de condomínio alta', 'Perto do terminal', 'Uma vaga'],
+  },
+  {
+    cod: 'MR-1174', nome: 'Casa Riacho Doce', tipo: 'Casa', negocio: 'Aluguel',
+    bairro: 'Riacho Doce', preco: 4800, area: 140, quartos: 3, suites: 1, banheiros: 2, vagas: 2,
+    andar: 'Térrea', condominio: 0, iptu: 180,
+    resumo: 'Casa térrea com jardim, em rua sem saída.',
+    descricao:
+      'Casa térrea de três dormitórios em rua sem saída, silenciosa e com pouco movimento de carro. Jardim na frente e quintal com varal coberto nos fundos. Cozinha com armários e fogão embutido, aquecimento solar para os chuveiros. Aceita animais de qualquer porte, sem restrição.',
+    itens: ['Rua sem saída', 'Jardim e quintal', 'Aquecimento solar', 'Aceita pets sem restrição', 'Cozinha com armários', 'Duas vagas'],
+  },
+  {
+    cod: 'MR-1190', nome: 'Terraço Praia do Sol', tipo: 'Cobertura', negocio: 'Venda',
+    bairro: 'Praia do Sol', preco: 1690000, area: 176, quartos: 3, suites: 2, banheiros: 4, vagas: 3,
+    andar: '12º andar', condominio: 1240, iptu: 410,
+    resumo: 'Cobertura sem duplex, toda em um piso, com terraço frontal.',
+    descricao:
+      'Cobertura horizontal: toda a metragem em um único pavimento, sem escada interna, com terraço frontal de 42 m² acompanhando a sala. Três dormitórios, dois suítes, lavabo e dependência completa. O prédio tem apenas duas unidades por andar e a garagem é privativa, fechada com portão próprio.',
+    itens: ['Sem escada interna', 'Terraço frontal de 42 m²', 'Duas unidades por andar', 'Garagem privativa fechada', 'Dependência completa', 'Três vagas'],
+  },
+];
+
+/* as quatro ilustrações de cada imóvel, geradas no build */
+const COM_ARTE = IMOVEIS.map((i) => ({ ...i, fotos: galeria(i.cod, i.tipo, i.quartos) }));
+
+const brl = (n: number) =>
+  n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+
+/* o preço se lê diferente conforme o negócio: mês no aluguel, total na venda */
+const preco = (i: (typeof IMOVEIS)[number]) =>
+  i.negocio === 'Aluguel' ? `${brl(i.preco)}/mês` : brl(i.preco);
+
+const TIPOS = [...new Set(IMOVEIS.map((i) => i.tipo))];
+
+const NUMEROS = [
+  { v: '18', u: 'anos', d: 'de carteira na cidade' },
+  { v: '340', u: '+', d: 'famílias atendidas' },
+  { v: '21', u: 'dias', d: 'média até a proposta' },
+  { v: '100', u: '%', d: 'com documentação conferida' },
+];
+
+const titulo = `${LOJA.nome} ${LOJA.sub} — imóveis à venda e para alugar em ${LOJA.cidade}`;
+const descricao =
+  'Imobiliária em Porto Sereno: apartamentos, casas, coberturas, lofts e studios à venda e para alugar. Ficha completa, planta e agendamento de visita pelo WhatsApp.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'RealEstateAgent',
+  name: `${LOJA.nome} ${LOJA.sub}`,
+  description: descricao,
+  telephone: LOJA.foneLink,
+  email: LOJA.email,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: LOJA.rua, addressLocality: LOJA.cidade,
+    addressRegion: LOJA.uf, postalCode: LOJA.cep, addressCountry: 'BR',
+  },
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta name="theme-color" content="#eff6fe" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600&display=swap"
+    />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    {/*
+      Só esconde o que vai ser revelado se houver movimento para revelar. Sem
+      JS, ou com movimento reduzido, `anima-on` nunca entra e o conteúdo nasce
+      visível — o imóvel é o produto, a entrada é enfeite.
+    */}
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anima-on');
+    </script>
+  </Fragment>
+
+  <div class="mi">
+    <a class="pular" href="#carteira">Pular para os imóveis</a>
+    <span hidden data-zap={LOJA.zap}></span>
+    {/*
+      Os imóveis com as ilustrações já geradas vão para o cliente numa ilha
+      JSON. É o que o modal lê ao abrir — sem uma segunda requisição e sem
+      recalcular o SVG no navegador.
+    */}
+    <script type="application/json" data-dados set:html={JSON.stringify({ imoveis: COM_ARTE, cidade: LOJA.cidade })}></script>
+
+    {/*
+      As formas do fundo. Ficam num SVG fixo, atrás de tudo e sem receber
+      toque: é o "shape" do brief resolvido em uma camada só, em vez de meia
+      dúzia de divs decorativas espalhadas pelo HTML.
+    */}
+    <svg class="formas" viewBox="0 0 1200 1600" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <circle cx="120" cy="180" r="300" fill="#bcd9f6" opacity=".38" />
+      <circle cx="1080" cy="520" r="360" fill="#dcebfb" opacity=".7" />
+      <circle cx="240" cy="980" r="260" fill="#dcebfb" opacity=".55" />
+      <circle cx="960" cy="1340" r="320" fill="#bcd9f6" opacity=".3" />
+      <rect x="820" y="60" width="300" height="300" rx="90" fill="#2b7fd4" opacity=".08" />
+      <rect x="60" y="620" width="220" height="220" rx="70" fill="#2b7fd4" opacity=".07" />
+    </svg>
+
+    {/* ═════════════════ CABEÇALHO ═════════════════ */}
+    <header class="topo" data-topo>
+      <div class="topo-caixa">
+        <a class="marca" href="#inicio" aria-label={`${LOJA.nome} ${LOJA.sub} — início`}>
+          <span class="marca-selo" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="2.4" />
+              <path d="M20 8v24M8 20h24" stroke="currentColor" stroke-width="2" opacity=".45" />
+              <path d="M20 11l4 9-4 9-4-9z" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="marca-txt">
+            <b>{LOJA.nome}</b>
+            <i>{LOJA.sub}</i>
+          </span>
+        </a>
+
+        <nav class="topo-nav" aria-label="Seções">
+          <a href="#carteira">Imóveis</a>
+          <a href="#como">Como funciona</a>
+          <a href="#sobre">Sobre</a>
+          <a href="#contato">Contato</a>
+        </nav>
+
+        <a class="btn btn-azul btn-min" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
+          <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+          <span class="so-larga">Falar com corretor</span>
+          <span class="so-estreita">WhatsApp</span>
+        </a>
+      </div>
+    </header>
+
+    <main id="conteudo">
+      {/* ═════════════════ ABERTURA ═════════════════ */}
+      <section class="capa" id="inicio">
+        <div class="caixa capa-caixa">
+          <p class="olho" data-capa>
+            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+            {LOJA.cidade} · {LOJA.uf}
+          </p>
+          <h1 data-capa>
+            A casa certa<br />
+            <span>com a conta fechando.</span>
+          </h1>
+          <p class="capa-d" data-capa>
+            Carteira enxuta e conferida: {IMOVEIS.length} imóveis, cada um com metragem
+            real medida por nós, condomínio e IPTU na ficha, e documentação
+            checada antes de entrar no site.
+          </p>
+
+          <div class="capa-acoes" data-capa>
+            <a class="btn btn-azul btn-g" href="#carteira">
+              <i class="fa-solid fa-house" aria-hidden="true"></i>
+              Ver os imóveis
+            </a>
+            <a class="btn btn-vaz btn-g" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
+              <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+              Falar com um corretor
+            </a>
+          </div>
+
+          <ul class="capa-selos" data-capa>
+            <li><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> Metragem medida</li>
+            <li><i class="fa-solid fa-file-shield" aria-hidden="true"></i> Documentação checada</li>
+            <li><i class="fa-solid fa-eye" aria-hidden="true"></i> Custo total à vista</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════════════ NÚMEROS ═════════════════ */}
+      <section class="faixa">
+        <div class="caixa">
+          <ul class="numeros">
+            {NUMEROS.map((n) => (
+              <li data-anima>
+                <p class="num-v">{n.v}<small>{n.u}</small></p>
+                <p class="num-d">{n.d}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════════════ CARTEIRA ═════════════════ */}
+      <section class="secao" id="carteira">
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho"><i class="fa-solid fa-building" aria-hidden="true"></i>A carteira</p>
+            <h2>Todos os imóveis, com a conta inteira</h2>
+            <p class="lead">
+              Toque no cartão para abrir a ficha: fotos, planta, descrição, o que
+              está incluso e o custo mensal somado — condomínio e IPTU juntos, e
+              não escondidos na letra miúda.
+            </p>
+          </header>
+
+          {/*
+            Filtro por negócio e tipo. É a primeira pergunta de quem procura
+            imóvel, então vem antes da grade e não dentro de um menu escondido.
+          */}
+          <div class="filtros" data-anima role="group" aria-label="Filtrar imóveis">
+            <div class="filtro-grupo" role="group" aria-label="Tipo de negócio">
+              <button type="button" class="chip ativo" data-negocio="todos" aria-pressed="true">Todos</button>
+              <button type="button" class="chip" data-negocio="Venda" aria-pressed="false">Venda</button>
+              <button type="button" class="chip" data-negocio="Aluguel" aria-pressed="false">Aluguel</button>
+            </div>
+            <div class="filtro-grupo" role="group" aria-label="Tipo de imóvel">
+              <button type="button" class="chip ativo" data-tipo="todos" aria-pressed="true">Qualquer tipo</button>
+              {TIPOS.map((t) => (
+                <button type="button" class="chip" data-tipo={t} aria-pressed="false">{t}</button>
+              ))}
+            </div>
+          </div>
+
+          <p class="conta" data-conta aria-live="polite">{IMOVEIS.length} imóveis</p>
+
+          <ul class="grade">
+            {
+              COM_ARTE.map((i) => (
+                <li class="cartao" data-imovel={i.cod} data-negocio-v={i.negocio} data-tipo-v={i.tipo} data-anima>
+                  <button type="button" class="cartao-btn" data-abrir={i.cod}
+                          aria-label={`Ver ficha de ${i.nome}, ${i.tipo} em ${i.bairro}`}>
+                    <span class="cartao-arte" set:html={i.fotos[0].svg} />
+                    <span class="cartao-fitas">
+                      <span class:list={['fita', i.negocio === 'Aluguel' && 'fita-alt']}>{i.negocio}</span>
+                      {i.destaque && <span class="fita fita-dest">Destaque</span>}
+                    </span>
+
+                    <span class="cartao-corpo">
+                      <span class="cartao-local">
+                        <i class="fa-solid fa-location-dot" aria-hidden="true" />
+                        {i.bairro} · {LOJA.cidade}
+                      </span>
+                      <span class="cartao-nome">{i.nome}</span>
+                      <span class="cartao-resumo">{i.resumo}</span>
+
+                      <span class="cartao-ficha">
+                        <span><i class="fa-solid fa-ruler-combined" aria-hidden="true" />{i.area} m²</span>
+                        <span><i class="fa-solid fa-bed" aria-hidden="true" />{i.quartos}</span>
+                        <span><i class="fa-solid fa-shower" aria-hidden="true" />{i.banheiros}</span>
+                        <span><i class="fa-solid fa-car" aria-hidden="true" />{i.vagas}</span>
+                      </span>
+
+                      <span class="cartao-pe">
+                        <span class="cartao-preco">{preco(i)}</span>
+                        <span class="cartao-ver">Ver ficha <i class="fa-solid fa-arrow-right" aria-hidden="true" /></span>
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))
+            }
+          </ul>
+
+          <p class="vazio" data-vazio hidden>
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            Nenhum imóvel com esse filtro. Tente outra combinação.
+          </p>
+        </div>
+      </section>
+
+      {/* ═════════════════ COMO FUNCIONA ═════════════════ */}
+      <section class="secao passos" id="como">
+        <div class="caixa">
+          <header class="cab cab-centro" data-anima>
+            <p class="olho"><i class="fa-solid fa-route" aria-hidden="true"></i>Como funciona</p>
+            <h2>Da ficha à chave, em quatro passos</h2>
+          </header>
+
+          <ol class="grade-passos">
+            {[
+              { i: 'fa-solid fa-magnifying-glass', t: 'Você escolhe', d: 'Abre a ficha, vê planta, custo mensal e o que está incluso. Nada de “consulte valores”.' },
+              { i: 'fa-solid fa-calendar-check', t: 'Agenda a visita', d: 'Um toque manda a mensagem já preenchida com o código do imóvel. Respondemos em minutos.' },
+              { i: 'fa-solid fa-file-signature', t: 'Proposta e análise', d: 'Proposta por escrito, análise de crédito e conferência da documentação — tudo antes de qualquer sinal.' },
+              { i: 'fa-solid fa-key', t: 'Assinatura e chave', d: 'Contrato revisado, vistoria com laudo fotográfico e entrega das chaves.' },
+            ].map((p, n) => (
+              <li data-anima>
+                <span class="passo-n">{String(n + 1).padStart(2, '0')}</span>
+                <span class="passo-i" aria-hidden="true"><i class={p.i} /></span>
+                <h3>{p.t}</h3>
+                <p>{p.d}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ═════════════════ SOBRE ═════════════════ */}
+      <section class="secao" id="sobre">
+        <div class="caixa sobre-grade">
+          <div data-anima>
+            <p class="olho"><i class="fa-solid fa-handshake" aria-hidden="true"></i>Sobre</p>
+            <h2>Carteira pequena, de propósito</h2>
+            <p class="sobre-p">
+              Trabalhamos com {IMOVEIS.length} imóveis por vez. Não é modéstia: é
+              o número que dá para visitar pessoalmente, medir com trena, conferir
+              matrícula e conhecer o síndico antes de anunciar. Imobiliária com
+              mil anúncios não conhece nenhum deles.
+            </p>
+            <p class="sobre-p">
+              Por isso a ficha traz metragem real e não a da escritura, custo
+              mensal somado e o que precisa de reforma. Se o imóvel tem problema,
+              está escrito na descrição — descobrir na visita custa o seu sábado.
+            </p>
+          </div>
+
+          <ul class="promessas" data-anima>
+            {[
+              { i: 'fa-solid fa-ruler-combined', t: 'Metragem conferida', d: 'Medimos com trena laser. Se diferir da escritura, os dois números aparecem.' },
+              { i: 'fa-solid fa-file-shield', t: 'Matrícula lida', d: 'Certidão conferida antes do anúncio. Imóvel com pendência não entra.' },
+              { i: 'fa-solid fa-calculator', t: 'Custo total', d: 'Condomínio e IPTU somados na ficha, para você comparar o que de fato vai sair do bolso.' },
+            ].map((p) => (
+              <li>
+                <span class="prom-i" aria-hidden="true"><i class={p.i} /></span>
+                <div>
+                  <h3>{p.t}</h3>
+                  <p>{p.d}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═════════════════ CONTATO ═════════════════ */}
+      <section class="secao contato" id="contato">
+        <div class="caixa">
+          <div class="chamada" data-anima>
+            <div>
+              <h2>Achou um, ou não achou nenhum?</h2>
+              <p>
+                Nos dois casos, fale com a gente. Se o imóvel que você procura não
+                está aqui, procuramos — e avisamos quando entrar na carteira.
+              </p>
+            </div>
+            <div class="chamada-acoes">
+              <a class="btn btn-azul btn-g" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
+                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                Chamar no WhatsApp
+              </a>
+              <a class="btn btn-vaz btn-g" href={`tel:${LOJA.foneLink}`}>
+                <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                {LOJA.fone}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    {/* ═════════════════ RODAPÉ ═════════════════ */}
+    <footer class="rodape">
+      <div class="caixa">
+        <div class="rodape-grade">
+          <div>
+            <p class="rodape-marca"><b>{LOJA.nome}</b> <i>{LOJA.sub}</i></p>
+            <p class="rodape-d">
+              {LOJA.creci} · {LOJA.rua}, {LOJA.bairro}<br />
+              {LOJA.cidade}/{LOJA.uf} — CEP {LOJA.cep}
+            </p>
+            <ul class="redes">
+              <li><a href={`https://wa.me/${LOJA.zap}`} rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a></li>
+              <li><a href={`https://instagram.com/${LOJA.insta}`} rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a></li>
+              <li><a href={`tel:${LOJA.foneLink}`} aria-label="Telefone"><i class="fa-solid fa-phone" aria-hidden="true"></i></a></li>
+              <li><a href={`mailto:${LOJA.email}`} aria-label="E-mail"><i class="fa-regular fa-envelope" aria-hidden="true"></i></a></li>
+            </ul>
+          </div>
+
+          <div>
+            <p class="rodape-t">Atendimento</p>
+            <dl class="rodape-horas">
+              <div><dt>Segunda a sexta</dt><dd>09h às 18h</dd></div>
+              <div><dt>Sábado</dt><dd>09h às 13h</dd></div>
+              <div><dt>Domingo</dt><dd>Plantão por agendamento</dd></div>
+            </dl>
+          </div>
+
+          <div>
+            <p class="rodape-t">Contato</p>
+            <ul class="rodape-contato">
+              <li><i class="fa-solid fa-phone" aria-hidden="true"></i><a href={`tel:${LOJA.foneLink}`}>{LOJA.fone}</a></li>
+              <li><i class="fa-brands fa-whatsapp" aria-hidden="true"></i><a href={`https://wa.me/${LOJA.zap}`} rel="noopener">{LOJA.zapFmt}</a></li>
+              <li><i class="fa-regular fa-envelope" aria-hidden="true"></i><a href={`mailto:${LOJA.email}`}>{LOJA.email}</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="rodape-legal">
+          Demonstração de portfólio. {LOJA.nome} {LOJA.sub} não existe: cidade,
+          bairros, imóveis, preços, CRECI e telefone são fictícios, as imagens
+          são ilustrações geradas pelo próprio site e nenhuma visita é agendada
+          de verdade.
+        </p>
+      </div>
+    </footer>
+
+    {/* ═════════════════ FICHA DO IMÓVEL (dialog nativo) ═════════════════ */}
+    <dialog class="ficha" data-ficha aria-label="Ficha do imóvel">
+      <button type="button" class="ficha-x" data-fechar aria-label="Fechar ficha">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+
+      <div class="ficha-rolo">
+        {/* carrossel */}
+        <div class="carro" data-carro>
+          <div class="carro-trilho" data-trilho></div>
+
+          <button type="button" class="carro-seta carro-ant" data-passo="-1" aria-label="Foto anterior">
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="carro-seta carro-prox" data-passo="1" aria-label="Próxima foto">
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+
+          <p class="carro-rotulo" data-carro-rotulo>—</p>
+          <div class="carro-pontos" data-pontos role="tablist" aria-label="Fotos do imóvel"></div>
+        </div>
+
+        <div class="ficha-corpo">
+          <p class="ficha-local">
+            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+            <span data-f-local>—</span>
+            <span class="ficha-cod" data-f-cod>—</span>
+          </p>
+          <h2 data-f-nome>—</h2>
+
+          <p class="ficha-preco">
+            <b data-f-preco>—</b>
+            <span data-f-negocio>—</span>
+          </p>
+
+          {/* custo mensal somado: é a conta que decide a compra */}
+          <dl class="ficha-custos">
+            <div><dt>Condomínio</dt><dd data-f-cond>—</dd></div>
+            <div><dt>IPTU (mês)</dt><dd data-f-iptu>—</dd></div>
+            <div class="custo-total"><dt>Custo mensal</dt><dd data-f-mensal>—</dd></div>
+          </dl>
+
+          <ul class="ficha-ficha" data-f-atributos></ul>
+
+          <h3 class="ficha-t">Sobre o imóvel</h3>
+          <p class="ficha-desc" data-f-desc>—</p>
+
+          <h3 class="ficha-t">O que está incluso</h3>
+          <ul class="ficha-itens" data-f-itens></ul>
+        </div>
+      </div>
+
+      {/* a ação fica presa no rodapé do modal: some do alcance ao rolar, não */}
+      <div class="ficha-acao">
+        <div class="ficha-acao-preco">
+          <span data-f-preco2>—</span>
+          <small data-f-area>—</small>
+        </div>
+        <a class="btn btn-azul btn-g" data-f-zap href="#" rel="noopener">
+          <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+          Agendar visita
+        </a>
+      </div>
+    </dialog>
+  </div>
+</Base>
+
+<style>
+  /*
+    Azul-claro, marinho e branco. O claro é o fundo e a superfície; o marinho é
+    o texto e o vulto; o azul-marca só aparece em ação e em dado. Cantos
+    generosos em tudo (`--raio-g` de 22px, chip em 999px) — o "arredondado" do
+    brief é uma regra de forma, não um enfeite pontual.
+
+    Contraste conferido: marinho #0B2A4A sobre branco dá 14,3:1; o azul de
+    botão é o escuro #1E5FA8, que com texto branco dá 6,3:1. O #2B7FD4 fica
+    para ícone e número grande, onde 4,1:1 basta.
+  */
+  .mi {
+    --branco: #ffffff;
+    --claro: #eff6fe;
+    --claro-2: #dcebfb;
+    --claro-3: #bcd9f6;
+
+    --marinho: #0b2a4a;
+    --marinho-2: #14395f;
+    --azul: #2b7fd4;
+    --azul-esc: #1e5fa8;
+    --azul-mais: #174a85;
+
+    --c60: #5a7183;
+    --c40: #7d92a3;
+    --borda: #dbe6f1;
+
+    --raio: 12px;
+    --raio-g: 22px;
+    --raio-xg: 30px;
+    --t: 0.4s;
+    --e: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --topo-h: 4.4rem;
+
+    --s1: 0 1px 2px rgba(11, 42, 74, 0.06), 0 4px 14px -6px rgba(11, 42, 74, 0.12);
+    --s2: 0 6px 18px -8px rgba(11, 42, 74, 0.18), 0 18px 40px -22px rgba(11, 42, 74, 0.28);
+    --s3: 0 12px 28px -12px rgba(11, 42, 74, 0.24), 0 40px 80px -40px rgba(11, 42, 74, 0.4);
+
+    position: relative;
+    background: var(--claro);
+    color: var(--marinho);
+    font-family: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.7;
+    overflow-x: clip;
+  }
+  :global(body) { background: #eff6fe; color: #0b2a4a; }
+  :global(html) { scrollbar-color: #bcd9f6 #eff6fe; }
+  :global(::selection) { background: #2b7fd4; color: #fff; }
+
+  .pular {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--azul-esc); color: #fff; padding: 0.7rem 1.1rem;
+    text-decoration: none; border-radius: 0 0 var(--raio) 0; font-weight: 600;
+  }
+  .pular:focus { left: 0; }
+
+  /* as formas: fixas, atrás de tudo, sem receber toque */
+  .formas {
+    position: fixed; inset: 0; z-index: 0;
+    width: 100%; height: 100%; pointer-events: none;
+  }
+  .topo, main, .rodape { position: relative; z-index: 2; }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3 { margin: 0; text-wrap: balance; font-family: 'Outfit', sans-serif; font-weight: 600; }
+  h1 { font-size: clamp(2.2rem, 7vw, 4rem); line-height: 1.05; letter-spacing: -0.03em; }
+  h1 span { color: var(--azul-esc); }
+  h2 { font-size: clamp(1.6rem, 4.4vw, 2.5rem); line-height: 1.12; letter-spacing: -0.02em; }
+  h3 { font-size: 1.02rem; font-weight: 600; line-height: 1.35; }
+  p { margin: 0; text-wrap: pretty; }
+  .lead { font-size: 1rem; color: var(--c60); max-width: 56ch; }
+
+  .olho {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.9rem; border-radius: 999px;
+    background: var(--claro-2); color: var(--azul-esc);
+    font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 1.1rem;
+  }
+
+  .caixa { max-width: 1180px; margin: 0 auto; padding-inline: clamp(1.1rem, 4vw, 2.4rem); }
+  .secao { position: relative; padding-block: clamp(3rem, 8vw, 5.5rem); }
+  .cab { margin-bottom: clamp(1.8rem, 4vw, 2.8rem); max-width: 58ch; }
+  .cab-centro { margin-inline: auto; text-align: center; }
+  .cab .lead { margin-top: 0.9rem; }
+  .mi section[id] { scroll-margin-top: calc(var(--topo-h) + 0.6rem); }
+
+  /* ---------- botões ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    min-height: 46px; padding: 0.75rem 1.5rem;
+    border: 1px solid transparent; border-radius: 999px;
+    font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 600;
+    text-decoration: none; white-space: nowrap; cursor: pointer;
+    transition: background var(--t) var(--e), color var(--t) var(--e),
+      border-color var(--t) var(--e), box-shadow var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .btn-g { padding: 0.95rem 1.9rem; font-size: 1rem; min-height: 52px; }
+  .btn-min { padding: 0.55rem 1.2rem; font-size: 0.85rem; min-height: 42px; }
+  .btn-azul { background: var(--azul-esc); color: #fff; box-shadow: var(--s2); }
+  .btn-azul:hover { background: var(--azul-mais); translate: 0 -2px; box-shadow: var(--s3); }
+  .btn-vaz { background: var(--branco); color: var(--marinho); border-color: var(--borda); box-shadow: var(--s1); }
+  .btn-vaz:hover { border-color: var(--azul); color: var(--azul-esc); translate: 0 -2px; box-shadow: var(--s2); }
+  .mi :is(a, button):focus-visible { outline: 2px solid var(--azul-esc); outline-offset: 3px; }
+
+  /* ---------- cabeçalho ---------- */
+  .topo {
+    position: sticky; top: 0; z-index: 60;
+    background: rgba(239, 246, 254, 0.82);
+    backdrop-filter: blur(16px) saturate(1.3);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .topo[data-topo='rolou'] { border-bottom-color: var(--borda); box-shadow: 0 8px 24px -18px rgba(11, 42, 74, 0.4); }
+  .topo-caixa {
+    max-width: 1180px; margin: 0 auto;
+    padding: 0.5rem clamp(1.1rem, 4vw, 2.4rem); min-height: var(--topo-h);
+    display: flex; align-items: center; gap: clamp(0.6rem, 2vw, 1.6rem);
+  }
+  .marca { display: inline-flex; align-items: center; gap: 0.65rem; text-decoration: none; color: var(--marinho); margin-right: auto; }
+  .marca-selo { width: 2.3rem; height: 2.3rem; flex: none; color: var(--azul-esc); }
+  .marca-selo svg { width: 100%; height: 100%; display: block; }
+  .marca-txt { display: flex; align-items: baseline; gap: 0.35rem; font-family: 'Outfit', sans-serif; }
+  .marca-txt b { font-size: 1.28rem; font-weight: 700; letter-spacing: -0.02em; }
+  .marca-txt i { font-style: normal; font-size: 0.95rem; font-weight: 400; color: var(--c60); }
+  .topo-nav { display: none; gap: clamp(1rem, 2.4vw, 2rem); }
+  .topo-nav a {
+    color: var(--c60); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+    transition: color var(--t) var(--e);
+  }
+  .topo-nav a:hover { color: var(--azul-esc); }
+  .so-estreita { display: inline; }
+  .so-larga { display: none; }
+  @media (min-width: 900px) {
+    .topo-nav { display: flex; }
+    .so-estreita { display: none; }
+    .so-larga { display: inline; }
+  }
+
+  /* ---------- abertura ---------- */
+  .capa { position: relative; padding-block: clamp(2.6rem, 9vw, 5.5rem) clamp(2.4rem, 6vw, 4rem); }
+  .capa-caixa { max-width: 900px; text-align: center; }
+  .capa .olho { margin-inline: auto; }
+  .capa-d { margin: 1.4rem auto 0; max-width: 56ch; color: var(--c60); font-size: 1.02rem; }
+  .capa-acoes { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
+  .capa-acoes .btn { flex: 1 1 15rem; max-width: 20rem; }
+  .capa-selos {
+    list-style: none; margin: 2.2rem 0 0; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center;
+  }
+  .capa-selos li {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 1rem; border-radius: 999px;
+    background: var(--branco); border: 1px solid var(--borda);
+    font-size: 0.82rem; color: var(--c60); box-shadow: var(--s1);
+  }
+  .capa-selos i { color: var(--azul); }
+
+  /* ---------- números ---------- */
+  .faixa { position: relative; }
+  .numeros {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--borda); border: 1px solid var(--borda);
+    border-radius: var(--raio-g); overflow: hidden; box-shadow: var(--s1);
+  }
+  @media (min-width: 760px) { .numeros { grid-template-columns: repeat(4, 1fr); } }
+  .numeros li { background: var(--branco); padding: clamp(1.2rem, 3vw, 1.9rem) 1rem; text-align: center; }
+  .num-v { font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 4.6vw, 2.6rem); font-weight: 700; line-height: 1; color: var(--azul-esc); }
+  .num-v small { font-size: 0.42em; margin-left: 0.15em; color: var(--c40); }
+  .num-d { margin-top: 0.4rem; font-size: 0.8rem; color: var(--c60); }
+
+  /* ---------- filtros ---------- */
+  .filtros { display: grid; gap: 0.7rem; margin-bottom: 1.2rem; }
+  .filtro-grupo { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip {
+    min-height: 42px; padding: 0.5rem 1.1rem;
+    border: 1px solid var(--borda); border-radius: 999px;
+    background: var(--branco); color: var(--c60); cursor: pointer;
+    font-family: 'Outfit', sans-serif; font-size: 0.86rem; font-weight: 500;
+    transition: background var(--t) var(--e), color var(--t) var(--e),
+      border-color var(--t) var(--e), box-shadow var(--t) var(--e);
+  }
+  .chip:hover { border-color: var(--azul); color: var(--azul-esc); }
+  .chip.ativo { background: var(--marinho); border-color: var(--marinho); color: #fff; box-shadow: var(--s1); }
+  .conta { font-size: 0.85rem; color: var(--c40); margin-bottom: 1.2rem; }
+
+  /* ---------- grade de imóveis ---------- */
+  .grade {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2.4vw, 1.5rem);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 620px) { .grade { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1000px) { .grade { grid-template-columns: repeat(3, 1fr); } }
+  .cartao { min-width: 0; }
+  .cartao[hidden] { display: none; }
+
+  /*
+    O cartão inteiro é um botão. Área de toque enorme no celular, e um só
+    elemento focável por imóvel — em vez de um link no título e outro na foto,
+    que faz o teclado passar duas vezes pela mesma coisa.
+  */
+  .cartao-btn {
+    display: flex; flex-direction: column; width: 100%; height: 100%;
+    padding: 0; text-align: left; cursor: pointer; overflow: hidden;
+    background: var(--branco); border: 1px solid var(--borda);
+    border-radius: var(--raio-xg); box-shadow: var(--s1);
+    font-family: inherit; color: inherit;
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .cartao-btn:hover { border-color: var(--claro-3); box-shadow: var(--s3); translate: 0 -5px; }
+  .cartao-arte { display: block; position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--claro-2); }
+  .cartao-arte :global(svg) { display: block; width: 100%; height: 100%; }
+  .cartao-btn:hover .cartao-arte :global(svg) { scale: 1.04; }
+  .cartao-arte :global(svg) { transition: scale 0.6s var(--e); }
+
+  .cartao-fitas { position: absolute; top: 0.9rem; left: 0.9rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .fita {
+    padding: 0.3rem 0.75rem; border-radius: 999px;
+    background: var(--marinho); color: #fff;
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    box-shadow: var(--s1);
+  }
+  .fita-alt { background: var(--azul-esc); }
+  .fita-dest { background: #fff; color: var(--marinho); }
+
+  .cartao-corpo { display: flex; flex-direction: column; gap: 0.45rem; padding: 1.2rem 1.25rem 1.3rem; flex: 1; }
+  .cartao-local {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.76rem; color: var(--c40);
+  }
+  .cartao-local i { color: var(--azul); }
+  .cartao-nome { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 600; letter-spacing: -0.01em; }
+  .cartao-resumo { font-size: 0.86rem; color: var(--c60); flex: 1; }
+  .cartao-ficha {
+    display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem;
+    padding: 0.7rem 0; margin-top: 0.3rem;
+    border-block: 1px solid var(--borda);
+    font-size: 0.8rem; color: var(--c60);
+  }
+  .cartao-ficha > span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .cartao-ficha i { color: var(--azul); font-size: 0.78rem; }
+  .cartao-pe { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; margin-top: 0.3rem; }
+  .cartao-preco { font-family: 'Outfit', sans-serif; font-size: 1.28rem; font-weight: 700; color: var(--marinho); }
+  .cartao-ver {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.82rem; font-weight: 600; color: var(--azul-esc);
+  }
+  /* quem anda é a seta, em transform: animar `gap` remexeria a linha inteira */
+  .cartao-ver i { font-size: 0.7rem; transition: translate var(--t) var(--e); }
+  .cartao-btn:hover .cartao-ver i { translate: 4px 0; }
+
+  .vazio {
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    padding: 3rem 1rem; color: var(--c60); font-size: 0.92rem;
+  }
+  .vazio[hidden] { display: none; }
+  .vazio i { color: var(--azul); }
+
+  /* ---------- como funciona ---------- */
+  .passos { background: var(--branco); border-block: 1px solid var(--borda); }
+  .grade-passos {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; gap: clamp(1rem, 2.4vw, 1.4rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    counter-reset: passo;
+  }
+  .grade-passos li {
+    position: relative; padding: 1.6rem 1.4rem;
+    background: var(--claro); border: 1px solid var(--borda);
+    border-radius: var(--raio-g); box-shadow: var(--s1);
+  }
+  .passo-n {
+    position: absolute; top: 1.1rem; right: 1.3rem;
+    font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700;
+    color: var(--claro-3);
+  }
+  .passo-i {
+    display: grid; place-items: center; width: 2.8rem; height: 2.8rem;
+    border-radius: 50%; background: var(--claro-2); color: var(--azul-esc);
+    font-size: 1rem; margin-bottom: 1rem;
+  }
+  .grade-passos p { margin-top: 0.4rem; font-size: 0.86rem; color: var(--c60); }
+
+  /* ---------- sobre ---------- */
+  .sobre-grade { display: grid; gap: clamp(1.8rem, 4vw, 3rem); }
+  @media (min-width: 900px) { .sobre-grade { grid-template-columns: 1fr 1fr; align-items: start; } }
+  .sobre-p { margin-top: 1rem; color: var(--c60); font-size: 0.98rem; max-width: 54ch; }
+  .promessas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+  .promessas li {
+    display: grid; grid-template-columns: 3rem 1fr; gap: 1rem; align-items: start;
+    padding: 1.3rem 1.4rem;
+    background: var(--branco); border: 1px solid var(--borda);
+    border-radius: var(--raio-g); box-shadow: var(--s1);
+  }
+  .prom-i {
+    display: grid; place-items: center; width: 3rem; height: 3rem;
+    border-radius: 50%; background: var(--claro-2); color: var(--azul-esc); font-size: 1.05rem;
+  }
+  .promessas p { margin-top: 0.3rem; font-size: 0.86rem; color: var(--c60); }
+
+  /* ---------- chamada ---------- */
+  .chamada {
+    display: grid; gap: 1.6rem; align-items: center;
+    padding: clamp(1.8rem, 5vw, 3rem);
+    background: var(--marinho); color: #fff;
+    border-radius: var(--raio-xg); box-shadow: var(--s3);
+  }
+  @media (min-width: 860px) { .chamada { grid-template-columns: 1.4fr 1fr; } }
+  .chamada h2 { color: #fff; }
+  .chamada p { margin-top: 0.8rem; color: #b9cbdd; font-size: 0.96rem; max-width: 46ch; }
+  .chamada-acoes { display: grid; gap: 0.7rem; }
+  .chamada .btn-azul { background: #fff; color: var(--marinho); }
+  .chamada .btn-azul:hover { background: var(--claro-2); }
+  .chamada .btn-vaz { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.3); box-shadow: none; }
+  .chamada .btn-vaz:hover { border-color: #fff; color: #fff; background: rgba(255, 255, 255, 0.08); }
+
+  /* ---------- rodapé ---------- */
+  .rodape { background: var(--branco); border-top: 1px solid var(--borda); }
+  .rodape .caixa { padding-block: clamp(2.4rem, 6vw, 3.6rem) 1.6rem; }
+  .rodape-grade { display: grid; gap: 2rem; }
+  @media (min-width: 760px) { .rodape-grade { grid-template-columns: 1.6fr 1fr 1.2fr; } }
+  .rodape-marca { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+  .rodape-marca i { font-style: normal; font-weight: 400; color: var(--c60); }
+  .rodape-d { margin-top: 0.7rem; font-size: 0.85rem; color: var(--c60); line-height: 1.8; }
+  .redes { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 0; padding: 0; }
+  .redes a {
+    display: grid; place-items: center; width: 44px; height: 44px;
+    border: 1px solid var(--borda); border-radius: 50%;
+    color: var(--c60); text-decoration: none; font-size: 0.95rem;
+    transition: color var(--t) var(--e), border-color var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .redes a:hover { color: var(--azul-esc); border-color: var(--azul); translate: 0 -2px; }
+  .rodape-t {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--c40); margin-bottom: 0.9rem;
+  }
+  .rodape-horas { margin: 0; display: grid; gap: 0.45rem; font-size: 0.85rem; }
+  .rodape-horas > div { display: flex; justify-content: space-between; gap: 0.8rem; }
+  .rodape-horas dt { color: var(--c60); }
+  .rodape-horas dd { margin: 0; text-align: right; }
+  .rodape-contato { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; font-size: 0.85rem; }
+  .rodape-contato li { display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.6rem; align-items: center; }
+  .rodape-contato i { color: var(--azul); }
+  .rodape-contato a { color: var(--c60); text-decoration: none; transition: color var(--t) var(--e); }
+  .rodape-contato a:hover { color: var(--azul-esc); }
+  .rodape-legal {
+    margin-top: 2.2rem; padding-top: 1.3rem; border-top: 1px solid var(--borda);
+    font-size: 0.75rem; color: var(--c40); max-width: 72ch;
+  }
+
+  /* ══════════════ FICHA (modal) ══════════════ */
+  .ficha {
+    /*
+      O <dialog> modal centraliza por `margin: auto` da folha do navegador — e
+      o preflight do Tailwind, que este projeto importa, zera a margem de todo
+      elemento. Sem repor, o modal encosta no canto superior esquerdo.
+    */
+    position: fixed; inset: 0; margin: auto;
+    width: min(50rem, calc(100vw - 1.6rem));
+    max-width: none; max-height: calc(100dvh - 1.6rem);
+    padding: 0; overflow: hidden;
+    border: 1px solid var(--borda); border-radius: var(--raio-xg);
+    background: var(--branco); color: var(--marinho);
+    box-shadow: var(--s3);
+  }
+  /*
+    O `display` só entra no estado aberto. Declarado na regra base ele
+    sobrescreve o `display: none` que o navegador dá ao <dialog> fechado — e a
+    ficha aparece empilhada por cima da página desde o carregamento.
+  */
+  .ficha[open] { display: flex; flex-direction: column; }
+  .ficha::backdrop { background: rgba(11, 42, 74, 0.55); backdrop-filter: blur(4px); }
+  /* o corpo rola; a barra de ação fica presa embaixo */
+  .ficha-rolo { overflow-y: auto; overscroll-behavior: contain; flex: 1; }
+
+  .ficha-x {
+    position: absolute; z-index: 5; top: 0.85rem; right: 0.85rem;
+    width: 44px; height: 44px; display: grid; place-items: center;
+    border: 0; border-radius: 50%; cursor: pointer;
+    background: rgba(255, 255, 255, 0.92); color: var(--marinho);
+    font-size: 1rem; box-shadow: var(--s2);
+    transition: background var(--t) var(--e), scale var(--t) var(--e);
+  }
+  .ficha-x:hover { background: #fff; scale: 1.06; }
+
+  /* ---------- carrossel ---------- */
+  .carro { position: relative; background: var(--claro-2); }
+  .carro-trilho {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .carro-trilho::-webkit-scrollbar { display: none; }
+  /* os slides nascem de JS: sem :global o escopo do Astro não os alcança */
+  /*
+    O teto de altura é o que impede o carrossel de comer o modal inteiro: em
+    tela alta ele para em 42% da viewport e sobra espaço para preço, custo e
+    descrição aparecerem sem rolar.
+  */
+  .carro :global(.carro-slide) {
+    flex: 0 0 100%; scroll-snap-align: center;
+    aspect-ratio: 4 / 3; max-height: min(42dvh, 22rem); min-width: 0;
+  }
+  .carro :global(.carro-slide svg) { display: block; width: 100%; height: 100%; }
+
+  .carro-seta {
+    position: absolute; top: 50%; translate: 0 -50%; z-index: 3;
+    width: 44px; height: 44px; display: grid; place-items: center;
+    border: 0; border-radius: 50%; cursor: pointer;
+    background: rgba(255, 255, 255, 0.92); color: var(--marinho);
+    font-size: 0.85rem; box-shadow: var(--s2);
+    transition: background var(--t) var(--e), scale var(--t) var(--e), opacity var(--t) var(--e);
+  }
+  .carro-seta:hover { background: #fff; scale: 1.08; }
+  .carro-seta:disabled { opacity: 0.35; cursor: not-allowed; scale: 1; }
+  .carro-ant { left: 0.7rem; }
+  .carro-prox { right: 0.7rem; }
+
+  .carro-rotulo {
+    position: absolute; z-index: 3; left: 0.9rem; bottom: 0.9rem;
+    padding: 0.35rem 0.85rem; border-radius: 999px;
+    background: rgba(11, 42, 74, 0.82); color: #fff;
+    font-size: 0.74rem; font-weight: 500;
+  }
+  .carro-pontos {
+    position: absolute; z-index: 3; right: 0.9rem; bottom: 0.9rem;
+    display: flex; gap: 0.35rem;
+  }
+  .carro :global(.ponto) {
+    width: 22px; height: 22px; padding: 0; display: grid; place-items: center;
+    border: 0; background: transparent; cursor: pointer;
+  }
+  /*
+    Duas formas empilhadas, e não uma que muda de tamanho: o círculo do estado
+    inativo e a pílula do ativo, trocando por opacidade.
+
+    Animar `width` remexeria o layout a cada slide, e comprimir a pílula com
+    `scaleX` esmaga o raio junto — o ponto vira quadradinho. Com as duas na
+    mesma célula da grade, cada uma guarda o próprio raio e o que anima é só
+    opacidade e transform, que rodam no compositor.
+  */
+  .carro :global(.ponto::before),
+  .carro :global(.ponto::after) {
+    content: ''; grid-area: 1 / 1; height: 7px;
+    box-shadow: 0 1px 3px rgba(11, 42, 74, 0.4);
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
+  }
+  .carro :global(.ponto::before) {
+    width: 7px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .carro :global(.ponto::after) {
+    width: 20px; border-radius: 999px; background: #fff;
+    opacity: 0; transform: scaleX(0.35);
+  }
+  .carro :global(.ponto[aria-selected='true']::before) { opacity: 0; }
+  .carro :global(.ponto[aria-selected='true']::after) { opacity: 1; transform: scaleX(1); }
+
+  /* ---------- corpo da ficha ---------- */
+  .ficha-corpo { padding: clamp(1.2rem, 3vw, 2rem); }
+  .ficha-local {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+    font-size: 0.82rem; color: var(--c60);
+  }
+  .ficha-local > i { color: var(--azul); }
+  .ficha-cod {
+    margin-left: auto; padding: 0.2rem 0.6rem; border-radius: 999px;
+    background: var(--claro-2); color: var(--azul-esc);
+    font-family: ui-monospace, monospace; font-size: 0.72rem;
+  }
+  .ficha-corpo h2 { margin-top: 0.5rem; }
+  .ficha-preco { display: flex; align-items: baseline; gap: 0.6rem; margin-top: 0.9rem; flex-wrap: wrap; }
+  .ficha-preco b { font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 5vw, 2.1rem); font-weight: 700; color: var(--azul-esc); }
+  .ficha-preco span { font-size: 0.82rem; color: var(--c40); }
+
+  .ficha-custos {
+    margin: 1.2rem 0 0; padding: 1rem 1.2rem;
+    background: var(--claro); border: 1px solid var(--borda); border-radius: var(--raio-g);
+    display: grid; gap: 0.45rem; font-size: 0.88rem;
+  }
+  .ficha-custos > div { display: flex; justify-content: space-between; gap: 1rem; }
+  .ficha-custos dt { color: var(--c60); }
+  .ficha-custos dd { margin: 0; font-weight: 500; }
+  /* a soma é o número que decide, então ganha peso e uma linha para separar */
+  .custo-total { padding-top: 0.5rem; border-top: 1px dashed var(--borda); font-weight: 600; }
+  .custo-total dd { color: var(--azul-esc); font-family: 'Outfit', sans-serif; font-size: 1.05rem; }
+
+  .ficha-ficha {
+    list-style: none; margin: 1.2rem 0 0; padding: 0;
+    display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  }
+  .ficha :global(.at) {
+    padding: 0.8rem 0.9rem; border-radius: var(--raio);
+    background: var(--branco); border: 1px solid var(--borda); text-align: center;
+  }
+  .ficha :global(.at i) { color: var(--azul); font-size: 0.9rem; }
+  .ficha :global(.at b) { display: block; margin-top: 0.3rem; font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 600; }
+  .ficha :global(.at span) { display: block; font-size: 0.72rem; color: var(--c40); }
+
+  .ficha-t { margin-top: 1.6rem; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40); }
+  .ficha-desc { margin-top: 0.7rem; font-size: 0.94rem; color: var(--c60); }
+  .ficha-itens { list-style: none; margin: 0.8rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+  @media (min-width: 620px) { .ficha-itens { grid-template-columns: 1fr 1fr; } }
+  .ficha :global(.item) { display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.6rem; align-items: start; font-size: 0.88rem; color: var(--c60); }
+  .ficha :global(.item i) { color: var(--azul); font-size: 0.8rem; margin-top: 0.32rem; }
+
+  .ficha-acao {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    padding: 0.9rem clamp(1.2rem, 3vw, 2rem) calc(0.9rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--borda); background: var(--branco);
+    box-shadow: 0 -10px 30px -20px rgba(11, 42, 74, 0.5);
+  }
+  .ficha-acao-preco { display: grid; line-height: 1.2; margin-right: auto; }
+  .ficha-acao-preco span { font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; }
+  .ficha-acao-preco small { font-size: 0.75rem; color: var(--c40); }
+  .ficha-acao .btn { flex: 1 1 12rem; }
+  @media (min-width: 560px) { .ficha-acao .btn { flex: 0 0 auto; } }
+
+  /* ---------- entrada ---------- */
+  :global(.anima-on) [data-anima], :global(.anima-on) [data-capa] { opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mi *, .mi *::before, .mi *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+    :global(.anima-on) [data-anima], :global(.anima-on) [data-capa] { opacity: 1; }
+  }
+</style>
+
+<script>
+  import { animate, inView, stagger } from 'motion';
+
+  /*
+    Três coisas: o filtro da grade, a ficha em modal com carrossel e as
+    entradas por scroll. Tudo no navegador, sem back-end nenhum.
+  */
+  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SAIDA = [0.22, 0.61, 0.36, 1] as const;
+
+  const brl = (n: number) =>
+    n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+
+  /* ═════════════ 1. filtro da carteira ═════════════ */
+  function filtrar() {
+    const cartoes = [...document.querySelectorAll<HTMLElement>('[data-imovel]')];
+    const conta = document.querySelector<HTMLElement>('[data-conta]');
+    const vazio = document.querySelector<HTMLElement>('[data-vazio]');
+    if (!cartoes.length) return;
+
+    const estado = { negocio: 'todos', tipo: 'todos' };
+
+    const aplicar = () => {
+      let n = 0;
+      for (const c of cartoes) {
+        const ok =
+          (estado.negocio === 'todos' || c.dataset.negocioV === estado.negocio) &&
+          (estado.tipo === 'todos' || c.dataset.tipoV === estado.tipo);
+        c.hidden = !ok;
+        if (ok) n++;
+      }
+      if (conta) conta.textContent = n === 1 ? '1 imóvel' : `${n} imóveis`;
+      if (vazio) vazio.hidden = n > 0;
+
+      /* os que ficaram entram de novo: a grade remonta, então ela reanima */
+      if (!reduz) {
+        const vistos = cartoes.filter((c) => !c.hidden);
+        animate(
+          vistos,
+          { opacity: [0, 1], transform: ['scale(0.96) translateY(10px)', 'scale(1) translateY(0px)'] },
+          { duration: 0.4, delay: stagger(0.04), ease: SAIDA },
+        );
+      }
+    };
+
+    document.querySelectorAll<HTMLElement>('[data-negocio],[data-tipo]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const chave = b.dataset.negocio ? 'negocio' : 'tipo';
+        const valor = b.dataset.negocio ?? b.dataset.tipo!;
+        estado[chave] = valor;
+        // o grupo inteiro perde o estado antes de o clicado ganhar
+        document
+          .querySelectorAll<HTMLElement>(`[data-${chave}]`)
+          .forEach((o) => {
+            const ativo = o === b;
+            o.classList.toggle('ativo', ativo);
+            o.setAttribute('aria-pressed', String(ativo));
+          });
+        aplicar();
+      });
+    });
+  }
+
+  /* ═════════════ 2. ficha em modal, com carrossel ═════════════ */
+  type Imovel = {
+    cod: string; nome: string; tipo: string; negocio: string; bairro: string;
+    preco: number; area: number; quartos: number; suites: number; banheiros: number;
+    vagas: number; andar: string; condominio: number; iptu: number;
+    descricao: string; itens: string[]; fotos: { t: string; svg: string }[];
+  };
+
+  function ficha(dados: Imovel[], cidade: string) {
+    const modal = document.querySelector<HTMLDialogElement>('[data-ficha]');
+    if (!modal) return;
+
+    const trilho = modal.querySelector<HTMLElement>('[data-trilho]')!;
+    const pontos = modal.querySelector<HTMLElement>('[data-pontos]')!;
+    const rotulo = modal.querySelector<HTMLElement>('[data-carro-rotulo]')!;
+    const setas = [...modal.querySelectorAll<HTMLButtonElement>('[data-passo]')];
+    const set = (sel: string, v: string) => {
+      const el = modal.querySelector<HTMLElement>(sel);
+      if (el) el.textContent = v;
+    };
+
+    let atual: Imovel | null = null;
+    let slide = 0;
+
+    const irPara = (n: number, liso = true) => {
+      if (!atual) return;
+      slide = Math.max(0, Math.min(atual.fotos.length - 1, n));
+      trilho.scrollTo({ left: slide * trilho.clientWidth, behavior: liso && !reduz ? 'smooth' : 'auto' });
+      pintarEstado();
+    };
+
+    /* o estado do carrossel sai da posição real do trilho, e não de um contador
+       paralelo: assim arrastar com o dedo mexe nos pontos igual ao botão */
+    const pintarEstado = () => {
+      if (!atual) return;
+      rotulo.textContent = atual.fotos[slide]?.t ?? '';
+      [...pontos.children].forEach((p, i) =>
+        p.setAttribute('aria-selected', String(i === slide)),
+      );
+      setas[0].disabled = slide === 0;
+      setas[1].disabled = slide === atual.fotos.length - 1;
+    };
+
+    let quieto = 0;
+    trilho.addEventListener('scroll', () => {
+      clearTimeout(quieto);
+      quieto = window.setTimeout(() => {
+        const n = Math.round(trilho.scrollLeft / Math.max(1, trilho.clientWidth));
+        if (n !== slide) { slide = n; pintarEstado(); }
+      }, 90);
+    }, { passive: true });
+
+    setas.forEach((b) =>
+      b.addEventListener('click', () => irPara(slide + Number(b.dataset.passo))),
+    );
+    pontos.addEventListener('click', (ev) => {
+      const p = (ev.target as HTMLElement).closest<HTMLElement>('[data-ponto]');
+      if (p) irPara(Number(p.dataset.ponto));
+    });
+    /* seta do teclado anda no carrossel, que é o que se espera de uma galeria */
+    modal.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowRight') { ev.preventDefault(); irPara(slide + 1); }
+      if (ev.key === 'ArrowLeft') { ev.preventDefault(); irPara(slide - 1); }
+    });
+
+    function abrir(cod: string) {
+      const i = dados.find((d) => d.cod === cod);
+      if (!i) return;
+      atual = i;
+      slide = 0;
+
+      trilho.innerHTML = i.fotos
+        .map((f) => `<div class="carro-slide" role="group" aria-label="${f.t}">${f.svg}</div>`)
+        .join('');
+      pontos.innerHTML = i.fotos
+        .map((f, n) => `<button type="button" class="ponto" data-ponto="${n}" role="tab" aria-selected="${n === 0}" aria-label="${f.t}"></button>`)
+        .join('');
+      trilho.scrollTo({ left: 0, behavior: 'auto' });
+
+      const aluguel = i.negocio === 'Aluguel';
+      const mensal = i.condominio + i.iptu + (aluguel ? i.preco : 0);
+
+      set('[data-f-local]', `${i.bairro} · ${cidade}`);
+      set('[data-f-cod]', i.cod);
+      set('[data-f-nome]', i.nome);
+      set('[data-f-preco]', aluguel ? `${brl(i.preco)}/mês` : brl(i.preco));
+      set('[data-f-negocio]', aluguel ? 'aluguel + encargos' : `${i.tipo} à venda`);
+      set('[data-f-cond]', i.condominio ? brl(i.condominio) : 'Não há');
+      set('[data-f-iptu]', brl(i.iptu));
+      set('[data-f-mensal]', `${brl(mensal)}/mês`);
+      set('[data-f-desc]', i.descricao);
+      set('[data-f-preco2]', aluguel ? `${brl(i.preco)}/mês` : brl(i.preco));
+      set('[data-f-area]', `${i.area} m² · ${i.andar}`);
+
+      const atributos = [
+        { i: 'fa-solid fa-ruler-combined', v: `${i.area} m²`, r: 'Área útil' },
+        { i: 'fa-solid fa-bed', v: String(i.quartos), r: i.quartos === 1 ? 'Dormitório' : 'Dormitórios' },
+        { i: 'fa-solid fa-door-open', v: String(i.suites), r: i.suites === 1 ? 'Suíte' : 'Suítes' },
+        { i: 'fa-solid fa-shower', v: String(i.banheiros), r: 'Banheiros' },
+        { i: 'fa-solid fa-car', v: String(i.vagas), r: 'Vagas' },
+      ];
+      const elAtrib = modal.querySelector<HTMLElement>('[data-f-atributos]')!;
+      elAtrib.innerHTML = atributos
+        .map((a) => `<li class="at"><i class="${a.i}" aria-hidden="true"></i><b>${a.v}</b><span>${a.r}</span></li>`)
+        .join('');
+
+      const elItens = modal.querySelector<HTMLElement>('[data-f-itens]')!;
+      elItens.innerHTML = i.itens
+        .map((t) => `<li class="item"><i class="fa-solid fa-check" aria-hidden="true"></i>${t}</li>`)
+        .join('');
+
+      /* a mensagem já vai preenchida: o corretor recebe o código, não um "oi" */
+      const zap = modal.querySelector<HTMLAnchorElement>('[data-f-zap]');
+      if (zap) {
+        const numero = document.querySelector<HTMLElement>('[data-zap]')?.dataset.zap ?? '';
+        const msg =
+          `Olá! Vi o imóvel ${i.cod} — ${i.nome}, ${i.tipo} em ${i.bairro}, ` +
+          `${aluguel ? `${brl(i.preco)}/mês` : brl(i.preco)}. Gostaria de agendar uma visita.`;
+        zap.href = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
+      }
+
+      modal.showModal();
+      pintarEstado();
+
+      if (!reduz) {
+        animate(modal, { opacity: [0, 1], transform: ['scale(0.97)', 'scale(1)'] }, { duration: 0.32, ease: SAIDA });
+        animate(
+          modal.querySelectorAll('.ficha-corpo > *'),
+          { opacity: [0, 1], transform: ['translateY(12px)', 'translateY(0px)'] },
+          { duration: 0.45, delay: stagger(0.035, { startDelay: 0.1 }), ease: SAIDA },
+        );
+      }
+    }
+
+    document.querySelectorAll<HTMLElement>('[data-abrir]').forEach((b) => {
+      b.addEventListener('click', () => abrir(b.dataset.abrir!));
+    });
+    modal.querySelector('[data-fechar]')?.addEventListener('click', () => modal.close());
+    /* clique no fundo escuro fecha: o <dialog> recebe o clique fora do conteúdo */
+    modal.addEventListener('click', (ev) => {
+      if (ev.target === modal) modal.close();
+    });
+    /* o trilho precisa reposicionar quando a largura do modal muda */
+    new ResizeObserver(() => irPara(slide, false)).observe(trilho);
+  }
+
+  /* ═════════════ 3. entradas por scroll ═════════════ */
+  function ligarMovimento() {
+    if (reduz) return;
+
+    animate(
+      '[data-capa]',
+      { opacity: [0, 1], transform: ['translateY(22px)', 'translateY(0px)'] },
+      { duration: 0.85, delay: stagger(0.1, { startDelay: 0.1 }), ease: SAIDA },
+    );
+
+    /* agrupado por pai: o stagger corre entre irmãos, e não entre elementos que
+       só por acaso estão na mesma altura da página */
+    const grupos = new Map<Element, HTMLElement[]>();
+    document.querySelectorAll<HTMLElement>('[data-anima]').forEach((el) => {
+      const pai = el.parentElement!;
+      grupos.set(pai, [...(grupos.get(pai) ?? []), el]);
+    });
+
+    for (const [pai, filhos] of grupos) {
+      inView(
+        pai,
+        () => {
+          animate(
+            filhos,
+            { opacity: [0, 1], transform: ['translateY(20px)', 'translateY(0px)'] },
+            { duration: 0.65, delay: stagger(0.06), ease: SAIDA },
+          );
+        },
+        { amount: 0.12, margin: '0px 0px -8% 0px' },
+      );
+    }
+  }
+
+  const topo = document.querySelector<HTMLElement>('[data-topo]');
+  if (topo) {
+    const marcar = () => { topo.dataset.topo = scrollY > 12 ? 'rolou' : ''; };
+    marcar();
+    addEventListener('scroll', marcar, { passive: true });
+  }
+
+  filtrar();
+  ligarMovimento();
+
+  /* os dados do modal chegam do frontmatter pela ilha JSON */
+  const ilha = document.querySelector<HTMLElement>('[data-dados]');
+  if (ilha) {
+    const { imoveis, cidade } = JSON.parse(ilha.textContent || '{}');
+    ficha(imoveis, cidade);
+  }
+</script>

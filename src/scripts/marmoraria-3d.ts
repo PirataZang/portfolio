@@ -38,7 +38,7 @@ type Base = {
   cena: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   pedra: THREE.MeshPhysicalMaterial;
-  redimensionar: (zPerto?: number, zLonge?: number) => void;
+  redimensionar: (meiaL: number, meiaP: number, folga?: number) => void;
   destruirBase: () => void;
 };
 
@@ -104,15 +104,35 @@ function montarBase(canvas: HTMLCanvasElement, chaoY = -1.35): Base | null {
     envMapIntensity: 1.0,
   });
 
-  const redimensionar = (zPerto = 4.6, zLonge = 6.6) => {
-    const pai = canvas.parentElement;
-    if (!pai) return;
-    const w = pai.clientWidth;
-    const h = pai.clientHeight;
+  /*
+    A distância saía de dois números fixos, um para retrato e um para paisagem.
+    Em tela estreita o de retrato não bastava: a chapa tem 2,75 m de largura e
+    sangrava pelas duas bordas, cortada justamente onde o veio conta a história.
+
+    Agora o recuo é calculado: quanto a câmera precisa andar para a peça caber
+    na largura disponível, com `+ meiaP` somando a perspectiva — a quina da
+    frente está mais perto da lente e projeta maior que o centro.
+  */
+  const redimensionar = (meiaL: number, meiaP: number, folga = 1.06) => {
+    // o canvas mede a si mesmo: no celular ele divide o sticky com a folha
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    camera.position.z = camera.aspect < 1 ? zLonge : zPerto;
+    const tg = Math.tan((camera.fov * Math.PI) / 360);
+    // retrato é o quadro da peça: enquadra mais apertado, porque ela é o assunto
+    const f = camera.aspect < 0.95 ? folga * 0.93 : folga;
+    const porLargura = (meiaL * f) / (tg * camera.aspect) + meiaP;
+    const porAltura = (meiaL * 0.62 * f) / tg + meiaP;
+    camera.position.z = Math.max(porLargura, porAltura, 3.4);
+    /*
+      `lookAt` é rotação, não vínculo: rodava uma vez na montagem e ficava
+      valendo a inclinação daquele z. Ao recuar a câmera, a mesma inclinação
+      passava a apontar para baixo da peça e ela subia no quadro. Reapontar
+      aqui mantém a bancada no centro em qualquer distância.
+    */
+    camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
   };
 
@@ -253,7 +273,16 @@ export function criarBancada(canvas: HTMLCanvasElement): Cena | null {
     grupo.position.y = -0.12 + Math.sin(pr * Math.PI) * 0.06;
   };
 
-  b.redimensionar(4.4, 6.4);
+  /*
+    A peça gira de -1,15 a +0,60 rad. A maior largura projetada nesse intervalo
+    é quase a diagonal da chapa — enquadrar por ela é o que garante que nenhum
+    giro corte o tampo, com a mesma escala em todo o percurso.
+  */
+  const MEIA_L = Math.hypot(TAMPO_L / 2, TAMPO_P / 2);
+  const MEIA_P = TAMPO_P / 2;
+  const enquadrar = () => b.redimensionar(MEIA_L, MEIA_P);
+
+  enquadrar();
   atualizar(0);
 
   // dispose de material não solta textura: a foto tem que sair na mão
@@ -262,5 +291,5 @@ export function criarBancada(canvas: HTMLCanvasElement): Cena | null {
     b.destruirBase();
   };
 
-  return { atualizar, render, redimensionar: () => b.redimensionar(4.4, 6.4), destruir };
+  return { atualizar, render, redimensionar: enquadrar, destruir };
 }
