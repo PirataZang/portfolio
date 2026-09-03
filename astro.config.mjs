@@ -18,7 +18,7 @@ const { VITE_BASE_URL } = loadEnv(process.env.NODE_ENV ?? 'development', process
 const base = VITE_BASE_URL ? `/${VITE_BASE_URL.replace(/^\/|\/$/g, '')}/` : '/';
 
 export default defineConfig({
-  base,
+  base: '/',
   server: {
     // 0.0.0.0 e não localhost: sem isso o servidor só escuta dentro do
     // container e o bind de porta do docker não alcança. Vale para `dev` e
