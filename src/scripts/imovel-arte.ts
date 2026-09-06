@@ -70,7 +70,14 @@ export function fachada(chave: string, tipo: string, p: Paleta = PALETA) {
   const r = semente(sementeDe(chave));
   const id = `f${sementeDe(chave) % 9999}`;
   const casa = tipo === 'Casa' || tipo === 'Sobrado';
-  const andares = casa ? (tipo === 'Sobrado' ? 2 : 1) : 5 + Math.floor(r() * 6);
+  /*
+    O loft desta carteira é galpão fabril convertido, de dois pavimentos — não
+    torre. Desenhá-lo com dez andares contradiz a própria descrição do anúncio,
+    e imagem que briga com o texto é o que faz o site parecer montado sem
+    ninguém olhar.
+  */
+  const baixo = tipo === 'Loft';
+  const andares = casa ? (tipo === 'Sobrado' ? 2 : 1) : baixo ? 3 : 5 + Math.floor(r() * 6);
 
   let s = abrir(id, p);
   s += `<rect width="800" height="600" fill="url(#c-${id})"/>`;
@@ -107,7 +114,7 @@ export function fachada(chave: string, tipo: string, p: Paleta = PALETA) {
       }
     }
   } else {
-    const larg = 300;
+    const larg = baixo ? 460 : 300;
     const x = (800 - larg) / 2;
     const altAndar = 62;
     const alt = andares * altAndar;
@@ -120,8 +127,9 @@ export function fachada(chave: string, tipo: string, p: Paleta = PALETA) {
     s += `<rect x="${x + larg + 14}" y="${y + 118}" width="92" height="${alt - 118}" rx="20" fill="${p.claro}"/>`;
     for (let a = 0; a < andares; a++) {
       const jy = y + 18 + a * altAndar;
-      for (let c = 0; c < 3; c++) {
-        const jx = x + 26 + c * 88;
+      const colunas = baixo ? 5 : 3;
+      for (let c = 0; c < colunas; c++) {
+        const jx = x + 26 + c * (baixo ? 84 : 88);
         const aceso = r() > 0.45;
         s += `<rect x="${jx}" y="${jy}" width="62" height="38" rx="10" fill="${aceso ? p.azul : p.ceu2}" opacity="${aceso ? 0.85 : 0.6}"/>`;
       }

@@ -24,7 +24,8 @@ import { galeria } from '../../../scripts/imovel-arte';
 const LOJA = {
   nome: 'Meridiano',
   sub: 'Imóveis',
-  creci: 'CRECI-J 99.999',
+  creci: 'CRECI-J 99.999 · SC',
+  corretor: 'Helena Braz',
   cidade: 'Porto Sereno',
   uf: 'SC',
   rua: 'Av. das Enseadas, 900',
@@ -47,7 +48,7 @@ const LOJA = {
 */
 const IMOVEIS = [
   {
-    cod: 'MR-1042', nome: 'Residencial Alvorada', tipo: 'Apartamento', negocio: 'Venda',
+    cod: 'MR-1042', atualizado: '2026-08-30', exclusivo: true, financia: true, predio: 'Entregue em 2013 · 4 unidades por andar', nome: 'Residencial Alvorada', tipo: 'Apartamento', negocio: 'Venda',
     bairro: 'Vila Aurora', preco: 780000, area: 92, quartos: 3, suites: 1, banheiros: 2, vagas: 2,
     andar: '8º andar', condominio: 720, iptu: 190, destaque: true,
     resumo: 'Três dormitórios com suíte e varanda voltada para o parque.',
@@ -56,7 +57,7 @@ const IMOVEIS = [
     itens: ['Varanda integrada', 'Armários planejados', 'Vidro duplo na sala', 'Duas vagas cobertas', 'Portaria 24h', 'Salão de festas'],
   },
   {
-    cod: 'MR-1077', nome: 'Casa Jardim Meridiano', tipo: 'Casa', negocio: 'Venda',
+    cod: 'MR-1077', atualizado: '2026-08-27', exclusivo: false, financia: true, predio: 'Construída em 2016', nome: 'Casa Jardim Meridiano', tipo: 'Casa', negocio: 'Venda',
     bairro: 'Jardim Meridiano', preco: 1250000, area: 210, quartos: 4, suites: 2, banheiros: 4, vagas: 3,
     andar: 'Térrea', condominio: 0, iptu: 340,
     resumo: 'Casa térrea em terreno de 450 m², com piscina e churrasqueira.',
@@ -65,7 +66,7 @@ const IMOVEIS = [
     itens: ['Terreno de 450 m²', 'Piscina 6 × 3', 'Área gourmet coberta', 'Pé-direito 3,10 m', 'Aquecimento solar', 'Três vagas'],
   },
   {
-    cod: 'MR-1103', nome: 'Studio Farol', tipo: 'Studio', negocio: 'Aluguel',
+    cod: 'MR-1103', atualizado: '2026-09-01', exclusivo: true, financia: false, predio: 'Entregue em 2022', nome: 'Studio Farol', tipo: 'Studio', negocio: 'Aluguel',
     bairro: 'Bairro Farol', preco: 2400, area: 38, quartos: 1, suites: 0, banheiros: 1, vagas: 1,
     andar: '14º andar', condominio: 480, iptu: 70,
     resumo: 'Studio mobiliado no 14º andar, a duas quadras da orla.',
@@ -74,7 +75,7 @@ const IMOVEIS = [
     itens: ['Mobiliado', 'Coworking no prédio', 'Lavanderia coletiva', 'Bicicletário', 'Pet friendly', 'Uma vaga'],
   },
   {
-    cod: 'MR-1118', nome: 'Cobertura Enseada', tipo: 'Cobertura', negocio: 'Venda',
+    cod: 'MR-1118', atualizado: '2026-08-19', exclusivo: true, financia: true, predio: 'Entregue em 2019 · 2 unidades por andar', nome: 'Cobertura Enseada', tipo: 'Cobertura', negocio: 'Venda',
     bairro: 'Alto da Enseada', preco: 2480000, area: 268, quartos: 4, suites: 3, banheiros: 5, vagas: 4,
     andar: '19º e 20º', condominio: 1980, iptu: 640, destaque: true,
     resumo: 'Cobertura duplex com terraço de 90 m² e vista para a baía.',
@@ -83,7 +84,7 @@ const IMOVEIS = [
     itens: ['Terraço de 90 m²', 'Vista permanente da baía', 'Spa no terraço', 'Master com closet', 'Elevador privativo', 'Quatro vagas'],
   },
   {
-    cod: 'MR-1126', nome: 'Sobrado Costa Nova', tipo: 'Sobrado', negocio: 'Venda',
+    cod: 'MR-1126', atualizado: '2026-08-25', exclusivo: false, financia: true, predio: 'Construído em 2018 · condomínio de 42 casas', nome: 'Sobrado Costa Nova', tipo: 'Sobrado', negocio: 'Venda',
     bairro: 'Costa Nova', preco: 890000, area: 168, quartos: 3, suites: 1, banheiros: 3, vagas: 2,
     andar: 'Dois pavimentos', condominio: 380, iptu: 220,
     resumo: 'Sobrado em condomínio fechado, com quintal e área gourmet.',
@@ -92,7 +93,7 @@ const IMOVEIS = [
     itens: ['Condomínio fechado', 'Quintal murado', 'Área gourmet', 'Quadra e playground', 'Espaço para piscina', 'Duas vagas'],
   },
   {
-    cod: 'MR-1149', nome: 'Edifício Dunas', tipo: 'Apartamento', negocio: 'Aluguel',
+    cod: 'MR-1149', atualizado: '2026-09-02', exclusivo: false, financia: false, predio: 'Entregue em 2015', nome: 'Edifício Dunas', tipo: 'Apartamento', negocio: 'Aluguel',
     bairro: 'Parque das Dunas', preco: 3200, area: 74, quartos: 2, suites: 1, banheiros: 2, vagas: 1,
     andar: '5º andar', condominio: 610, iptu: 130,
     resumo: 'Dois dormitórios com suíte, de frente para a praça.',
@@ -101,7 +102,7 @@ const IMOVEIS = [
     itens: ['Varanda com churrasqueira', 'Suíte', 'Academia no prédio', 'Piscina', 'Água e gás inclusos', 'Uma vaga'],
   },
   {
-    cod: 'MR-1155', nome: 'Loft Vila Bandeira', tipo: 'Loft', negocio: 'Venda',
+    cod: 'MR-1155', atualizado: '2026-08-14', exclusivo: true, financia: true, predio: 'Galpão de 1948, retrofit em 2021', nome: 'Loft Vila Bandeira', tipo: 'Loft', negocio: 'Venda',
     bairro: 'Vila Bandeira', preco: 615000, area: 66, quartos: 1, suites: 1, banheiros: 2, vagas: 1,
     andar: '2º andar', condominio: 420, iptu: 110,
     resumo: 'Loft de pé-direito duplo em antiga fábrica restaurada.',
@@ -110,7 +111,7 @@ const IMOVEIS = [
     itens: ['Pé-direito de 5,40 m', 'Tijolo aparente original', 'Mezanino', 'Janela industrial', 'Prédio tombado', 'Uma vaga'],
   },
   {
-    cod: 'MR-1168', nome: 'Residencial Morro Azul', tipo: 'Apartamento', negocio: 'Venda',
+    cod: 'MR-1168', atualizado: '2026-08-31', exclusivo: false, financia: true, predio: 'Entregue em 1998 · sem elevador', nome: 'Residencial Morro Azul', tipo: 'Apartamento', negocio: 'Venda',
     bairro: 'Morro Azul', preco: 445000, area: 58, quartos: 2, suites: 0, banheiros: 1, vagas: 1,
     andar: '3º andar', condominio: 390, iptu: 85,
     resumo: 'Dois dormitórios reformado, pronto para entrar.',
@@ -119,7 +120,7 @@ const IMOVEIS = [
     itens: ['Reformado em 2025', 'Elétrica refeita', 'Aceita financiamento', 'Sem taxa de condomínio alta', 'Perto do terminal', 'Uma vaga'],
   },
   {
-    cod: 'MR-1174', nome: 'Casa Riacho Doce', tipo: 'Casa', negocio: 'Aluguel',
+    cod: 'MR-1174', atualizado: '2026-08-22', exclusivo: false, financia: false, predio: 'Construída em 2009', nome: 'Casa Riacho Doce', tipo: 'Casa', negocio: 'Aluguel',
     bairro: 'Riacho Doce', preco: 4800, area: 140, quartos: 3, suites: 1, banheiros: 2, vagas: 2,
     andar: 'Térrea', condominio: 0, iptu: 180,
     resumo: 'Casa térrea com jardim, em rua sem saída.',
@@ -128,7 +129,7 @@ const IMOVEIS = [
     itens: ['Rua sem saída', 'Jardim e quintal', 'Aquecimento solar', 'Aceita pets sem restrição', 'Cozinha com armários', 'Duas vagas'],
   },
   {
-    cod: 'MR-1190', nome: 'Terraço Praia do Sol', tipo: 'Cobertura', negocio: 'Venda',
+    cod: 'MR-1190', atualizado: '2026-08-28', exclusivo: true, financia: true, predio: 'Entregue em 2021 · 2 unidades por andar', nome: 'Terraço Praia do Sol', tipo: 'Cobertura', negocio: 'Venda',
     bairro: 'Praia do Sol', preco: 1690000, area: 176, quartos: 3, suites: 2, banheiros: 4, vagas: 3,
     andar: '12º andar', condominio: 1240, iptu: 410,
     resumo: 'Cobertura sem duplex, toda em um piso, com terraço frontal.',
@@ -150,16 +151,29 @@ const preco = (i: (typeof IMOVEIS)[number]) =>
 
 const TIPOS = [...new Set(IMOVEIS.map((i) => i.tipo))];
 
-const NUMEROS = [
-  { v: '18', u: 'anos', d: 'de carteira na cidade' },
-  { v: '340', u: '+', d: 'famílias atendidas' },
-  { v: '21', u: 'dias', d: 'média até a proposta' },
-  { v: '100', u: '%', d: 'com documentação conferida' },
-];
+/*
+  Quando o anúncio foi mexido pela última vez. Relativo enquanto é recente,
+  porque é assim que se lê ("há 3 dias" diz mais que "01/09"); vira data
+  absoluta depois de dois meses, senão um build antigo passa a anunciar
+  "atualizado há 400 dias" — que é pior do que não dizer nada.
+*/
+const HOJE = new Date('2026-09-04T12:00:00');
+function desdeQuando(iso: string) {
+  const d = new Date(`${iso}T12:00:00`);
+  const dias = Math.round((HOJE.getTime() - d.getTime()) / 86400000);
+  if (dias <= 0) return 'atualizado hoje';
+  if (dias === 1) return 'atualizado ontem';
+  if (dias <= 60) return `atualizado há ${dias} dias`;
+  return `atualizado em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;
+}
+
+/* o destaque abre a página; o resto vai para a grade */
+const VITRINE = COM_ARTE.find((i) => i.destaque) ?? COM_ARTE[0];
+const ATUALIZADO = [...IMOVEIS].sort((a, b) => (a.atualizado < b.atualizado ? 1 : -1))[0];
 
 const titulo = `${LOJA.nome} ${LOJA.sub} — imóveis à venda e para alugar em ${LOJA.cidade}`;
 const descricao =
-  'Imobiliária em Porto Sereno: apartamentos, casas, coberturas, lofts e studios à venda e para alugar. Ficha completa, planta e agendamento de visita pelo WhatsApp.';
+  'Imobiliária em Porto Sereno (SC) com carteira de dez imóveis: apartamentos, casas, coberturas, lofts e studios, à venda e para alugar. Cada ficha traz metragem medida, planta, condomínio e IPTU, e a visita se agenda pelo WhatsApp.';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -243,7 +257,6 @@ const jsonLd = {
 
         <nav class="topo-nav" aria-label="Seções">
           <a href="#carteira">Imóveis</a>
-          <a href="#como">Como funciona</a>
           <a href="#sobre">Sobre</a>
           <a href="#contato">Contato</a>
         </nav>
@@ -257,88 +270,102 @@ const jsonLd = {
     </header>
 
     <main id="conteudo">
-      {/* ═════════════════ ABERTURA ═════════════════ */}
-      <section class="capa" id="inicio">
-        <div class="caixa capa-caixa">
-          <p class="olho" data-capa>
-            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-            {LOJA.cidade} · {LOJA.uf}
-          </p>
-          <h1 data-capa>
-            A casa certa<br />
-            <span>com a conta fechando.</span>
-          </h1>
-          <p class="capa-d" data-capa>
-            Carteira enxuta e conferida: {IMOVEIS.length} imóveis, cada um com metragem
-            real medida por nós, condomínio e IPTU na ficha, e documentação
-            checada antes de entrar no site.
-          </p>
+      {/*
+        ═════════════════ ABERTURA ═════════════════
 
-          <div class="capa-acoes" data-capa>
-            <a class="btn btn-azul btn-g" href="#carteira">
-              <i class="fa-solid fa-house" aria-hidden="true"></i>
-              Ver os imóveis
-            </a>
-            <a class="btn btn-vaz btn-g" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
-              <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-              Falar com um corretor
-            </a>
+        A abertura mostra um imóvel, não um slogan. Quem entra num site de
+        imobiliária quer ver imóvel — e o texto ao lado só precisa dizer que
+        carteira é essa. Composição assimétrica de propósito: coluna estreita
+        de texto contra o anúncio largo, para a página não abrir com o mesmo
+        bloco centrado de sempre.
+      */}
+      <section class="abertura" id="inicio">
+        <div class="caixa abertura-grade">
+          <div class="abertura-txt">
+            <p class="olho" data-capa>
+              <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+              {LOJA.cidade} · {LOJA.uf}
+            </p>
+            <h1 data-capa>
+              {IMOVEIS.length} imóveis por vez.<br />
+              <span>Todos visitados por nós.</span>
+            </h1>
+            <p class="abertura-d" data-capa>
+              Medimos a metragem com trena, lemos a matrícula e somamos
+              condomínio e IPTU antes de publicar. Se o imóvel tem problema,
+              está escrito na ficha.
+            </p>
+            <p class="abertura-acoes" data-capa>
+              <a class="btn btn-azul" href="#carteira">Ver a carteira</a>
+              <a class="elo" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
+                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                Falar com {LOJA.corretor.split(' ')[0]}
+              </a>
+            </p>
           </div>
 
-          <ul class="capa-selos" data-capa>
-            <li><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> Metragem medida</li>
-            <li><i class="fa-solid fa-file-shield" aria-hidden="true"></i> Documentação checada</li>
-            <li><i class="fa-solid fa-eye" aria-hidden="true"></i> Custo total à vista</li>
-          </ul>
-        </div>
-      </section>
-
-      {/* ═════════════════ NÚMEROS ═════════════════ */}
-      <section class="faixa">
-        <div class="caixa">
-          <ul class="numeros">
-            {NUMEROS.map((n) => (
-              <li data-anima>
-                <p class="num-v">{n.v}<small>{n.u}</small></p>
-                <p class="num-d">{n.d}</p>
-              </li>
-            ))}
-          </ul>
+          {/* o destaque da semana, com a mesma ficha do card da grade */}
+          <article class="vitrine" data-capa>
+            <button type="button" class="vitrine-btn" data-abrir={VITRINE.cod}
+                    aria-label={`Ver ficha de ${VITRINE.nome}`}>
+              <span class="vitrine-arte" set:html={VITRINE.fotos[0].svg} />
+              <span class="vitrine-tarja">
+                <span class="fita">{VITRINE.negocio}</span>
+                <span class="vitrine-ref">{VITRINE.cod}</span>
+              </span>
+              <span class="vitrine-corpo">
+                <span class="vitrine-topo">
+                  <span>
+                    <span class="vitrine-local">{VITRINE.bairro} · {LOJA.cidade}</span>
+                    <span class="vitrine-nome">{VITRINE.nome}</span>
+                  </span>
+                  <span class="vitrine-preco">{preco(VITRINE)}</span>
+                </span>
+                <span class="vitrine-ficha">
+                  <span>{VITRINE.area} m²</span>
+                  <span>{VITRINE.quartos} dorm.</span>
+                  <span>{VITRINE.vagas} vagas</span>
+                  <span>{VITRINE.andar}</span>
+                </span>
+                <span class="vitrine-ver">Ver ficha completa <i class="fa-solid fa-arrow-right" aria-hidden="true" /></span>
+              </span>
+            </button>
+          </article>
         </div>
       </section>
 
       {/* ═════════════════ CARTEIRA ═════════════════ */}
-      <section class="secao" id="carteira">
+      <section class="secao carteira" id="carteira">
         <div class="caixa">
-          <header class="cab" data-anima>
-            <p class="olho"><i class="fa-solid fa-building" aria-hidden="true"></i>A carteira</p>
-            <h2>Todos os imóveis, com a conta inteira</h2>
-            <p class="lead">
-              Toque no cartão para abrir a ficha: fotos, planta, descrição, o que
-              está incluso e o custo mensal somado — condomínio e IPTU juntos, e
-              não escondidos na letra miúda.
-            </p>
-          </header>
-
           {/*
-            Filtro por negócio e tipo. É a primeira pergunta de quem procura
-            imóvel, então vem antes da grade e não dentro de um menu escondido.
+            Barra de listagem, e não cabeçalho de seção: título, contagem e
+            filtros na mesma faixa. É o que um portal de imóvel faz, e evita
+            repetir pela terceira vez o par "olho + título + lead".
           */}
-          <div class="filtros" data-anima role="group" aria-label="Filtrar imóveis">
-            <div class="filtro-grupo" role="group" aria-label="Tipo de negócio">
-              <button type="button" class="chip ativo" data-negocio="todos" aria-pressed="true">Todos</button>
-              <button type="button" class="chip" data-negocio="Venda" aria-pressed="false">Venda</button>
-              <button type="button" class="chip" data-negocio="Aluguel" aria-pressed="false">Aluguel</button>
+          <div class="carteira-topo" data-anima>
+            <div>
+              <h2>A carteira</h2>
+              <p class="carteira-nota">
+                <span data-conta aria-live="polite">{IMOVEIS.length} imóveis</span>
+                <span class="ponto" aria-hidden="true">·</span>
+                {desdeQuando(ATUALIZADO.atualizado)}
+              </p>
             </div>
-            <div class="filtro-grupo" role="group" aria-label="Tipo de imóvel">
-              <button type="button" class="chip ativo" data-tipo="todos" aria-pressed="true">Qualquer tipo</button>
-              {TIPOS.map((t) => (
-                <button type="button" class="chip" data-tipo={t} aria-pressed="false">{t}</button>
-              ))}
+
+            <div class="filtros" role="group" aria-label="Filtrar imóveis">
+              <div class="filtro-grupo" role="group" aria-label="Tipo de negócio">
+                <button type="button" class="chip ativo" data-negocio="todos" aria-pressed="true">Todos</button>
+                <button type="button" class="chip" data-negocio="Venda" aria-pressed="false">Venda</button>
+                <button type="button" class="chip" data-negocio="Aluguel" aria-pressed="false">Aluguel</button>
+              </div>
+              <div class="filtro-grupo" role="group" aria-label="Tipo de imóvel">
+                <button type="button" class="chip ativo" data-tipo="todos" aria-pressed="true">Qualquer tipo</button>
+                {TIPOS.map((t) => (
+                  <button type="button" class="chip" data-tipo={t} aria-pressed="false">{t}</button>
+                ))}
+              </div>
             </div>
           </div>
-
-          <p class="conta" data-conta aria-live="polite">{IMOVEIS.length} imóveis</p>
 
           <ul class="grade">
             {
@@ -349,27 +376,38 @@ const jsonLd = {
                     <span class="cartao-arte" set:html={i.fotos[0].svg} />
                     <span class="cartao-fitas">
                       <span class:list={['fita', i.negocio === 'Aluguel' && 'fita-alt']}>{i.negocio}</span>
-                      {i.destaque && <span class="fita fita-dest">Destaque</span>}
+                      {i.exclusivo && <span class="fita fita-dest">Exclusivo</span>}
                     </span>
 
                     <span class="cartao-corpo">
+                      {/* ref e data: os dois dados que separam anúncio de enfeite */}
+                      <span class="cartao-meta">
+                        <b>{i.cod}</b>
+                        <span class="ponto" aria-hidden="true">·</span>
+                        {desdeQuando(i.atualizado)}
+                      </span>
+                      <span class="cartao-nome">{i.nome}</span>
                       <span class="cartao-local">
                         <i class="fa-solid fa-location-dot" aria-hidden="true" />
                         {i.bairro} · {LOJA.cidade}
                       </span>
-                      <span class="cartao-nome">{i.nome}</span>
-                      <span class="cartao-resumo">{i.resumo}</span>
 
                       <span class="cartao-ficha">
-                        <span><i class="fa-solid fa-ruler-combined" aria-hidden="true" />{i.area} m²</span>
-                        <span><i class="fa-solid fa-bed" aria-hidden="true" />{i.quartos}</span>
-                        <span><i class="fa-solid fa-shower" aria-hidden="true" />{i.banheiros}</span>
-                        <span><i class="fa-solid fa-car" aria-hidden="true" />{i.vagas}</span>
+                        <span>{i.area} m²</span>
+                        <span>{i.quartos} dorm.</span>
+                        {i.suites > 0 && <span>{i.suites} suíte{i.suites > 1 ? 's' : ''}</span>}
+                        <span>{i.vagas} vaga{i.vagas > 1 ? 's' : ''}</span>
                       </span>
 
                       <span class="cartao-pe">
-                        <span class="cartao-preco">{preco(i)}</span>
-                        <span class="cartao-ver">Ver ficha <i class="fa-solid fa-arrow-right" aria-hidden="true" /></span>
+                        <span class="cartao-valor">
+                          <b>{preco(i)}</b>
+                          <small>
+                            {i.condominio > 0 ? `+ ${brl(i.condominio)} cond.` : 'sem condomínio'}
+                            {i.financia && i.negocio === 'Venda' ? ' · aceita financiamento' : ''}
+                          </small>
+                        </span>
+                        <span class="cartao-ver" aria-hidden="true"><i class="fa-solid fa-arrow-right" /></span>
                       </span>
                     </span>
                   </button>
@@ -385,66 +423,43 @@ const jsonLd = {
         </div>
       </section>
 
-      {/* ═════════════════ COMO FUNCIONA ═════════════════ */}
-      <section class="secao passos" id="como">
-        <div class="caixa">
-          <header class="cab cab-centro" data-anima>
-            <p class="olho"><i class="fa-solid fa-route" aria-hidden="true"></i>Como funciona</p>
-            <h2>Da ficha à chave, em quatro passos</h2>
-          </header>
+      {/*
+        ═════════════════ SOBRE ═════════════════
 
-          <ol class="grade-passos">
-            {[
-              { i: 'fa-solid fa-magnifying-glass', t: 'Você escolhe', d: 'Abre a ficha, vê planta, custo mensal e o que está incluso. Nada de “consulte valores”.' },
-              { i: 'fa-solid fa-calendar-check', t: 'Agenda a visita', d: 'Um toque manda a mensagem já preenchida com o código do imóvel. Respondemos em minutos.' },
-              { i: 'fa-solid fa-file-signature', t: 'Proposta e análise', d: 'Proposta por escrito, análise de crédito e conferência da documentação — tudo antes de qualquer sinal.' },
-              { i: 'fa-solid fa-key', t: 'Assinatura e chave', d: 'Contrato revisado, vistoria com laudo fotográfico e entrega das chaves.' },
-            ].map((p, n) => (
-              <li data-anima>
-                <span class="passo-n">{String(n + 1).padStart(2, '0')}</span>
-                <span class="passo-i" aria-hidden="true"><i class={p.i} /></span>
-                <h3>{p.t}</h3>
-                <p>{p.d}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* ═════════════════ SOBRE ═════════════════ */}
-      <section class="secao" id="sobre">
+        Só texto e a ficha da imobiliária. Os três cartões de "promessa" que
+        moravam aqui repetiam, em caixa, o que o parágrafo ao lado já dizia em
+        prosa — e três caixas iguais é justamente o que faz a página parecer
+        montada por gerador.
+      */}
+      <section class="secao sobre" id="sobre">
         <div class="caixa sobre-grade">
           <div data-anima>
             <p class="olho"><i class="fa-solid fa-handshake" aria-hidden="true"></i>Sobre</p>
             <h2>Carteira pequena, de propósito</h2>
             <p class="sobre-p">
-              Trabalhamos com {IMOVEIS.length} imóveis por vez. Não é modéstia: é
-              o número que dá para visitar pessoalmente, medir com trena, conferir
-              matrícula e conhecer o síndico antes de anunciar. Imobiliária com
-              mil anúncios não conhece nenhum deles.
+              Trabalhamos com cerca de dez imóveis por vez. Não é modéstia: é o
+              número que dá para visitar pessoalmente, medir com trena, conferir
+              matrícula e conhecer o síndico antes de anunciar.
             </p>
             <p class="sobre-p">
-              Por isso a ficha traz metragem real e não a da escritura, custo
-              mensal somado e o que precisa de reforma. Se o imóvel tem problema,
-              está escrito na descrição — descobrir na visita custa o seu sábado.
+              Por isso a ficha traz a metragem que medimos e não a da escritura,
+              o custo mensal somado e o que precisa de reforma. Descobrir na
+              visita custa o seu sábado.
+            </p>
+            <p class="sobre-p">
+              Quem atende é sempre a mesma pessoa, do primeiro WhatsApp à
+              entrega da chave. Não passamos o cliente de corretor em corretor.
             </p>
           </div>
 
-          <ul class="promessas" data-anima>
-            {[
-              { i: 'fa-solid fa-ruler-combined', t: 'Metragem conferida', d: 'Medimos com trena laser. Se diferir da escritura, os dois números aparecem.' },
-              { i: 'fa-solid fa-file-shield', t: 'Matrícula lida', d: 'Certidão conferida antes do anúncio. Imóvel com pendência não entra.' },
-              { i: 'fa-solid fa-calculator', t: 'Custo total', d: 'Condomínio e IPTU somados na ficha, para você comparar o que de fato vai sair do bolso.' },
-            ].map((p) => (
-              <li>
-                <span class="prom-i" aria-hidden="true"><i class={p.i} /></span>
-                <div>
-                  <h3>{p.t}</h3>
-                  <p>{p.d}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {/* ficha da empresa: dado verificável, não selo de confiança */}
+          <dl class="ficha-empresa" data-anima>
+            <div><dt>Responsável técnico</dt><dd>{LOJA.corretor}</dd></div>
+            <div><dt>Registro</dt><dd>{LOJA.creci}</dd></div>
+            <div><dt>Escritório</dt><dd>{LOJA.rua} · {LOJA.bairro}</dd></div>
+            <div><dt>Atendimento</dt><dd>Seg a sex, 9h–18h · sáb, 9h–13h</dd></div>
+            <div><dt>Visitas</dt><dd>Agendadas, inclusive sábado de manhã</dd></div>
+          </dl>
         </div>
       </section>
 
@@ -452,11 +467,23 @@ const jsonLd = {
       <section class="secao contato" id="contato">
         <div class="caixa">
           <div class="chamada" data-anima>
-            <div>
+            <div class="chamada-txt">
               <h2>Achou um, ou não achou nenhum?</h2>
               <p>
-                Nos dois casos, fale com a gente. Se o imóvel que você procura não
-                está aqui, procuramos — e avisamos quando entrar na carteira.
+                Nos dois casos, fale com a gente. Se o que você procura não está
+                na carteira, procuramos — e avisamos quando entrar.
+              </p>
+              {/*
+                O caminho da visita em uma linha. Era uma grade de quatro
+                cartões numerados com ícone; virou uma frase, que é o tamanho
+                que a informação merece.
+              */}
+              <p class="chamada-passos">
+                Visita agendada por WhatsApp
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                proposta por escrito
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                documentação conferida antes do sinal
               </p>
             </div>
             <div class="chamada-acoes">
@@ -563,6 +590,12 @@ const jsonLd = {
           </dl>
 
           <ul class="ficha-ficha" data-f-atributos></ul>
+
+          {/* a linha do prédio: idade e porte, o que ninguém põe e todo mundo pergunta */}
+          <p class="ficha-predio">
+            <i class="fa-solid fa-building" aria-hidden="true"></i>
+            <span data-f-predio>—</span>
+          </p>
 
           <h3 class="ficha-t">Sobre o imóvel</h3>
           <p class="ficha-desc" data-f-desc>—</p>
@@ -728,37 +761,82 @@ const jsonLd = {
   }
 
   /* ---------- abertura ---------- */
-  .capa { position: relative; padding-block: clamp(2.6rem, 9vw, 5.5rem) clamp(2.4rem, 6vw, 4rem); }
-  .capa-caixa { max-width: 900px; text-align: center; }
-  .capa .olho { margin-inline: auto; }
-  .capa-d { margin: 1.4rem auto 0; max-width: 56ch; color: var(--c60); font-size: 1.02rem; }
-  .capa-acoes { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
-  .capa-acoes .btn { flex: 1 1 15rem; max-width: 20rem; }
-  .capa-selos {
-    list-style: none; margin: 2.2rem 0 0; padding: 0;
-    display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center;
+  /*
+    Assimétrica: texto estreito contra o anúncio largo. No celular a ordem
+    inverte pouco — texto primeiro, porque é ele que diz que carteira é essa,
+    e o imóvel logo abaixo, ainda na primeira rolagem.
+  */
+  .abertura { position: relative; padding-block: clamp(2rem, 6vw, 4rem) clamp(2.4rem, 6vw, 4rem); }
+  .abertura-grade { display: grid; gap: clamp(1.8rem, 4vw, 3rem); align-items: center; }
+  @media (min-width: 940px) {
+    .abertura-grade { grid-template-columns: 0.82fr 1.18fr; gap: clamp(2.4rem, 4vw, 4rem); }
   }
-  .capa-selos li {
+  .abertura-d { margin-top: 1.2rem; color: var(--c60); font-size: 1rem; max-width: 42ch; }
+  .abertura-acoes { margin-top: 1.8rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.4rem; }
+  /* o segundo caminho é um elo de texto, não um segundo botão: dois botões
+     lado a lado dividem a atenção e nenhum vira ação principal */
+  .elo {
     display: inline-flex; align-items: center; gap: 0.5rem;
-    padding: 0.5rem 1rem; border-radius: 999px;
-    background: var(--branco); border: 1px solid var(--borda);
-    font-size: 0.82rem; color: var(--c60); box-shadow: var(--s1);
+    color: var(--azul-esc); font-weight: 600; font-size: 0.92rem;
+    text-decoration: none; border-bottom: 1px solid transparent; padding-bottom: 2px;
+    transition: border-color var(--t) var(--e);
   }
-  .capa-selos i { color: var(--azul); }
+  .elo:hover { border-bottom-color: var(--azul-esc); }
 
-  /* ---------- números ---------- */
-  .faixa { position: relative; }
-  .numeros {
-    list-style: none; margin: 0; padding: 0;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
-    background: var(--borda); border: 1px solid var(--borda);
-    border-radius: var(--raio-g); overflow: hidden; box-shadow: var(--s1);
+  /* ---------- vitrine (o destaque da abertura) ---------- */
+  .vitrine { min-width: 0; }
+  .vitrine-btn {
+    display: block; width: 100%; padding: 0; overflow: hidden; cursor: pointer;
+    text-align: left; font-family: inherit; color: inherit;
+    background: var(--branco); border: 1px solid var(--borda);
+    border-radius: var(--raio-xg); box-shadow: var(--s2);
+    transition: border-color var(--t) var(--e), box-shadow var(--t) var(--e);
   }
-  @media (min-width: 760px) { .numeros { grid-template-columns: repeat(4, 1fr); } }
-  .numeros li { background: var(--branco); padding: clamp(1.2rem, 3vw, 1.9rem) 1rem; text-align: center; }
-  .num-v { font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 4.6vw, 2.6rem); font-weight: 700; line-height: 1; color: var(--azul-esc); }
-  .num-v small { font-size: 0.42em; margin-left: 0.15em; color: var(--c40); }
-  .num-d { margin-top: 0.4rem; font-size: 0.8rem; color: var(--c60); }
+  .vitrine-btn:hover { border-color: var(--claro-3); box-shadow: var(--s3); }
+  .vitrine-arte { display: block; position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--claro-2); }
+  .vitrine-arte :global(svg) { display: block; width: 100%; height: 100%; }
+  .vitrine-tarja {
+    position: absolute; top: 1rem; left: 1rem; right: 1rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+  }
+  .vitrine-ref {
+    padding: 0.3rem 0.7rem; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92); color: var(--marinho);
+    font-family: ui-monospace, monospace; font-size: 0.7rem; box-shadow: var(--s1);
+  }
+  .vitrine-corpo { display: grid; gap: 0.9rem; padding: 1.3rem clamp(1.2rem, 3vw, 1.8rem) 1.4rem; }
+  .vitrine-topo { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.6rem 1.2rem; }
+  .vitrine-local { display: block; font-size: 0.78rem; color: var(--c40); }
+  .vitrine-nome { display: block; font-family: 'Outfit', sans-serif; font-size: clamp(1.25rem, 3vw, 1.6rem); font-weight: 600; letter-spacing: -0.01em; }
+  .vitrine-preco { font-family: 'Outfit', sans-serif; font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 700; color: var(--azul-esc); }
+  .vitrine-ficha {
+    display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem;
+    padding-top: 0.9rem; border-top: 1px solid var(--borda);
+    font-size: 0.84rem; color: var(--c60);
+  }
+  /* separador entre os itens da ficha, sem precisar de um <span> por vão */
+  .vitrine-ficha > span + span::before { content: '·'; margin-right: 0.8rem; color: var(--c40); }
+  .vitrine-ver {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.85rem; font-weight: 600; color: var(--azul-esc);
+  }
+  .vitrine-ver i { font-size: 0.7rem; transition: translate var(--t) var(--e); }
+  .vitrine-btn:hover .vitrine-ver i { translate: 4px 0; }
+
+  /* ---------- barra da carteira ---------- */
+  .carteira-topo {
+    display: grid; gap: 1.2rem; margin-bottom: clamp(1.4rem, 3vw, 2rem);
+    padding-bottom: 1.2rem; border-bottom: 1px solid var(--borda);
+  }
+  @media (min-width: 1000px) {
+    .carteira-topo { grid-template-columns: auto 1fr; align-items: end; gap: 2rem; }
+    .carteira-topo .filtros { justify-items: end; }
+  }
+  .carteira-nota {
+    margin-top: 0.4rem; font-size: 0.85rem; color: var(--c40);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  }
+  .ponto { color: var(--claro-3); }
 
   /* ---------- filtros ---------- */
   .filtros { display: grid; gap: 0.7rem; margin-bottom: 1.2rem; }
@@ -782,7 +860,25 @@ const jsonLd = {
     grid-template-columns: 1fr;
   }
   @media (min-width: 620px) { .grade { grid-template-columns: 1fr 1fr; } }
-  @media (min-width: 1000px) { .grade { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1000px) {
+    .grade { grid-template-columns: repeat(3, 1fr); }
+    /*
+      O primeiro anúncio ocupa duas colunas e deita a foto ao lado do texto.
+      Dez caixas idênticas é o que mais denuncia página montada por gerador —
+      basta um elemento fora da régua para a grade parar de parecer template.
+    */
+    .cartao:first-child { grid-column: span 2; }
+    .cartao:first-child .cartao-btn { flex-direction: row; align-items: stretch; }
+    .cartao:first-child .cartao-arte { flex: 0 0 46%; aspect-ratio: auto; }
+    .cartao:first-child .cartao-corpo { flex: 1; justify-content: center; padding: 1.6rem 1.7rem; }
+    .cartao:first-child .cartao-nome { font-size: 1.45rem; }
+    /*
+      No cartão em pé a ficha desce com `margin-top: auto` para alinhar o rodapé
+      dos três da fileira. Deitado não há fileira para alinhar — e o auto abre
+      um vão no meio do texto. Aqui o bloco volta a ser fluido.
+    */
+    .cartao:first-child .cartao-ficha { margin-top: 0.4rem; }
+  }
   .cartao { min-width: 0; }
   .cartao[hidden] { display: none; }
 
@@ -816,30 +912,38 @@ const jsonLd = {
   .fita-dest { background: #fff; color: var(--marinho); }
 
   .cartao-corpo { display: flex; flex-direction: column; gap: 0.45rem; padding: 1.2rem 1.25rem 1.3rem; flex: 1; }
+  /* a referência e a data: o par que separa anúncio de cartão decorativo */
+  .cartao-meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem;
+    font-size: 0.72rem; color: var(--c40);
+  }
+  .cartao-meta b { font-family: ui-monospace, monospace; font-weight: 500; color: var(--azul-esc); }
+  .cartao-nome { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 600; letter-spacing: -0.01em; }
   .cartao-local {
     display: inline-flex; align-items: center; gap: 0.4rem;
-    font-size: 0.76rem; color: var(--c40);
-  }
-  .cartao-local i { color: var(--azul); }
-  .cartao-nome { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 600; letter-spacing: -0.01em; }
-  .cartao-resumo { font-size: 0.86rem; color: var(--c60); flex: 1; }
-  .cartao-ficha {
-    display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem;
-    padding: 0.7rem 0; margin-top: 0.3rem;
-    border-block: 1px solid var(--borda);
     font-size: 0.8rem; color: var(--c60);
   }
-  .cartao-ficha > span { display: inline-flex; align-items: center; gap: 0.35rem; }
-  .cartao-ficha i { color: var(--azul); font-size: 0.78rem; }
-  .cartao-pe { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8rem; margin-top: 0.3rem; }
-  .cartao-preco { font-family: 'Outfit', sans-serif; font-size: 1.28rem; font-weight: 700; color: var(--marinho); }
-  .cartao-ver {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    font-size: 0.82rem; font-weight: 600; color: var(--azul-esc);
+  .cartao-local i { color: var(--azul); font-size: 0.75rem; }
+  .cartao-ficha {
+    display: flex; flex-wrap: wrap; gap: 0.35rem 0.7rem;
+    padding: 0.75rem 0; margin-top: auto;
+    border-block: 1px solid var(--borda);
+    font-size: 0.82rem; color: var(--c60);
   }
-  /* quem anda é a seta, em transform: animar `gap` remexeria a linha inteira */
-  .cartao-ver i { font-size: 0.7rem; transition: translate var(--t) var(--e); }
-  .cartao-btn:hover .cartao-ver i { translate: 4px 0; }
+  /* separador entre itens, sem gastar um elemento por vão */
+  .cartao-ficha > span + span::before { content: '·'; margin-right: 0.7rem; color: var(--claro-3); }
+  .cartao-pe { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.8rem; margin-top: 0.65rem; }
+  .cartao-valor { display: grid; gap: 0.1rem; min-width: 0; }
+  .cartao-valor b { font-family: 'Outfit', sans-serif; font-size: 1.28rem; font-weight: 700; color: var(--marinho); }
+  /* o custo que vem junto do preço: é a conta que o comprador faz de verdade */
+  .cartao-valor small { font-size: 0.74rem; color: var(--c40); }
+  .cartao-ver {
+    flex: none; width: 2.1rem; height: 2.1rem; display: grid; place-items: center;
+    border-radius: 50%; background: var(--claro-2);
+    font-size: 0.72rem; color: var(--azul-esc);
+    transition: background var(--t) var(--e), color var(--t) var(--e), translate var(--t) var(--e);
+  }
+  .cartao-btn:hover .cartao-ver { background: var(--azul-esc); color: #fff; translate: 3px 0; }
 
   .vazio {
     display: flex; align-items: center; justify-content: center; gap: 0.6rem;
@@ -848,47 +952,30 @@ const jsonLd = {
   .vazio[hidden] { display: none; }
   .vazio i { color: var(--azul); }
 
-  /* ---------- como funciona ---------- */
-  .passos { background: var(--branco); border-block: 1px solid var(--borda); }
-  .grade-passos {
-    list-style: none; margin: 0; padding: 0;
-    display: grid; gap: clamp(1rem, 2.4vw, 1.4rem);
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-    counter-reset: passo;
-  }
-  .grade-passos li {
-    position: relative; padding: 1.6rem 1.4rem;
-    background: var(--claro); border: 1px solid var(--borda);
-    border-radius: var(--raio-g); box-shadow: var(--s1);
-  }
-  .passo-n {
-    position: absolute; top: 1.1rem; right: 1.3rem;
-    font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700;
-    color: var(--claro-3);
-  }
-  .passo-i {
-    display: grid; place-items: center; width: 2.8rem; height: 2.8rem;
-    border-radius: 50%; background: var(--claro-2); color: var(--azul-esc);
-    font-size: 1rem; margin-bottom: 1rem;
-  }
-  .grade-passos p { margin-top: 0.4rem; font-size: 0.86rem; color: var(--c60); }
-
   /* ---------- sobre ---------- */
   .sobre-grade { display: grid; gap: clamp(1.8rem, 4vw, 3rem); }
   @media (min-width: 900px) { .sobre-grade { grid-template-columns: 1fr 1fr; align-items: start; } }
   .sobre-p { margin-top: 1rem; color: var(--c60); font-size: 0.98rem; max-width: 54ch; }
-  .promessas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
-  .promessas li {
-    display: grid; grid-template-columns: 3rem 1fr; gap: 1rem; align-items: start;
-    padding: 1.3rem 1.4rem;
+  /*
+    A ficha da imobiliária: lista de definição, não cartões. São dados que o
+    visitante confere — quem atende, registro, endereço — e dado se confere
+    lendo em linha, não dentro de três caixas com ícone dizendo "confiança".
+  */
+  .ficha-empresa {
+    margin: 0; align-self: start;
     background: var(--branco); border: 1px solid var(--borda);
-    border-radius: var(--raio-g); box-shadow: var(--s1);
+    border-radius: var(--raio-g); box-shadow: var(--s1); overflow: hidden;
   }
-  .prom-i {
-    display: grid; place-items: center; width: 3rem; height: 3rem;
-    border-radius: 50%; background: var(--claro-2); color: var(--azul-esc); font-size: 1.05rem;
+  .ficha-empresa > div {
+    display: grid; gap: 0.15rem; padding: 0.95rem 1.3rem;
+    border-bottom: 1px solid var(--borda);
   }
-  .promessas p { margin-top: 0.3rem; font-size: 0.86rem; color: var(--c60); }
+  .ficha-empresa > div:last-child { border-bottom: 0; }
+  .ficha-empresa dt {
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--c40);
+  }
+  .ficha-empresa dd { margin: 0; font-size: 0.92rem; color: var(--marinho); }
 
   /* ---------- chamada ---------- */
   .chamada {
@@ -900,7 +987,16 @@ const jsonLd = {
   @media (min-width: 860px) { .chamada { grid-template-columns: 1.4fr 1fr; } }
   .chamada h2 { color: #fff; }
   .chamada p { margin-top: 0.8rem; color: #b9cbdd; font-size: 0.96rem; max-width: 46ch; }
-  .chamada-acoes { display: grid; gap: 0.7rem; }
+  .chamada-txt { min-width: 0; }
+  /* o caminho da visita em uma frase: era uma grade de quatro cartões */
+  .chamada-passos {
+    margin-top: 1.4rem !important; padding-top: 1.2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.7rem;
+    font-size: 0.84rem; color: #cfdcea !important; max-width: none !important;
+  }
+  .chamada-passos i { font-size: 0.62rem; color: var(--claro-3); }
+  .chamada-acoes { display: grid; gap: 0.7rem; align-content: center; }
   .chamada .btn-azul { background: #fff; color: var(--marinho); }
   .chamada .btn-azul:hover { background: var(--claro-2); }
   .chamada .btn-vaz { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.3); box-shadow: none; }
@@ -1088,6 +1184,13 @@ const jsonLd = {
   .ficha :global(.at b) { display: block; margin-top: 0.3rem; font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 600; }
   .ficha :global(.at span) { display: block; font-size: 0.72rem; color: var(--c40); }
 
+  .ficha-predio {
+    margin-top: 1.2rem; padding: 0.8rem 1rem;
+    display: flex; align-items: center; gap: 0.65rem;
+    background: var(--claro); border-radius: var(--raio);
+    font-size: 0.86rem; color: var(--c60);
+  }
+  .ficha-predio i { color: var(--azul); }
   .ficha-t { margin-top: 1.6rem; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c40); }
   .ficha-desc { margin-top: 0.7rem; font-size: 0.94rem; color: var(--c60); }
   .ficha-itens { list-style: none; margin: 0.8rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
@@ -1187,7 +1290,8 @@ const jsonLd = {
     cod: string; nome: string; tipo: string; negocio: string; bairro: string;
     preco: number; area: number; quartos: number; suites: number; banheiros: number;
     vagas: number; andar: string; condominio: number; iptu: number;
-    descricao: string; itens: string[]; fotos: { t: string; svg: string }[];
+    descricao: string; itens: string[]; predio: string;
+    fotos: { t: string; svg: string }[];
   };
 
   function ficha(dados: Imovel[], cidade: string) {
@@ -1266,6 +1370,7 @@ const jsonLd = {
 
       set('[data-f-local]', `${i.bairro} · ${cidade}`);
       set('[data-f-cod]', i.cod);
+      set('[data-f-predio]', i.predio);
       set('[data-f-nome]', i.nome);
       set('[data-f-preco]', aluguel ? `${brl(i.preco)}/mês` : brl(i.preco));
       set('[data-f-negocio]', aluguel ? 'aluguel + encargos' : `${i.tipo} à venda`);

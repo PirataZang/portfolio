@@ -1,0 +1,109 @@
+---
+/*
+  MOLDURA — retrato emoldurado.
+
+  Uma foto solta num fundo escuro parece arquivo colado na página. Aqui ela
+  ganha o que uma foto pendurada numa barbearia tem: um passe-partout escuro
+  em volta, um fio de latão rente à imagem e quatro cantoneiras — o detalhe
+  que faz o olho ler "moldura" em vez de "img".
+
+  O componente não escolhe tamanho: quem usa define a proporção pelo `proporcao`
+  e a largura pelo contexto. Assim serve tanto para os três barbeiros lado a
+  lado quanto para um retrato solto mais adiante.
+*/
+interface Props {
+  src: string;          /* caminho sem extensão: /img/barbearia/daniel */
+  alt: string;
+  largura: number;
+  altura: number;
+  proporcao?: string;   /* padrão 3/4 */
+  legenda?: string;     /* placa de latão no pé da moldura */
+  carregar?: 'lazy' | 'eager';
+  class?: string;
+}
+
+const {
+  src, alt, largura, altura,
+  proporcao = '3 / 4',
+  legenda,
+  carregar = 'lazy',
+  class: klass = '',
+} = Astro.props;
+---
+
+<figure class={`moldura ${klass}`} style={`--prop: ${proporcao}`}>
+  <div class="moldura-vidro">
+    <picture>
+      <source srcset={`${src}.webp`} type="image/webp" />
+      <img
+        src={`${src}.jpg`}
+        alt={alt}
+        width={largura}
+        height={altura}
+        loading={carregar}
+        decoding="async"
+      />
+    </picture>
+    <span class="moldura-canto ct-ne" aria-hidden="true"></span>
+    <span class="moldura-canto ct-nd" aria-hidden="true"></span>
+    <span class="moldura-canto ct-se" aria-hidden="true"></span>
+    <span class="moldura-canto ct-sd" aria-hidden="true"></span>
+  </div>
+  {legenda && <figcaption class="moldura-placa">{legenda}</figcaption>}
+</figure>
+
+<style>
+  .moldura {
+    --mat: clamp(0.5rem, 1.4vw, 0.85rem);   /* respiro entre o quadro e a foto */
+    --fio: #6b5834;                          /* latão apagado, como o de moldura velha */
+    margin: 0;
+    padding: var(--mat);
+    background: linear-gradient(160deg, #1c1815 0%, #141110 55%, #191512 100%);
+    border: 1px solid var(--linha-viva, #453d34);
+    border-radius: 3px;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.04),
+      0 18px 40px -28px rgb(0 0 0 / 0.9);
+  }
+
+  /* o "vidro": recorta a foto e segura o fio de latão rente à imagem */
+  .moldura-vidro {
+    position: relative; overflow: hidden; border-radius: 1px;
+    aspect-ratio: var(--prop); background: #100e0c;
+  }
+  .moldura-vidro::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 0 1px var(--fio);
+  }
+  .moldura img {
+    display: block; width: 100%; height: 100%; object-fit: cover;
+  }
+
+  /* cantoneiras: dois riscos curtos de latão em cada canto, por dentro do vidro */
+  .moldura-canto {
+    position: absolute; width: 0.9rem; height: 0.9rem; pointer-events: none;
+    border: 0 solid var(--fio); opacity: 0.85;
+  }
+  .ct-ne { top: 0.4rem; left: 0.4rem; border-top-width: 1px; border-left-width: 1px; }
+  .ct-nd { top: 0.4rem; right: 0.4rem; border-top-width: 1px; border-right-width: 1px; }
+  .ct-se { bottom: 0.4rem; left: 0.4rem; border-bottom-width: 1px; border-left-width: 1px; }
+  .ct-sd { bottom: 0.4rem; right: 0.4rem; border-bottom-width: 1px; border-right-width: 1px; }
+
+  /*
+    Placa: a plaquinha gravada que fica presa no pé da moldura. Dois fios de
+    latão saindo dos lados fazem o nome parecer cravado no quadro, e não uma
+    legenda solta embaixo da foto.
+  */
+  .moldura-placa {
+    margin-top: var(--mat);
+    display: flex; align-items: center; gap: 0.7rem;
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 1.15rem; letter-spacing: 0.02em;
+    color: var(--creme, #f5efe6);
+  }
+  .moldura-placa::before,
+  .moldura-placa::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--fio), transparent);
+  }
+</style>

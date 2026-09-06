@@ -27,7 +27,7 @@ import Base from '../layouts/Base.astro';
 /* ────────────── troque estes quatro valores ────────────── */
 const EU = {
   nome: 'Igor Fronza',
-  papel: 'Engenheiro de software · Full stack',
+  papel: 'Engenheiro de software',
   gh: 'PirataZang',
   email: 'igorfronza20@gmail.com',
   zap: '5547989022030',
@@ -276,15 +276,20 @@ const CORES: Record<string, string> = {
 const linguagens = [...new Set(projetos.map((p) => p.lang).filter(Boolean))] as string[];
 const desde = perfil?.created_at ? new Date(perfil.created_at).getFullYear() : 2023;
 
+/*
+  Os números do herói contavam repositório, linguagem e código aberto — ou
+  seja, anunciavam que eu vendo código. Quem contrata compra problema
+  resolvido, então aqui vão os números do combinado: quanto custa começar, em
+  quanto tempo fica pronto, o que vem depois e desde quando eu faço isso.
+
+  Os números do GitHub não sumiram: desceram para a seção de projetos, que é
+  onde eles são prova e não vitrine.
+*/
 const numeros = [
-  /*
-    `||` e não `??`: com a API fora, `repos.length` é 0 — e 0 não é nulo, então
-    `??` pararia nele e o herói anunciaria "0 repositórios públicos".
-  */
-  { v: perfil?.public_repos || projetos.length, l: 'repositórios públicos' },
-  { v: linguagens.length, l: 'linguagens usadas em produção' },
-  { v: DESTAQUES.length, l: 'projetos em destaque, com código aberto' },
-  { v: desde, ano: true, l: 'publicando código desde' },
+  { v: 500, moeda: true, l: 'para começar um site de uma página' },
+  { v: 2, l: 'semanas, no prazo típico de um site' },
+  { v: 30, l: 'dias de ajuste sem custo depois da entrega' },
+  { v: desde, ano: true, l: 'publicando projetos desde' },
 ];
 
 /*
@@ -304,18 +309,18 @@ const SERVICOS = [
     ],
     icone: 'fa-solid fa-laptop-code',
     t: 'Criação de Site',
-    sub: 'Landing, institucional ou página de produto',
+    sub: 'Página única, site institucional ou de produto',
     de: 'R$ 500',
     unidade: 'uma página, escopo fechado',
     extra: 'R$ 250 por página adicional.',
     prazo: '1 a 2 semanas',
-    d: 'Do rascunho ao ar. Você recebe o site publicado, com domínio apontado, HTTPS e o código no seu repositório — sem ficar preso a mim para subir de novo.',
+    d: 'Do primeiro rascunho ao site no ar. Você recebe o endereço funcionando, com cadeado de segurança, e fica com todos os arquivos do projeto — não precisa de mim para publicar de novo.',
     itens: [
-      'Design sob medida, sem tema comprado',
-      'Responsivo de 320 px a 4K',
-      'SEO técnico, dados estruturados e Open Graph',
+      'Desenho feito para você, sem modelo pronto',
+      'Bonito no celular, no computador e na TV',
+      'Preparado para o Google encontrar',
       'Formulário que cai no seu WhatsApp',
-      'Deploy, configuração de domínio e HTTPS',
+      'Endereço próprio configurado e cadeado de segurança',
       '30 dias de ajuste sem custo',
     ],
     destaque: true,
@@ -329,19 +334,19 @@ const SERVICOS = [
     ],
     icone: 'fa-solid fa-project-diagram',
     t: 'Sistema sob medida',
-    sub: 'Painel, ERP, integrações e sistemas internos',
+    sub: 'Painel de controle, gestão e integração entre sistemas',
     de: 'R$ 3.000',
-    unidade: 'escopo fechado, por módulo',
-    extra: 'Projeto maior sai por módulo, com escopo fechado antes de cada etapa. Hosting não incluído.',
+    unidade: 'escopo fechado, por etapa',
+    extra: 'Projeto maior sai por etapas, com escopo e preço fechados antes de cada uma. Hospedagem cobrada à parte.',
     prazo: '4 a 12 semanas',
-    d: 'Quando a planilha não dá mais conta. Sistema que nasce do seu processo, não de um molde que você tem que aprender.',
+    d: 'Quando a planilha não dá mais conta. Um sistema que nasce do seu jeito de trabalhar, não de um molde que você tem que aprender.',
     itens: [
-      'Login, papéis e permissão por tela',
-      'Banco modelado do zero',
-      'API documentada para integrar',
-      'Relatório exportável em CSV e PDF',
-      'Fila, retentativa e log de erro',
-      'Deploy em container, com backup',
+      'Cada pessoa entra com o seu login e vê só o que é dela',
+      'Seus dados organizados do zero, do jeito do seu negócio',
+      'Conversa com os sistemas que você já usa',
+      'Relatórios para baixar em Excel e em PDF',
+      'Se algo falhar, tenta de novo sozinho e registra o que houve',
+      'Publicação com cópia de segurança automática',
     ],
     destaque: false,
   },
@@ -354,18 +359,18 @@ const SERVICOS = [
     ],
     icone: 'fa-solid fa-drafting-compass',
     t: 'Consultoria técnica',
-    sub: 'Arquitetura, revisão, performance',
+    sub: 'Segunda opinião, revisão e velocidade',
     de: 'R$ 280',
     unidade: 'por hora · pacotes de 10 h',
     extra: 'Pacote de 10 h por R$ 2.500.',
     prazo: 'agenda na semana',
-    d: 'Seu time já constrói, mas travou. Entro para revisar, medir e destravar — e saio deixando a decisão documentada.',
+    d: 'Seu time já constrói, mas travou. Entro para revisar, medir e destravar — e saio deixando a decisão registrada por escrito.',
     itens: [
-      'Revisão de código e de arquitetura',
-      'Diagnóstico de performance com número',
-      'Escolha de stack e de hospedagem',
-      'Pair programming em cima do problema',
-      'Plano de migração em etapas',
+      'Revisão do que já foi construído',
+      'Medição do que está lento, com número',
+      'Escolha das ferramentas e de onde hospedar',
+      'Programação lado a lado com o seu time',
+      'Plano de mudança em etapas',
       'Relatório escrito no fim',
     ],
     destaque: false,
@@ -378,22 +383,22 @@ const SERVICOS = [
       { f: 'malha', x: 68, y: 84, s: 54, d: 15, a: 1.7, m: 2 },
     ],
     icone: 'fa-solid fa-server',
-    t: 'Hosting',
-    sub: 'Só site estático, e é de propósito',
+    t: 'Hospedagem',
+    sub: 'Seu site no ar, sem dor de cabeça',
     de: 'R$ 50',
-    unidade: 'por mês · por site estático',
-    extra: 'Sistema com VPS dedicada: R$ 300 por mês.',
+    unidade: 'por mês · por site',
+    extra: 'Sistema, com servidor só seu: R$ 300 por mês.',
     prazo: 'no ar em 24 h',
-    d: 'Site estático na minha infra, com HTTPS e domínio próprio, por R$ 50/mês. Sistema que precisa de servidor sobe em VPS dedicada, por R$ 300/mês — banco, backup e monitoramento inclusos.',
+    d: 'Seu site no ar comigo, com endereço próprio e cadeado de segurança, por R$ 50 ao mês. Sistema precisa de mais estrutura e fica num servidor só seu, por R$ 300 ao mês — com dados, cópia de segurança e monitoramento inclusos.',
     itens: [
-      'Site estático: HTML, CSS e JavaScript',
-      'Sistema: VPS dedicada com banco de dados',
-      'HTTPS com renovação automática',
-      'Seu domínio apontado e configurado',
-      'Deploy a cada atualização, sem custo',
-      'Backup e histórico de versão',
+      'Site no ar 24 horas por dia, todo dia',
+      'Sistema: servidor só seu, com banco de dados',
+      'Cadeado de segurança renovado sozinho',
+      'Seu endereço próprio configurado',
+      'Toda atualização publicada sem custo',
+      'Cópia de segurança e histórico de versões',
     ],
-    naoEntra: 'Hosting de site estático não roda WordPress, banco de dados ou API — para isso é o plano de sistema com VPS dedicada.',
+    naoEntra: 'O plano de R$ 50 é para site: páginas que mostram conteúdo. Loja, área de login ou qualquer coisa que guarde dados de cliente entra no plano de sistema, com servidor só seu.',
     destaque: false,
   },
 ];
@@ -405,19 +410,19 @@ const SERVICOS = [
 const CAMINHO = [
   { n: '01', i: 'fa-solid fa-comments', t: 'A conversa', marco: 'no mesmo dia',
     x: 12, y: 32, lado: 'd', mi: [{ x: -4, y: -11 }, { x: 3.5, y: -14 }, { x: -2.5, y: 10 }],
-    d: 'Uma call de trinta minutos, e eu pergunto o que o site precisa resolver — não de quantas páginas você quer. Sai daí um resumo escrito da demanda, que vira a régua do resto.' },
+    d: 'Uma conversa de trinta minutos, e eu pergunto o que o site precisa resolver — não de quantas páginas você quer. Sai daí um resumo escrito da demanda, que vira a régua do resto.' },
   { n: '02', i: 'fa-solid fa-file-signature', t: 'Escopo e orçamento', marco: 'em até 48 h',
     x: 31, y: 68, lado: 'd', mi: [{ x: -5, y: 9 }, { x: 2, y: 13 }],
     d: 'Proposta por escrito: o que entra, o que fica de fora, prazo e valor fechado. Sem hora surpresa no fim, e sem a linha “a definir”.' },
   { n: '03', i: 'fa-solid fa-tower-broadcast', t: 'Acompanhamento em tempo real', marco: 'link permanente',
     x: 52, y: 26, lado: 'e', mi: [{ x: -6, y: -9 }, { x: 5.5, y: -11 }, { x: 7, y: 5 }],
-    d: 'Link de preview que atualiza a cada avanço meu. Você abre no celular e vê o site crescer — corrige no caminho, não no dia da entrega.' },
-  { n: '04', i: 'fa-brands fa-docker', t: 'Entrega em Docker', marco: 'imagem + fonte',
+    d: 'Um link só seu, que atualiza a cada avanço meu. Você abre no celular e vê o site crescer — corrige no caminho, não no dia da entrega.' },
+  { n: '04', i: 'fa-solid fa-box-open', t: 'Tudo na sua mão', marco: 'arquivos + código',
     x: 72, y: 72, lado: 'e', mi: [{ x: -4.5, y: 10 }, { x: 4, y: 8 }],
-    d: 'O projeto sai em container, com Dockerfile e compose no repositório. Roda igual na minha máquina, na sua e no servidor — e você não fica preso a mim para subir de novo.' },
+    d: 'No fim você recebe o projeto inteiro: os arquivos, o código e as instruções de como publicar. Funciona igual no meu computador, no seu e onde o site ficar hospedado — e você não fica preso a mim para colocar no ar de novo.' },
   { n: '05', i: 'fa-solid fa-server', t: 'No ar, e depois', marco: '30 dias de ajuste',
     x: 88, y: 30, lado: 'e', mi: [{ x: -5, y: -10 }, { x: 2.5, y: -14 }],
-    d: 'Publico, aponto o domínio e te ensino a mexer. Se quiser, fica na minha hospedagem por R$ 50 ao mês; se não quiser, o container é seu e sobe em qualquer lugar.' },
+    d: 'Publico, configuro o endereço e te ensino a mexer. Se quiser, fica na minha hospedagem por R$ 50 ao mês; se não quiser, o projeto é seu e sobe em qualquer lugar.' },
 ];
 
 /*
@@ -435,10 +440,10 @@ const POEIRA = Array.from({ length: 26 }, (_, i) => {
 /* as demos que moram neste repositório */
 const DEMOS = [
   { slug: 'imobiliaria', nome: 'Meridiano', tag: 'Imobiliária', nota: 'Carteira com filtro, ficha em modal e visita no WhatsApp', pronto: true },
-  { slug: 'barbearia', nome: "Daniel's", tag: 'Barbearia', nota: 'Agendamento em quatro passos, calendário e tema escuro', pronto: true },
+  { slug: 'barbearia', nome: "Daniel's", tag: 'Barbearia', nota: 'Capa em fotografia e reserva em um toque', pronto: true },
   { slug: 'arquitetura', nome: 'PRUMO', tag: 'Arquitetura e engenharia', nota: 'Planta interativa e cena dirigida por scroll', pronto: true },
   { slug: 'marmoraria', nome: 'Marmoraria', tag: 'Mármores e granitos', nota: 'Comparador de acabamento e orçamento', pronto: true },
-  { slug: 'nova', nome: 'Vereda', tag: 'Psicologia clínica', nota: 'Fundo em WebGL, planos e agendamento no WhatsApp', pronto: true },
+  { slug: 'nova', nome: 'Vereda', tag: 'Psicologia clínica', nota: 'Fotografia grande, seis terapias em cor e planos comparáveis', pronto: true },
   { slug: 'pulse', nome: 'PULSE', tag: 'Festival de eletrônica', nota: 'Carrinho, compra simulada e ingresso com QR', pronto: true },
 ];
 
@@ -501,7 +506,7 @@ const FERRAMENTAL = [
     ],
   },
   {
-    g: "Infra e deploy",
+    g: "Onde o projeto roda",
     icone: 'fa-solid fa-cubes',
     forma: 'chanfro',
     itens: [
@@ -611,6 +616,18 @@ const CAMPO_FERRAMENTAL: Forma[] = [
   { f: 'qua', x: 172, y: 396, s: 36, r: 20 },
 ];
 
+/*
+  Quatro formas, uma por canto, sobre o fundo liso. O vazio desta seção era da
+  grade — quatro colunas para seis cartas deixavam dois buracos —, e não falta
+  de enfeite: com três colunas o buraco some e o fundo pode continuar quieto.
+*/
+const CAMPO_DEMOS: Forma[] = [
+  { f: 'mira', x: 76, y: 118, s: 86 },
+  { f: 'los', x: 1082, y: 182, s: 52, r: 16 },
+  { f: 'canto', x: 52, y: 612, s: 48, r: 180 },
+  { f: 'tri', x: 1098, y: 606, s: 42, r: 200 },
+];
+
 const CAMPO_PROJETOS: Forma[] = [
   { f: 'hex', x: 90, y: 120, s: 88, r: -6 },
   { f: 'zig', x: 940, y: 90, s: 92 },
@@ -636,7 +653,7 @@ const CAMPO_CONTATO: Forma[] = [
 
 const titulo = `${EU.nome} — Engenheiro de software: sites, sistemas sob medida e consultoria`;
 const descricao =
-  'Engenheiro de software full stack em Rio do Sul (SC). Sites a partir de R$ 500, sistemas sob medida por módulo, consultoria técnica por hora e hosting. Entrega em container, código no seu repositório e projetos abertos no GitHub.';
+  'Engenheiro de software em Rio do Sul (SC). Sites a partir de R$ 500, sistemas sob medida por etapa, consultoria técnica por hora e hospedagem a partir de R$ 50 por mês. O código fica com você, e os projetos são abertos no GitHub.';
 
 /*
   As perguntas que chegam por WhatsApp antes de qualquer orçamento. Estão aqui
@@ -646,23 +663,23 @@ const descricao =
 const DUVIDAS = [
   {
     p: 'Quanto custa um site?',
-    r: 'A partir de R$ 500 para uma página com escopo fechado, e R$ 250 por página adicional. Sistema sob medida começa em R$ 3.000, é cotado por módulo e não inclui hosting. São pontos de partida, não teto: o preço final depende do que o projeto precisa fazer, fecha depois da conversa, por escrito, e não muda no meio.',
+    r: 'A partir de R$ 500 para uma página com escopo fechado, e R$ 250 por página adicional. Sistema sob medida começa em R$ 3.000 e é orçado por etapa. São pontos de partida, não teto: o preço final depende do que o projeto precisa fazer, fecha depois da conversa, por escrito, e não muda no meio.',
   },
   {
     p: 'Em quanto tempo fica pronto?',
-    r: 'Site: de 1 a 2 semanas a partir do aceite, contando que o conteúdo chegue. Sistema: de 4 a 12 semanas, entregue por módulo — você vê o primeiro pedaço funcionando bem antes do fim. Consultoria entra na agenda da mesma semana.',
+    r: 'Site: de 1 a 2 semanas a partir do aceite, contando que o conteúdo chegue. Sistema: de 4 a 12 semanas, entregue por etapas — você vê o primeiro pedaço funcionando bem antes do fim. Consultoria entra na agenda da mesma semana.',
   },
   {
     p: 'O que eu preciso ter pronto antes de começar?',
-    r: 'Textos, fotos e logo, se existirem. Se não existirem, eu escrevo a estrutura e indico onde a foto faz falta — projeto não trava esperando conteúdo perfeito. O domínio é comprado por você, no seu nome: o registro fica na sua mão, e eu faço a configuração e o HTTPS, que entram no pacote.',
+    r: 'Textos, fotos e logo, se existirem. Se não existirem, eu escrevo a estrutura e indico onde a foto faz falta — projeto não trava esperando conteúdo perfeito. O endereço do site é comprado por você, no seu nome: fica registrado na sua mão, e eu cuido da configuração e do cadeado de segurança, que já entram no pacote.',
   },
   {
     p: 'O código fica comigo?',
-    r: 'Fica. O repositório é seu desde o primeiro commit e a entrega é em container, então roda em qualquer provedor. Não uso plataforma fechada que prende o projeto: se um dia você quiser trocar de desenvolvedor, leva tudo junto. A hospedagem na minha infra é um serviço opcional e à parte — contratando ou não, o código é seu do mesmo jeito.',
+    r: 'Fica. O código é seu desde o primeiro dia, e a entrega vem pronta para rodar em qualquer empresa de hospedagem. Não uso plataforma fechada que prende o projeto: se um dia você quiser trocar de desenvolvedor, leva tudo junto. A hospedagem comigo é opcional e cobrada à parte — contratando ou não, o código é seu do mesmo jeito.',
   },
   {
     p: 'E depois que o site está no ar?',
-    r: 'Os 30 primeiros dias de ajuste vão inclusos, sem custo. Depois disso, manutenção mensal é opcional e cotada separada, conforme o tamanho do site. Se quiser o site publicado na minha infra, com HTTPS e domínio apontado, o hosting sai por R$ 50 por mês — só site estático, e o tráfego não gera cobrança adicional. E dá para me chamar pontualmente por hora quando aparecer alguma coisa.',
+    r: 'Os 30 primeiros dias de ajuste vão inclusos, sem custo. Depois disso, manutenção mensal é opcional e cotada separada, conforme o tamanho do site. Se quiser o site no ar comigo, com endereço próprio e cadeado de segurança, a hospedagem sai por R$ 50 ao mês, e visita no site não gera cobrança extra. E dá para me chamar pontualmente por hora quando aparecer alguma coisa.',
   },
   {
     p: 'Você atende fora de Rio do Sul?',
@@ -872,21 +889,28 @@ const jsonLd = {
         <span class="marca-sig">IF</span>
         <span class="marca-txt">{EU.nome}<small>{EU.papel}</small></span>
       </a>
+      {/*
+        A ordem do menu segue a ordem da página, e a página segue a ordem da
+        decisão: como funciona → o que já está pronto → quanto custa → o que
+        costumam perguntar. A prova técnica (projetos e ferramentas) fica
+        depois disso, para quem quiser conferir antes de fechar.
+      */}
       <nav class="topo-nav" aria-label="Seções">
         <a href="#processo">Como funciona</a>
-        <a href="#projetos">Projetos</a>
-        <a href="#demos">Demos</a>
-        <a href="#stack">Ferramental</a>
+        <a href="#demos">Sites prontos</a>
         <a href="#servicos">Serviços</a>
-        <a href="#duvidas">Dúvidas</a>
+        <a href="#duvidas">Perguntas</a>
+        <a href="#projetos">Projetos</a>
+        <a href="#stack">Ferramentas</a>
       </nav>
       <a class="btn btn-p btn-min topo-cta" href="#contato">
         <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
         <span>Pedir orçamento</span>
       </a>
       {/*
-        Abaixo de 920px a navegação some e, até aqui, não havia nada no lugar:
-        no celular dava para chegar às seções só rolando a página inteira.
+        Abaixo de 1100px a navegação vira o botão de menu. O corte subiu de
+        920 para 1100 quando os rótulos ficaram mais descritivos: com seis
+        itens em palavra de gente, a barra quebrava em três linhas.
       */}
       <button type="button" class="topo-botao" data-menu aria-expanded="false" aria-controls="menu-celular">
         <span class="topo-risco" aria-hidden="true"></span>
@@ -896,11 +920,11 @@ const jsonLd = {
 
     <nav class="menu" id="menu-celular" data-menu-painel aria-label="Seções">
       <a href="#processo">Como funciona</a>
-      <a href="#projetos">Projetos no GitHub</a>
-      <a href="#demos">Demos completas</a>
-      <a href="#stack">Ferramental</a>
+      <a href="#demos">Sites prontos para ver</a>
       <a href="#servicos">Serviços e preços</a>
-      <a href="#duvidas">Dúvidas</a>
+      <a href="#duvidas">Perguntas frequentes</a>
+      <a href="#projetos">O que eu já construí</a>
+      <a href="#stack">Ferramentas que uso</a>
       <a href="#contato">Falar comigo</a>
       <a class="menu-zap" href={`https://wa.me/${EU.zap}`} rel="noopener">
         <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp
@@ -946,16 +970,16 @@ const jsonLd = {
           */}
           <p class="lead" data-anima>
             Transformo ideias, processos e problemas em software que funciona —
-            do primeiro rascunho ao servidor. Do site de uma página ao sistema
+            do primeiro rascunho à entrega. Do site de uma página ao sistema
             que a sua equipe usa todo dia.
           </p>
-          <p class="heroi-esp" data-anima>Full stack · Sistemas · Automação · IA</p>
+          <p class="heroi-esp" data-anima>Sites · Sistemas · Automação · Inteligência artificial</p>
           <div class="acoes" data-anima>
             <a class="btn btn-p btn-g" href="#servicos">
               <i class="fa-solid fa-tags" aria-hidden="true"></i> Ver serviços e preços
             </a>
-            <a class="btn btn-fant btn-g" href={`https://github.com/${EU.gh}`} rel="noopener">
-              <i class="fa-brands fa-github" aria-hidden="true"></i> Ver o código
+            <a class="btn btn-fant btn-g" href="#demos">
+              <i class="fa-solid fa-arrow-pointer" aria-hidden="true"></i> Ver sites prontos
             </a>
           </div>
 
@@ -963,7 +987,9 @@ const jsonLd = {
             {
               numeros.map((n) => (
                 <div>
-                  <dt data-conta-ate={n.v} data-ano={n.ano ? '1' : null}>{n.v}</dt>
+                  <dt data-conta-ate={n.v} data-ano={n.ano ? '1' : null} data-moeda={n.moeda ? '1' : null}>
+                    {n.moeda ? `R$ ${n.v}` : n.v}
+                  </dt>
                   <dd>{n.l}</dd>
                 </div>
               ))
@@ -991,7 +1017,7 @@ const jsonLd = {
           <div class="caixa caminho-caixa">
             <header class="cab" data-anima>
               <p class="olho olho-escuro">Como a coisa anda</p>
-              <h2>Da primeira conversa ao container rodando</h2>
+              <h2>Da primeira conversa ao site no ar</h2>
             </header>
 
             <p class="cam-conta" aria-live="polite">
@@ -1084,11 +1110,11 @@ const jsonLd = {
         </div>
       </section>
 
-      {/* ================= PROJETOS DO GITHUB ================= */}
-      <section class="secao projetos" id="projetos">
-        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="0.13" aria-hidden="true" focusable="false">
+      {/* ================= DEMOS ================= */}
+      <section class="secao demos" id="demos">
+        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="-0.08" aria-hidden="true" focusable="false">
           {
-            CAMPO_PROJETOS.map((f, i) => (
+            CAMPO_DEMOS.map((f, i) => (
               <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
                 <use
                   href={`#s-${f.f}`}
@@ -1101,103 +1127,23 @@ const jsonLd = {
         </svg>
 
         <div class="caixa">
-          <header class="cab" data-anima>
-            <p class="olho">Código aberto</p>
-            <h2>Projetos no GitHub</h2>
-            <p class="lead">
-              Puxado da API pública do GitHub na hora do build. Nada de
-              mockup: é o repositório, com a linguagem e a data reais. Arraste
-              de lado, ou use as setas.
-            </p>
-          </header>
-
-          {/*
-            Galeria com scroll-snap nativo: quem manda no avanço é o dedo, a
-            roda ou as setas — nada anda sozinho. O encaixe, a rolagem suave e
-            o arrasto por toque saem todos do CSS; ao JS sobram só as setas e
-            os pontos, que precisam saber onde a fila parou.
-          */}
-          <div class="galeria" data-galeria data-anima>
-            <ul class="galeria-fila no-bar" data-fila>
-              {
-                    projetos.map((p) => (
-                <li class="proj" data-brilho>
-                  <div class="serv-luz" aria-hidden="true"></div>
-                  <div class="proj-cab">
-                    <span class="proj-tipo">{p.tipo}</span>
-                    {p.estrelas > 0 && (
-                      <span class="proj-estrela">
-                        <i class="fa-solid fa-star" aria-hidden="true"></i> {p.estrelas}
-                      </span>
-                    )}
-                  </div>
-                  <h3><span class="cerquilha">/</span>{p.nome}</h3>
-                  <p class="proj-d">{p.resumo}</p>
-                  <p class="proj-pe">
-                    {p.lang && (
-                      <span class="proj-lang">
-                        <i style={`--cor:${CORES[p.lang] ?? '#8b93b5'}`} aria-hidden="true"></i>
-                        {p.lang}
-                      </span>
-                    )}
-                    {p.empurrado && (
-                      <span class="proj-data">
-                        {new Date(p.empurrado).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
-                      </span>
-                    )}
-                  </p>
-                  <div class="proj-links">
-                    <a href={p.url} rel="noopener">
-                      <i class="fa-brands fa-github" aria-hidden="true"></i> Código
-                    </a>
-                    {p.aoVivo && (
-                      <a href={p.aoVivo} rel="noopener" class="proj-vivo">
-                        <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> Ver no ar
-                      </a>
-                    )}
-                  </div>
-                </li>
-                    ))
-              }
-            </ul>
-
-            <div class="galeria-leme">
-              <button type="button" class="gal-seta" data-gal="-1" aria-label="Projeto anterior">
-                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-              </button>
-              <span class="gal-trilho" aria-hidden="true">
-                <span class="gal-polegar" data-polegar></span>
-              </span>
-              <p class="gal-conta" aria-live="polite">
-                <b data-gal-atual>01</b>
-                <span>/ {String(projetos.length).padStart(2, '0')}</span>
+          <header class="cab cab-demos" data-anima>
+            <div>
+              <p class="olho">Demonstrações</p>
+              <h2>Sites completos, para você abrir e clicar</h2>
+              <p class="lead">
+                Não são modelos prontos: são sites que funcionam de verdade.
+                Cada um tem texto escrito, tudo clicável do começo ao fim e o
+                mesmo cuidado de um projeto pago.
               </p>
-              <button type="button" class="gal-seta" data-gal="1" aria-label="Próximo projeto">
-                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-              </button>
             </div>
 
-            <p class="trilha-pe">
-              <a class="btn btn-fant" href={`https://github.com/${EU.gh}?tab=repositories`} rel="noopener">
-                <i class="fa-brands fa-github" aria-hidden="true"></i>
-                Ver todos os projetos
-              </a>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= DEMOS ================= */}
-      <section class="secao demos" id="demos">
-        <div class="caixa">
-          <header class="cab" data-anima>
-            <p class="olho">Demonstrações</p>
-            <h2>Sites completos, para você abrir e clicar</h2>
-            <p class="lead">
-              Não são templates: são demonstrações funcionais. Cada uma tem
-              conteúdo escrito, fluxo que roda de ponta a ponta e o mesmo
-              cuidado técnico de um projeto pago.
-            </p>
+            {/* a direita do cabeçalho estava vazia; aqui ela responde o que a pessoa pensa antes de clicar */}
+            <ul class="demos-notas">
+              <li><b>{DEMOS.length}</b> negócios diferentes, nenhum molde repetido</li>
+              <li>Abre no navegador, sem cadastro e sem instalar nada</li>
+              <li>Feitas por mim, com o mesmo cuidado de projeto pago</li>
+            </ul>
           </header>
 
           <ul class="grade-demos">
@@ -1216,63 +1162,6 @@ const jsonLd = {
               ))
             }
           </ul>
-        </div>
-      </section>
-
-      {/* ================= FERRAMENTAL ================= */}
-      <section class="secao stack blueprint" id="stack">
-        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="0.11" aria-hidden="true" focusable="false">
-          {
-            CAMPO_FERRAMENTAL.map((f, i) => (
-              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
-                <use
-                  href={`#s-${f.f}`}
-                  class={`fm fm-${modo(f.f)}`}
-                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
-                />
-              </g>
-            ))
-          }
-        </svg>
-
-        <div class="caixa">
-          <header class="cab" data-anima>
-            <p class="olho">Ferramental</p>
-            <h2>Com o que eu construo</h2>
-            <p class="lead">
-              Escolha de stack é decisão de manutenção, não de moda. Estas são
-              as que eu sustento em produção — e as que uso para ir mais rápido
-              sem entregar código que eu não saiba explicar.
-            </p>
-          </header>
-
-          <div class="grade-fer">
-            {
-              FERRAMENTAL.map((g) => (
-                <section class={`fer-g fer-${g.forma}`} data-anima data-brilho>
-                  <div class="serv-luz" aria-hidden="true"></div>
-                  <header class="fer-cab">
-                    <span class="fer-marca" aria-hidden="true"><i class={g.icone} /></span>
-                    <h3>{g.g}</h3>
-                    <span class="fer-n">{g.itens.length}</span>
-                  </header>
-                  <ul class="fer-lista">
-                    {g.itens.map((i) => (
-                      <li class="fer-item">
-                        <span class="fer-ladrilho" style={`--cor:${i.c}`}>
-                          <svg class="fer-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <use href={`#fi-${i.s}`} />
-                          </svg>
-                        </span>
-                        <span class="fer-nome">{i.n}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))
-            }
-          </div>
-
         </div>
       </section>
 
@@ -1401,6 +1290,172 @@ const jsonLd = {
         </div>
       </section>
 
+      {/* ================= PROJETOS DO GITHUB ================= */}
+      <section class="secao projetos" id="projetos">
+        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="0.13" aria-hidden="true" focusable="false">
+          {
+            CAMPO_PROJETOS.map((f, i) => (
+              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
+                <use
+                  href={`#s-${f.f}`}
+                  class={`fm fm-${modo(f.f)}`}
+                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
+                />
+              </g>
+            ))
+          }
+        </svg>
+
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Prova</p>
+            <h2>O que eu já construí</h2>
+            <p class="lead">
+              Você não precisa entender de programação para conferir: cada um
+              destes projetos está aberto e pode ser inspecionado por qualquer
+              desenvolvedor que você confie. É o contrário de comprar no
+              escuro. Arraste de lado, ou use as setas.
+            </p>
+            <p class="lead-nums">
+              <b>{perfil?.public_repos || projetos.length}</b> projetos públicos
+              {' · '}<b>{linguagens.length}</b> linguagens
+              {' · '}abertos no GitHub desde <b>{desde}</b>
+            </p>
+          </header>
+
+          {/*
+            Galeria com scroll-snap nativo: quem manda no avanço é o dedo, a
+            roda ou as setas — nada anda sozinho. O encaixe, a rolagem suave e
+            o arrasto por toque saem todos do CSS; ao JS sobram só as setas e
+            os pontos, que precisam saber onde a fila parou.
+          */}
+          <div class="galeria" data-galeria data-anima>
+            <ul class="galeria-fila no-bar" data-fila>
+              {
+                    projetos.map((p) => (
+                <li class="proj" data-brilho>
+                  <div class="serv-luz" aria-hidden="true"></div>
+                  <div class="proj-cab">
+                    <span class="proj-tipo">{p.tipo}</span>
+                    {p.estrelas > 0 && (
+                      <span class="proj-estrela">
+                        <i class="fa-solid fa-star" aria-hidden="true"></i> {p.estrelas}
+                      </span>
+                    )}
+                  </div>
+                  <h3><span class="cerquilha">/</span>{p.nome}</h3>
+                  <p class="proj-d">{p.resumo}</p>
+                  <p class="proj-pe">
+                    {p.lang && (
+                      <span class="proj-lang">
+                        <i style={`--cor:${CORES[p.lang] ?? '#8b93b5'}`} aria-hidden="true"></i>
+                        {p.lang}
+                      </span>
+                    )}
+                    {p.empurrado && (
+                      <span class="proj-data">
+                        {new Date(p.empurrado).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                      </span>
+                    )}
+                  </p>
+                  <div class="proj-links">
+                    <a href={p.url} rel="noopener">
+                      <i class="fa-brands fa-github" aria-hidden="true"></i> Código
+                    </a>
+                    {p.aoVivo && (
+                      <a href={p.aoVivo} rel="noopener" class="proj-vivo">
+                        <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> Ver no ar
+                      </a>
+                    )}
+                  </div>
+                </li>
+                    ))
+              }
+            </ul>
+
+            <div class="galeria-leme">
+              <button type="button" class="gal-seta" data-gal="-1" aria-label="Projeto anterior">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              </button>
+              <span class="gal-trilho" aria-hidden="true">
+                <span class="gal-polegar" data-polegar></span>
+              </span>
+              <p class="gal-conta" aria-live="polite">
+                <b data-gal-atual>01</b>
+                <span>/ {String(projetos.length).padStart(2, '0')}</span>
+              </p>
+              <button type="button" class="gal-seta" data-gal="1" aria-label="Próximo projeto">
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <p class="trilha-pe">
+              <a class="btn btn-fant" href={`https://github.com/${EU.gh}?tab=repositories`} rel="noopener">
+                <i class="fa-brands fa-github" aria-hidden="true"></i>
+                Ver todos os projetos
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= FERRAMENTAL ================= */}
+      <section class="secao stack blueprint" id="stack">
+        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="0.11" aria-hidden="true" focusable="false">
+          {
+            CAMPO_FERRAMENTAL.map((f, i) => (
+              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
+                <use
+                  href={`#s-${f.f}`}
+                  class={`fm fm-${modo(f.f)}`}
+                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
+                />
+              </g>
+            ))
+          }
+        </svg>
+
+        <div class="caixa">
+          <header class="cab" data-anima>
+            <p class="olho">Ferramentas</p>
+            <h2>Com o que eu construo</h2>
+            <p class="lead">
+              A escolha das ferramentas é decisão de manutenção, não de moda.
+              Estas são as que eu uso todo dia — e as que eu sei explicar para
+              você depois, sem enrolação.
+            </p>
+          </header>
+
+          <div class="grade-fer">
+            {
+              FERRAMENTAL.map((g) => (
+                <section class={`fer-g fer-${g.forma}`} data-anima data-brilho>
+                  <div class="serv-luz" aria-hidden="true"></div>
+                  <header class="fer-cab">
+                    <span class="fer-marca" aria-hidden="true"><i class={g.icone} /></span>
+                    <h3>{g.g}</h3>
+                    <span class="fer-n">{g.itens.length}</span>
+                  </header>
+                  <ul class="fer-lista">
+                    {g.itens.map((i) => (
+                      <li class="fer-item">
+                        <span class="fer-ladrilho" style={`--cor:${i.c}`}>
+                          <svg class="fer-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <use href={`#fi-${i.s}`} />
+                          </svg>
+                        </span>
+                        <span class="fer-nome">{i.n}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))
+            }
+          </div>
+
+        </div>
+      </section>
+
       {/* ================= CONTATO ================= */}
       <section class="secao contato" id="contato">
         <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="-0.14" aria-hidden="true" focusable="false">
@@ -1477,10 +1532,10 @@ const jsonLd = {
                       O padrão fica na faixa do meio de propósito — ancorar no
                       degrau mais baixo puxa todo orçamento para baixo.
                     */}
-                    <option>Até R$ 2.000</option>
-                    <option selected>R$ 2.000 a R$ 5.000</option>
-                    <option>R$ 5.000 a R$ 15.000</option>
-                    <option>Acima de R$ 15.000</option>
+                    <option>Até R$ 1.000</option>
+                    <option selected>R$ 1.000 a R$ 3.000</option>
+                    <option>R$ 3.000 a R$ 10.000</option>
+                    <option>Acima de R$ 10.000</option>
                     <option>Prefiro que você me diga</option>
                   </select>
                 </label>
@@ -1520,8 +1575,9 @@ const jsonLd = {
         <div>
           <p class="rodape-marca">{EU.nome}<small>{EU.papel} · {EU.local}</small></p>
           <p class="rodape-d">
-            Sites, sistemas e consultoria. Código aberto no GitHub, entrega em
-            container, conversa em português.
+            Sites, sistemas e consultoria para quem precisa resolver um
+            problema, não comprar tecnologia. O que eu construo fica com você,
+            e a conversa é em português.
           </p>
           <ul class="redes">
             {
@@ -1539,11 +1595,11 @@ const jsonLd = {
           <p class="rodape-t">Navegar</p>
           <ul>
             <li><a href="#processo">Como funciona</a></li>
-            <li><a href="#projetos">Projetos no GitHub</a></li>
-            <li><a href="#demos">Demos completas</a></li>
-            <li><a href="#stack">Ferramental</a></li>
+            <li><a href="#demos">Sites prontos para ver</a></li>
             <li><a href="#servicos">Serviços e preços</a></li>
-            <li><a href="#duvidas">Dúvidas frequentes</a></li>
+            <li><a href="#duvidas">Perguntas frequentes</a></li>
+            <li><a href="#projetos">O que eu já construí</a></li>
+            <li><a href="#stack">Ferramentas que uso</a></li>
           </ul>
         </nav>
         <div>
@@ -1654,6 +1710,13 @@ const jsonLd = {
   h3 { font-size: 1.18rem; letter-spacing: -0.02em; }
   p { margin: 0; text-wrap: pretty; }
   .lead { font-size: 1.04rem; color: var(--gelo-60); max-width: 56ch; }
+
+  /* os números do GitHub, agora como nota de prova e não como manchete */
+  .lead-nums {
+    margin-top: 0.9rem; font-size: 0.86rem; color: var(--mist);
+    font-variant-numeric: tabular-nums;
+  }
+  .lead-nums b { color: #fff; font-weight: 600; }
 
   .olho {
     display: inline-flex; align-items: center; gap: 0.55rem;
@@ -2177,11 +2240,39 @@ const jsonLd = {
 
   /* ---------- demos ---------- */
   .demos { background: var(--noite-3); border-block: 1px solid var(--borda); }
+  /*
+    Três colunas, e não `auto-fit`: com seis cartas o auto-fit abria quatro
+    colunas no desktop e deixava dois buracos na segunda fileira. Três fecham
+    as duas fileiras exatas e ainda dão mais largura para a nota de cada demo.
+  */
   .grade-demos {
-    list-style: none; margin: 0; padding: 0;
+    list-style: none; margin: 0; padding: 0; position: relative; z-index: 2;
     display: grid; gap: clamp(0.8rem, 1.6vw, 1.1rem);
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   }
+  @media (min-width: 900px) { .grade-demos { grid-template-columns: repeat(3, 1fr); } }
+
+  /* cabeçalho das demos: título à esquerda, as três respostas curtas à direita */
+  .cab-demos { max-width: none; display: grid; gap: 1.6rem 3rem; }
+  @media (min-width: 900px) {
+    .cab-demos { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); align-items: end; }
+  }
+  .cab-demos > div { max-width: 46ch; }
+  .demos-notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+  .demos-notas li {
+    position: relative; padding-left: 1.6rem;
+    font-size: 0.9rem; line-height: 1.5; color: var(--gelo-60);
+  }
+  /* losango, e não quadrado: quadrado vazio lia como caixa de marcar por marcar */
+  .demos-notas li::before {
+    content: ''; position: absolute; left: 0.1rem; top: 0.52em;
+    width: 0.5rem; height: 0.5rem; rotate: 45deg;
+    border: 1px solid var(--anil);
+    background: rgba(68, 114, 247, 0.28);
+  }
+  .demos-notas b { color: var(--gelo); font-weight: 700; }
+
+
   .demo a {
     position: relative; overflow: hidden;
     display: grid; gap: 0.35rem; height: 100%;
@@ -2209,6 +2300,14 @@ const jsonLd = {
   .caminho {
     position: relative; z-index: 2;
     background: var(--clara); color: var(--escuro);
+    /*
+      A câmera do céu e a poeira sangram para fora da seção de propósito, mas
+      sem recorte elas empurravam a barra horizontal da página inteira: 88 px
+      de rolagem lateral no desktop. `clip` recorta sem criar contexto de
+      rolagem, então o `position: sticky` de dentro continua funcionando —
+      `overflow: hidden` quebraria.
+    */
+    overflow-x: clip;
   }
   /* fundo claro: a grade tem que ser azul escuro para aparecer */
   .caminho { --g-fina: rgba(30, 43, 107, 0.05); --g-forte: rgba(30, 43, 107, 0.095); }
@@ -2630,6 +2729,7 @@ const jsonLd = {
     color: var(--gelo-60); margin-top: 0.3rem;
   }
   .topo-nav { display: none; gap: 1.5rem; }
+  .topo-nav a { white-space: nowrap; }
   .topo-nav a {
     position: relative; font-size: 0.89rem; font-weight: 500;
     color: var(--gelo-60); text-decoration: none;
@@ -2651,7 +2751,7 @@ const jsonLd = {
     border-radius: 12px; border: 1px solid var(--borda-viva);
     background: rgba(234, 238, 252, 0.04); cursor: pointer;
   }
-  @media (min-width: 920px) { .topo-botao { display: none; } }
+  @media (min-width: 1100px) { .topo-botao { display: none; } }
   /*
     Três riscos empilhados na mesma célula do grid: os de fora são pseudos do
     botão, o do meio é o span. Ficam no botão, e não todos no span, porque
@@ -2680,7 +2780,7 @@ const jsonLd = {
     visibility: hidden;
   }
   .menu.aberto { transform: translateY(0); visibility: visible; }
-  @media (min-width: 920px) { .menu, .menu-fundo, .topo-botao { display: none; } }
+  @media (min-width: 1100px) { .menu, .menu-fundo, .topo-botao { display: none; } }
   .menu a {
     display: flex; align-items: center; gap: 0.6rem;
     padding: 0.95rem 0.2rem; min-height: 3rem;
@@ -2826,10 +2926,11 @@ const jsonLd = {
   }
   @media (min-width: 920px) {
     .pf { --topo-h: 4.4rem; }
-    .topo-nav { display: flex; }
     .contato-grade { grid-template-columns: 1fr 1.05fr; }
     .duvidas-grade { grid-template-columns: 0.85fr 1.15fr; }
   }
+  /* a barra completa só onde os seis rótulos cabem numa linha */
+  @media (min-width: 1100px) { .topo-nav { display: flex; } }
 
   /* ---------- movimento reduzido ---------- */
   @media (prefers-reduced-motion: reduce) {
@@ -3096,13 +3197,15 @@ const jsonLd = {
       const ano = el.dataset.ano === '1';
       /* ano não é contagem: 1.400 anos passando na tela não quer dizer nada */
       if (ano) return;
+      /* valor em reais mantém o prefixo enquanto conta, senão pisca sem o R$ */
+      const pre = el.dataset.moeda === '1' ? 'R$ ' : '';
       umaVez(
         el,
         () =>
           animate(0, fim, {
             duration: 1.2,
             ease: SAIDA,
-            onUpdate: (n) => (el.textContent = String(Math.round(n))),
+            onUpdate: (n) => (el.textContent = pre + Math.round(n)),
           }),
         { amount: 0.8 },
       );
