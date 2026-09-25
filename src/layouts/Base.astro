@@ -9,11 +9,14 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 interface Props {
   title?: string;
   description?: string;
+  /* contrato de direção de uma demo; sai como comentário HTML no topo do body */
+  contrato?: string;
 }
 
 const {
   title = 'Portfolio Sites',
   description = 'Coleção de sites de portfólio.',
+  contrato,
 } = Astro.props;
 ---
 
@@ -28,6 +31,7 @@ const {
     <slot name="head" />
   </head>
   <body class="min-h-dvh font-sans antialiased">
+    {contrato && <Fragment set:html={`<!--\n${contrato}\n-->`} />}
     <slot />
   </body>
 </html>

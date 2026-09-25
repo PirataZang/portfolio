@@ -1,0 +1,317 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-25T00:00:00Z",
+  "title": "Design System: Lâmina Estética Automotiva",
+  "extensions": {
+    "colorMeta": {
+      "tinta": {
+        "role": "primary",
+        "displayName": "Marinho de Rótulo",
+        "canonical": "#144669",
+        "tonalRamp": [
+          "#0C2B40",
+          "#154A6F",
+          "#1E6A9F",
+          "#2789CE",
+          "#4FA3DE",
+          "#7EBCE7",
+          "#B2D7F0",
+          "#EAF4FB"
+        ]
+      },
+      "tinta-funda": {
+        "role": "primary",
+        "displayName": "Marinho Fundo",
+        "canonical": "#0F3A58",
+        "tonalRamp": [
+          "#0B2B41",
+          "#134B71",
+          "#1B6AA1",
+          "#248AD1",
+          "#4CA4E1",
+          "#7CBCE9",
+          "#B1D7F2",
+          "#E9F4FB"
+        ]
+      },
+      "ceu": {
+        "role": "secondary",
+        "displayName": "Céu de Nível",
+        "canonical": "#6AC5E0",
+        "tonalRamp": [
+          "#0D343F",
+          "#175A6E",
+          "#20809C",
+          "#2AA6CB",
+          "#52BCDB",
+          "#80CEE5",
+          "#B3E1EF",
+          "#EAF7FB"
+        ]
+      },
+      "agua": {
+        "role": "secondary",
+        "displayName": "Água de Hover",
+        "canonical": "#69BEDA",
+        "tonalRamp": [
+          "#0F323D",
+          "#1A576A",
+          "#257B97",
+          "#30A0C4",
+          "#57B6D6",
+          "#84CAE1",
+          "#B5DFED",
+          "#EBF6FA"
+        ]
+      },
+      "papel": {
+        "role": "neutral",
+        "displayName": "Papel Frio",
+        "canonical": "#F0F2F2",
+        "tonalRamp": [
+          "#242929",
+          "#3E4747",
+          "#586565",
+          "#728383",
+          "#8F9E9E",
+          "#ADB8B8",
+          "#CED4D4",
+          "#F1F3F3"
+        ]
+      },
+      "tinta-2": {
+        "role": "neutral",
+        "displayName": "Marinho Secundário",
+        "canonical": "#406884",
+        "tonalRamp": [
+          "#192934",
+          "#2B4659",
+          "#3E647F",
+          "#5082A5",
+          "#729DBB",
+          "#98B7CD",
+          "#C1D4E1",
+          "#EEF3F7"
+        ]
+      },
+      "nevoa": {
+        "role": "neutral",
+        "displayName": "Névoa de Fio",
+        "canonical": "#B1BEC6",
+        "tonalRamp": [
+          "#20282C",
+          "#38454D",
+          "#50626D",
+          "#677F8D",
+          "#869AA7",
+          "#A7B5BE",
+          "#CAD3D8",
+          "#F0F3F4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Título da primeira dobra, dentro do rótulo."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Títulos de seção, alinhados pela base ao parágrafo à direita."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Serviço da etiqueta, nome do produto, etapa da receita."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texto corrido e campos de formulário."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Nome de campo do rótulo, em caixa-alta espaçada. Nunca sobretítulo."
+      },
+      "measure": {
+        "displayName": "Medida",
+        "purpose": "Só valores com unidade; tabular, sem quebra."
+      }
+    },
+    "shadows": [
+      {
+        "name": "anel-foco-campo",
+        "value": "0 0 0 3px #144669",
+        "purpose": "Foco e erro de input/textarea. Não é elevação; o sistema não tem sombras."
+      }
+    ],
+    "motion": [
+      {
+        "name": "e-saida",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrada por opacidade (1.1s), fio do link, translação do ícone do botão."
+      },
+      {
+        "name": "fade-entrada",
+        "value": "opacity 1.1s var(--e-saida) calc(var(--i) * var(--passo))",
+        "purpose": "Única animação de entrada; passo próprio por lista (.08s a .3s). Nenhuma com prefers-reduced-motion."
+      },
+      {
+        "name": "estado",
+        "value": "background-color .25s ease",
+        "purpose": "Hover de botões; chips em .18s."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "estreito",
+        "value": "420px"
+      },
+      {
+        "name": "coluna-unica",
+        "value": "899px"
+      },
+      {
+        "name": "produto-compacto",
+        "value": "1099px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação sólida marinho; agendar e enviar ao WhatsApp.",
+      "html": "<button class=\"ds-botao\">Agendar um horário <svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"><path d=\"M8 2v11M3.5 8.5 8 13l4.5-4.5\"/></svg></button>",
+      "css": ".ds-botao { display: inline-flex; align-items: center; gap: 0.7rem; min-height: 52px; padding: 0 1.4rem; border: 0; border-radius: 12px; background: #144669; color: #F0F2F2; font: 600 1.02rem/1 'Sofia Sans', system-ui, sans-serif; letter-spacing: 0.01em; cursor: pointer; transition: background-color .25s ease, translate .35s cubic-bezier(0.16,1,0.3,1); } .ds-botao svg { transition: translate .35s cubic-bezier(0.16,1,0.3,1); } .ds-botao:hover { background: #0F3A58; } .ds-botao:hover svg { translate: 0 2px; } .ds-botao:active { translate: 0 1px; } .ds-botao:focus-visible { outline: 2px solid #144669; outline-offset: 3px; }"
+    },
+    {
+      "name": "Botão com contorno (Menu)",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Controle secundário de 44px com fio marinho.",
+      "html": "<button class=\"ds-menu\"><span class=\"ds-menu-traco\"></span>Menu</button>",
+      "css": ".ds-menu { display: inline-flex; align-items: center; gap: 0.6rem; height: 44px; padding: 0 0.9rem; border: 1.5px solid #144669; border-radius: 12px; background: transparent; color: #144669; font: 600 0.95rem/1 'Sofia Sans', system-ui, sans-serif; cursor: pointer; } .ds-menu-traco { width: 16px; height: 9px; border-block: 1.5px solid currentColor; } .ds-menu:focus-visible { outline: 2px solid #144669; outline-offset: 3px; }"
+    },
+    {
+      "name": "Link com fio",
+      "kind": "custom",
+      "refersTo": "link-seta",
+      "description": "Link com fio que recolhe e seta SVG autoral em máscara; variante clara sobre marinho.",
+      "html": "<a class=\"ds-link\" href=\"#\">Ver trabalhos</a>",
+      "css": ".ds-link { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; font: 600 1rem 'Sofia Sans', system-ui, sans-serif; color: #144669; text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 calc(100% - 10px) / 100% 1.5px no-repeat; transition: background-size .35s cubic-bezier(0.16,1,0.3,1), color .2s ease; } .ds-link::after { content: ''; width: 0.95em; height: 0.95em; background: currentColor; -webkit-mask: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9.5 4l4 4-4 4'/%3E%3C/svg%3E\") center / contain no-repeat; mask: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 8h11M9.5 4l4 4-4 4'/%3E%3C/svg%3E\") center / contain no-repeat; transition: translate .35s cubic-bezier(0.16,1,0.3,1); } .ds-link:hover { background-size: 0% 1.5px; background-position: 100% calc(100% - 10px); } .ds-link:hover::after { translate: 3px 0; } .ds-link:focus-visible { outline: 2px solid #144669; outline-offset: 3px; border-radius: 6px; }"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Input papel com fio marinho e anel de foco sólido.",
+      "html": "<label class=\"ds-campo\"><span>Modelo do carro</span><input placeholder=\"Ex.: Corolla 2021 prata\" /></label>",
+      "css": ".ds-campo { display: grid; gap: 0.4rem; color: #144669; } .ds-campo span { font: 700 0.76rem/1.2 'Sofia Sans Condensed', 'Sofia Sans', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-campo input { min-height: 52px; padding: 0.8rem 1rem; border: 1.5px solid #144669; border-radius: 12px; background: #F0F2F2; color: #144669; font: 500 1rem/1.4 'Sofia Sans', system-ui, sans-serif; transition: box-shadow .2s ease; } .ds-campo input::placeholder { color: #406884; opacity: 1; } .ds-campo input:focus-visible { outline: none; box-shadow: 0 0 0 3px #144669; }"
+    },
+    {
+      "name": "Chip de horário",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Rádio temático para dia e hora de entrada.",
+      "html": "<div class=\"ds-chips\"><label class=\"ds-chip\"><input type=\"radio\" name=\"h\" checked><span>09:00</span></label><label class=\"ds-chip\"><input type=\"radio\" name=\"h\"><span>10:00</span></label><label class=\"ds-chip\"><input type=\"radio\" name=\"h\" disabled><span>11:00</span></label></div>",
+      "css": ".ds-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; } .ds-chip { position: relative; display: block; cursor: pointer; } .ds-chip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; } .ds-chip span { display: grid; place-items: center; min-height: 48px; border: 1.5px solid #144669; border-radius: 10px; background: #F0F2F2; color: #144669; font: 400 0.8rem 'Martian Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; transition: background-color .18s ease, color .18s ease; } .ds-chip:hover span { background: color-mix(in srgb, #144669 10%, #F0F2F2); } .ds-chip input:checked + span { background: #144669; color: #F0F2F2; } .ds-chip input:focus-visible + span { outline: 2px solid #144669; outline-offset: 3px; } .ds-chip input:disabled + span { background: transparent; border-style: dashed; opacity: 0.55; text-decoration: line-through; }"
+    },
+    {
+      "name": "Régua de navegação",
+      "kind": "nav",
+      "refersTo": "nav-ruler-link",
+      "description": "Links sobre a escala graduada; nível céu enche até a seção atual.",
+      "html": "<nav class=\"ds-regua\"><ol><li><a href=\"#\">Início</a></li><li><a href=\"#\" aria-current=\"location\">Trabalhos</a></li><li><a href=\"#\">Produtos</a></li></ol><div class=\"ds-escala\"><span></span></div></nav>",
+      "css": ".ds-regua ol { display: flex; list-style: none; margin: 0; padding: 0; height: 56px; } .ds-regua li { position: relative; display: flex; } .ds-regua li::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 1.5px; height: 12px; background: #144669; translate: -50% 0; } .ds-regua a { display: flex; align-items: center; padding: 0 20px 6px; font: 500 0.98rem/1 'Sofia Sans', system-ui, sans-serif; color: #406884; text-decoration: none; transition: color .2s ease; } .ds-regua a:hover, .ds-regua a[aria-current] { color: #144669; } .ds-regua a[aria-current] { font-weight: 600; } .ds-regua a:focus-visible { outline: 2px solid #144669; outline-offset: 3px; border-radius: 6px; } .ds-escala { position: relative; height: 6px; border-top: 1.5px solid #144669; background: repeating-linear-gradient(90deg, #B1BEC6 0 1px, transparent 1px 8px); } .ds-escala span { position: absolute; left: 0; top: -1.5px; bottom: 0; width: 50%; background: #6AC5E0; } .ds-escala span::after { content: ''; position: absolute; right: -1px; top: -4px; bottom: -4px; width: 2px; background: #144669; }"
+    },
+    {
+      "name": "Rótulo",
+      "kind": "card",
+      "refersTo": "label-strip",
+      "description": "Contêiner-assinatura: faixa, corpo e pé com campos em linha.",
+      "html": "<div class=\"ds-rotulo\"><div class=\"ds-rotulo-faixa\"><span>Lâmina · Estética Automotiva</span><span>Blumenau · SC</span></div><div class=\"ds-rotulo-corpo\">Cada superfície tem o seu produto.</div><dl class=\"ds-rotulo-pe\"><div><dt>Prazo</dt><dd>De 3 horas a 2 dias</dd></div><div><dt>Onde</dt><dd>Rua Almirante Barroso</dd></div></dl></div>",
+      "css": ".ds-rotulo { border: 1.5px solid #144669; border-radius: 28px; overflow: hidden; background: #F0F2F2; color: #144669; font-family: 'Sofia Sans', system-ui, sans-serif; } .ds-rotulo-faixa { display: flex; justify-content: space-between; gap: 1rem; padding: 0.8rem 24px; border-bottom: 1.5px solid #144669; font: 600 0.8rem/1.2 'Sofia Sans Condensed', 'Sofia Sans', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-rotulo-corpo { padding: 24px; font: 600 2.4rem/0.94 'Sofia Sans Condensed', 'Sofia Sans', sans-serif; letter-spacing: -0.025em; } .ds-rotulo-pe { display: grid; grid-template-columns: 1fr 1fr; margin: 0; border-top: 1.5px solid #144669; } .ds-rotulo-pe div { padding: 0.9rem 24px 1rem; border-left: 1px solid #B1BEC6; } .ds-rotulo-pe div:first-child { border-left: 0; } .ds-rotulo-pe dt { font: 600 0.72rem/1.2 'Sofia Sans Condensed', 'Sofia Sans', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #406884; margin-bottom: 0.3rem; } .ds-rotulo-pe dd { margin: 0; font-weight: 500; font-size: 0.98rem; }"
+    },
+    {
+      "name": "Janela de foto graduada",
+      "kind": "custom",
+      "refersTo": "janela",
+      "description": "Recorte de 18px com graduação em papel junto à borda direita.",
+      "html": "<figure class=\"ds-janela\"><span class=\"ds-janela-grad\"></span></figure>",
+      "css": ".ds-janela { position: relative; margin: 0; width: 240px; aspect-ratio: 3 / 3.75; overflow: hidden; border-radius: 18px; background: #406884; } .ds-janela-grad { position: absolute; right: 14px; top: 16px; bottom: 16px; width: 14px; opacity: 0.75; background: repeating-linear-gradient(180deg, #F0F2F2 0 1.5px, transparent 1.5px 60px) right / 14px 100% no-repeat, repeating-linear-gradient(180deg, #F0F2F2 0 1px, transparent 1px 12px) right / 7px 100% no-repeat; }"
+    },
+    {
+      "name": "Linha de produto",
+      "kind": "custom",
+      "refersTo": "produto",
+      "description": "Rótulo invertido sobre a placa marinho; valor com unidade em mono.",
+      "html": "<div class=\"ds-produto\"><span class=\"ds-produto-cat\">Máquina</span><div><h3>BigFoot LHR 15</h3><span class=\"ds-produto-marca\">Rupes</span></div><div class=\"ds-produto-valor\"><span>15 mm</span><small>órbita</small></div></div>",
+      "css": ".ds-produto { display: grid; grid-template-columns: 7rem 1fr auto; gap: 0.6rem 24px; align-items: baseline; padding: 24px; background: #144669; color: #F0F2F2; border-bottom: 1px solid color-mix(in srgb, #B1BEC6 40%, #144669); font-family: 'Sofia Sans', system-ui, sans-serif; } .ds-produto-cat { font: 600 0.72rem/1.2 'Sofia Sans Condensed', 'Sofia Sans', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #6AC5E0; } .ds-produto h3 { margin: 0; font: 600 1.6rem/1.05 'Sofia Sans Condensed', 'Sofia Sans', sans-serif; letter-spacing: -0.015em; } .ds-produto-marca { display: block; margin-top: 0.3rem; font-size: 0.92rem; color: #B1BEC6; } .ds-produto-valor { display: grid; justify-items: end; gap: 0.2rem; } .ds-produto-valor span { font: 500 1.2rem 'Martian Mono', ui-monospace, monospace; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; } .ds-produto-valor small { font-size: 0.82rem; color: #B1BEC6; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Rótulo de Diluição",
+    "overview": "A página inteira é um rótulo técnico de frasco profissional. Em vez de prometer brilho, ela mostra o método: cada superfície com o seu produto, a sua medida e o seu tempo de contato. A primeira dobra é um rótulo inteiro (faixa, corpo, pé), as fotos são vistas por janelas graduadas como a faixa transparente de um frasco, o cabeçalho é uma régua cujo nível azul enche com a rolagem, e os números com unidade (20 ml/L, 15 mm, 5 min) são a tipografia que se repete.\n\nO papel é claro e frio, a tinta é marinho. Existem só dois campos de cor cheios: o rótulo invertido dos produtos (placa marinho recuada) e o agendamento (faixa inteira em céu, encostando no rodapé marinho). Densidade de ficha técnica nos campos em linha, respiro generoso entre seções. Movimento só de opacidade.\n\nA recusa é a do próprio padrão da categoria: nada de carro brilhando em fundo escuro, faísca, neon ou preto de interface. Carro escuro pode aparecer na foto, sempre em garagem clara.",
+    "keyCharacteristics": [
+      "Rótulo com faixa superior, campos em linha e pé em colunas divididas por fio.",
+      "Fio marinho de 1.5px como estrutura; névoa em 1px como divisão interna.",
+      "Graduação (traço maior + traço menor) como assinatura: régua do cabeçalho, janela de foto, base da prateleira, topo do rodapé.",
+      "Título condensado e apertado; corpo em Sofia Sans; mono só para valor com unidade.",
+      "Plano: nenhuma sombra de elevação."
+    ],
+    "rules": [
+      {
+        "name": "A Regra das Tintas do Cliente",
+        "body": "Só papel, marinho, céu, água e névoa, mais os dois derivados do marinho. Sem preto, sem cinza neutro, sem degradê de cor; `repeating-linear-gradient` aparece só com paradas duras, para desenhar traços de graduação.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Céu como Nível",
+        "body": "O céu é campo ou nível, nunca texto sobre papel. Como texto, só sobre marinho.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra dos Dois Campos",
+        "body": "A página tem dois campos de cor cheios: a placa marinho recuada dos produtos e a faixa céu de ponta a ponta do agendamento, que encosta direto no rodapé marinho. Nada mais ganha fundo cheio.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra da Medida",
+        "body": "Mono só para número com unidade (ml/L, min, mm, h, anos, %, g/m², dias, horas do relógio). Valor sem unidade (\"3800\", \"puro\", \"3 em 1\", \"camada fina\") sai em condensada, nunca em mono.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra do Campo Nomeado",
+        "body": "Caixa-alta espaçada existe só como nome de campo de um rótulo (o `dt` antes do `dd`, o cabeçalho de coluna, a faixa). Nunca como sobretítulo acima de um título de seção.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra do Fio, não da Sombra",
+        "body": "Separação é fio (1.5px marinho para contorno, 1px névoa para divisão interna), nunca sombra.",
+        "section": "elevation"
+      },
+      {
+        "name": "A Regra do Raio Aninhado",
+        "body": "Quem está dentro tem raio menor que quem contém: 28 > 18 > 12 > 10.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do desenhar qualquer contêiner novo como rótulo: contorno 1.5px marinho, faixa superior em label, recuo clamp(16px, 2.2vw, 28px).",
+      "Do passar toda foto pela janela graduada de 18px.",
+      "Do escrever valores com unidade em Martian Mono tabular e valores sem unidade em condensada.",
+      "Do usar o céu como nível ou campo; como texto, só sobre marinho.",
+      "Do manter o movimento em opacidade (1.1s, cubic-bezier(0.16, 1, 0.3, 1), passo por lista) e desligá-lo com `prefers-reduced-motion`.",
+      "Do manter alvos de toque de 44px ou mais."
+    ],
+    "donts": [
+      "Don't usar preto, cinza neutro ou degradê de cor na interface.",
+      "Don't colocar carro em fundo escuro, faísca, neon ou brilho como efeito.",
+      "Don't usar sombra de elevação; separação é fio.",
+      "Don't pôr sobretítulo em caixa-alta acima de título de seção; caixa-alta espaçada é só nome de campo.",
+      "Don't usar mono para número sem unidade, nem para texto corrido.",
+      "Don't criar um terceiro campo de cor cheio além da placa de produtos e da faixa de agendamento.",
+      "Don't usar Marinho Fundo fora do hover de botão."
+    ]
+  }
+}

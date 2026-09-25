@@ -1,0 +1,1332 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  LÂMINA — estética automotiva de uma pessoa só.
+
+  Segunda versão. A primeira tentou ser "rótulo técnico" (régua no cabeçalho,
+  campos em caixa-alta, fonte mono, azul-céu) e o cliente leu como amadora.
+  Esta volta ao que um estúdio de detalhamento sério mostra: o carro pronto
+  grande, o método explicado passo a passo e um jeito limpo de marcar horário.
+
+  O que sustenta a credibilidade:
+    - fotografia real (Freepik, licença gratuita com crédito), toda de carro
+      preto em estúdio, nivelada em cor e exposição;
+    - o passo a passo da lavagem, que é a seção-assinatura: a lista de etapas
+      fica presa à esquerda e marca a etapa do cartão que está na tela;
+    - agendamento num <dialog> nativo, que monta a mensagem do WhatsApp com o
+      texto que o cliente definiu.
+
+  Cor: marinho #144669 como marca, um marinho mais fundo para as seções
+  escuras, cinza-aço #B1BEC6 para fios e texto sobre escuro, papel #F0F2F2 de
+  fundo e branco nas superfícies. Sem azul-claro.
+
+  Movimento: fade por opacidade quando o bloco entra na tela; só os cartões do
+  processo sobem alguns pixels. Nada disso existe para quem pede menos
+  movimento, e sem JavaScript tudo aparece.
+*/
+
+const LOJA = {
+  nome: 'Lâmina',
+  sub: 'Estética Automotiva',
+  dono: 'Téo Ramalho',
+  desde: 2017,
+  rua: 'Rua Almirante Barroso, 1040',
+  bairro: 'Vila Nova',
+  cidade: 'Blumenau',
+  uf: 'SC',
+  cep: '89035-401',
+  fone: '(99) 9999-9999',
+  foneLink: '+559999999999',
+  zap: '5599999999999',
+  zapFmt: '(99) 99999-9999',
+  email: 'contato@laminaestetica.com.br',
+  insta: 'laminaestetica',
+  tiktok: 'laminaestetica',
+  face: 'laminaestetica',
+  site: 'https://laminaestetica.com.br',
+};
+
+/* terça a sábado; o modal usa os mesmos números para montar dias e horários */
+const EXPEDIENTE = { dias: [2, 3, 4, 5, 6], abre: 8, ultimaEntrada: 17 };
+const HORAS = Array.from(
+  { length: EXPEDIENTE.ultimaEntrada - EXPEDIENTE.abre + 1 },
+  (_, i) => `${String(EXPEDIENTE.abre + i).padStart(2, '0')}:00`,
+);
+
+const IMG = `${import.meta.env.BASE_URL}img/estetica-automotiva`;
+
+const mapaQuery = encodeURIComponent(
+  `${LOJA.rua}, ${LOJA.bairro}, ${LOJA.cidade} - ${LOJA.uf}, ${LOJA.cep}`,
+);
+
+const NAV = [
+  { id: 'trabalhos', t: 'Trabalhos' },
+  { id: 'processo', t: 'Processo' },
+  { id: 'sobre', t: 'Sobre' },
+  { id: 'produtos', t: 'Produtos' },
+  { id: 'contato', t: 'Contato' },
+];
+
+const TRABALHOS = [
+  {
+    f: 'sedan-molhado', w: 1400, h: 933,
+    alt: 'Sedã preto logo depois da lavagem, com a pintura brilhando e gotas de água sobre o para-lama',
+    t: 'Lavagem técnica e descontaminação', d: 'Sedã preto', tempo: '3 horas',
+  },
+  {
+    f: 'suv-farol', w: 1400, h: 935,
+    alt: 'Frente de um SUV preto polido, com o farol aceso refletido no piso encerado',
+    t: 'Polimento técnico', d: 'SUV preto', tempo: '1 dia',
+  },
+  {
+    f: 'grafite-farol', w: 1400, h: 933,
+    alt: 'Farol e capô de um carro grafite depois da vitrificação, com a pintura espelhada',
+    t: 'Vitrificação', d: 'Hatch grafite', tempo: '2 dias',
+  },
+];
+
+/* uma lavagem técnica de verdade, na ordem em que acontece */
+const PASSOS = [
+  {
+    f: 'p1-espuma', t: 'Pré-lavagem com espuma',
+    d: 'O carro inteiro recebe espuma de pH neutro e descansa alguns minutos. Ela solta a sujeira pesada antes de qualquer coisa tocar a pintura.',
+    produto: 'Koch-Chemie Gentle Snow Foam', tempo: '10 min',
+  },
+  {
+    f: 'p2-enxague', t: 'Enxágue de alta pressão',
+    d: 'A espuma sai levando areia e barro. É esse grão que risca a pintura quando alguém passa esponja direto no carro sujo.',
+    produto: 'Lavadora com bico em leque', tempo: '10 min',
+  },
+  {
+    f: 'p3-lavagem', t: 'Lavagem de contato',
+    d: 'Método de dois baldes: um com shampoo, outro só com água para enxaguar a luva. De cima para baixo, painel por painel.',
+    produto: 'Shampoo neutro e luva de microfibra', tempo: '40 min',
+  },
+  {
+    f: 'p4-detalhes', t: 'Detalhes, rodas e frestas',
+    d: 'Pincel macio em emblemas, grades, maçanetas e frisos. As rodas levam descontaminante de ferro, que dissolve a limalha de freio.',
+    produto: 'CarPro IronX e pincéis de cerdas macias', tempo: '35 min',
+  },
+  {
+    f: 'p5-secagem', t: 'Secagem sem arrastar',
+    d: 'Toalha grossa apoiada e puxada devagar, sem esfregar. As frestas saem no ar comprimido para não escorrer água depois.',
+    produto: 'Toalha de microfibra 500 g/m²', tempo: '20 min',
+  },
+  {
+    f: 'p6-protecao', t: 'Proteção final',
+    d: 'Cera, selante ou vitrificação, conforme o serviço contratado. É ela que mantém o brilho e faz a água escorrer nas próximas semanas.',
+    produto: 'Swissvax, Gyeon ou Gtechniq', tempo: '30 min a 1 dia',
+  },
+];
+
+/* prateleira de hoje, agrupada pela etapa em que cada produto entra */
+const PRODUTOS = [
+  {
+    g: 'Lavagem',
+    itens: [
+      { nome: 'Gentle Snow Foam', marca: 'Koch-Chemie', d: 'Espuma de pH neutro para a pré-lavagem. Não remove cera nem vitrificação.', v: '20 ml por litro' },
+      { nome: 'IronX', marca: 'CarPro', d: 'Descontaminante de ferro. Fica roxo onde há limalha de freio presa.', v: '3 a 5 min de ação' },
+      { nome: 'Eagle Edgeless 500', marca: 'The Rag Company', d: 'Toalha sem costura na borda, para secar sem marcar.', v: '500 g/m²' },
+    ],
+  },
+  {
+    g: 'Correção',
+    itens: [
+      { nome: 'BigFoot LHR 15 Mark III', marca: 'Rupes', d: 'Politriz roto-orbital que corrige sem aquecer o verniz nem deixar holograma.', v: 'Órbita de 15 mm' },
+      { nome: 'Super Finish Plus 3800', marca: 'Menzerna', d: 'Polimento de acabamento. Tira a névoa das etapas de corte.', v: 'Última etapa' },
+    ],
+  },
+  {
+    g: 'Proteção',
+    itens: [
+      { nome: 'Crystal Serum Ultra', marca: 'Gtechniq', d: 'Vitrificação vendida só a instaladores credenciados pelo fabricante.', v: 'Até 9 anos' },
+      { nome: 'Q² Mohs EVO', marca: 'Gyeon', d: 'Vitrificação de entrada, com ótima repelência à água.', v: 'Até 3 anos' },
+      { nome: 'Crystal Rock', marca: 'Swissvax', d: 'Cera de carnaúba branca feita à mão, entre as mais caras do mundo.', v: '76% de carnaúba' },
+    ],
+  },
+  {
+    g: 'Interior',
+    itens: [
+      { nome: 'Pol Star', marca: 'Koch-Chemie', d: 'Limpa tecido, couro e forro de teto sem encharcar a espuma do banco.', v: 'Tecido e couro' },
+    ],
+  },
+];
+
+const REDES = [
+  { n: 'Instagram', i: 'fa-brands fa-instagram', u: `https://instagram.com/${LOJA.insta}` },
+  { n: 'WhatsApp', i: 'fa-brands fa-whatsapp', u: `https://wa.me/${LOJA.zap}` },
+  { n: 'TikTok', i: 'fa-brands fa-tiktok', u: `https://tiktok.com/@${LOJA.tiktok}` },
+  { n: 'Facebook', i: 'fa-brands fa-facebook-f', u: `https://facebook.com/${LOJA.face}` },
+];
+
+const titulo = `${LOJA.nome} ${LOJA.sub} | Lavagem técnica, polimento e vitrificação em ${LOJA.cidade}`;
+const descricao =
+  `Estética automotiva em ${LOJA.cidade}, no bairro ${LOJA.bairro}: lavagem técnica, polimento, vitrificação e higienização interna, um carro por vez. Terça a sábado, das 8h às 18h. Agende pelo WhatsApp.`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'AutoWash',
+  '@id': `${LOJA.site}/#negocio`,
+  name: `${LOJA.nome} ${LOJA.sub}`,
+  description: descricao,
+  url: LOJA.site,
+  image: `${LOJA.site}/img/estetica-automotiva/heroi.jpg`,
+  telephone: LOJA.foneLink,
+  email: LOJA.email,
+  founder: { '@type': 'Person', name: LOJA.dono },
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: LOJA.rua,
+    addressLocality: LOJA.cidade,
+    addressRegion: LOJA.uf,
+    postalCode: LOJA.cep,
+    addressCountry: 'BR',
+  },
+  openingHoursSpecification: [{
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    opens: '08:00',
+    closes: '18:00',
+  }],
+  sameAs: REDES.filter((r) => r.n !== 'WhatsApp').map((r) => r.u),
+};
+
+const contrato = `THESIS: estúdio de detalhamento sério, mostrado como tal — carro pronto grande, método explicado etapa por etapa e agendamento limpo. Recusa a versão anterior (régua, caixa-alta, mono, azul-céu) e o clichê do setor (neon, faísca, preto com vermelho).
+OWN-WORLD: papel #F0F2F2, superfícies brancas, marinho #144669 como marca, marinho fundo #0B2A40 nas seções escuras, aço #B1BEC6 em fios. Onest em todo o texto, peso e tamanho fazem a hierarquia. Fotografia real de carro preto em estúdio, cantos de 14px.
+STORY: o visitante vê o resultado, entende o processo, confere quem faz e com quais produtos, e marca horário no modal que abre o WhatsApp com a mensagem pronta.
+FIRST VIEWPORT: foto de ponta a ponta (sedã preto na garagem, espelhado para a direita) sob véu marinho à esquerda; título grande em branco, uma linha de apoio, botões "Agendar horário" e "Ver o processo"; faixa inferior com horário, endereço e resposta.
+FORM: padrão do setor executado a sério, a pedido do cliente ("profissional", "credibilidade"); a direção sorteada anterior (seed b63c9536) foi rejeitada.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance`;
+---
+
+<Base title={titulo} description={descricao} contrato={contrato}>
+  <Fragment slot="head">
+    <meta name="theme-color" content="#0B2A40" />
+    <link rel="canonical" href={LOJA.site} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:image" content={`${LOJA.site}/img/estetica-automotiva/heroi.jpg`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" />
+    <link rel="preload" as="image" href={`${IMG}/heroi.webp`} type="image/webp" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </Fragment>
+
+  <div class="lam">
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <!-- ─────────────── cabeçalho ─────────────── -->
+    <header class="topo" data-estado="sobre-foto">
+      <div class="topo-in">
+        <a class="marca" href="#inicio" aria-label={`${LOJA.nome} ${LOJA.sub}, voltar ao início`}>
+          <span class="marca-selo" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M9.5 21.5 A7.4 7.4 0 1 1 22.5 21.5" /><path d="M6 21.5h20" /></svg>
+          </span>
+          <span class="marca-texto">
+            <span class="marca-nome">{LOJA.nome}</span>
+            <span class="marca-sub">{LOJA.sub}</span>
+          </span>
+        </a>
+
+        <nav class="nav" aria-label="Seções da página">
+          <ul>
+            {NAV.map((n) => <li><a href={`#${n.id}`} data-secao={n.id}>{n.t}</a></li>)}
+          </ul>
+        </nav>
+
+        <button class="botao botao-topo" type="button" data-abrir-agenda>Agendar horário</button>
+
+        <button class="topo-menu" type="button" aria-expanded="false" aria-controls="menu-movel" aria-label="Abrir menu">
+          <span></span><span></span>
+        </button>
+      </div>
+
+      <nav id="menu-movel" class="menu-movel" aria-label="Seções da página" hidden>
+        <ul>
+          {NAV.map((n) => <li><a href={`#${n.id}`} data-secao={n.id}>{n.t}</a></li>)}
+        </ul>
+        <button class="botao botao-cheio" type="button" data-abrir-agenda>Agendar horário</button>
+      </nav>
+    </header>
+
+    <main id="conteudo">
+      <!-- ─────────────── início ─────────────── -->
+      <section id="inicio" class="heroi" aria-labelledby="titulo-inicio">
+        <picture class="heroi-foto">
+          <source srcset={`${IMG}/heroi.webp`} type="image/webp" />
+          <img src={`${IMG}/heroi.jpg`} alt="Sedã preto limpo e brilhando dentro de uma garagem de estética automotiva"
+            width="2400" height="1600" fetchpriority="high" />
+        </picture>
+        <div class="heroi-veu" aria-hidden="true"></div>
+
+        <div class="heroi-in">
+          <div class="heroi-texto">
+            <h1 id="titulo-inicio" data-fade>Lavagem técnica, polimento e vitrificação em {LOJA.cidade}.</h1>
+            <p class="heroi-lide" data-fade style="--i: 1">
+              Um carro por vez, numa garagem coberta, com os mesmos produtos dos
+              estúdios de referência. Você deixa o carro e busca ele pronto.
+            </p>
+            <div class="heroi-acoes" data-fade style="--i: 2">
+              <button class="botao botao-claro" type="button" data-abrir-agenda>Agendar horário</button>
+              <a class="botao botao-contorno" href="#processo">Ver o processo</a>
+            </div>
+          </div>
+        </div>
+
+        <ul class="heroi-fatos" aria-label="Informações rápidas">
+          <li>
+            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+            <span><strong>Terça a sábado</strong>das 8h às 18h</span>
+          </li>
+          <li>
+            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+            <span><strong>{LOJA.rua}</strong>{LOJA.bairro}, {LOJA.cidade}</span>
+          </li>
+          <li>
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+            <span><strong>Resposta no mesmo dia</strong>pelo WhatsApp</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ─────────────── trabalhos ─────────────── -->
+      <section id="trabalhos" class="secao trabalhos" aria-labelledby="titulo-trabalhos">
+        <div class="cab">
+          <h2 id="titulo-trabalhos" data-fade>Carros que saíram daqui</h2>
+          <p data-fade style="--i: 1">
+            Três trabalhos recentes. Cada carro sai com o que foi combinado antes
+            de entrar: o serviço, o prazo e o que dá ou não dá para corrigir.
+          </p>
+        </div>
+
+        <ul class="galeria">
+          {TRABALHOS.map((t, i) => (
+            <li class={`galeria-item galeria-${i + 1}`} data-fade style={`--i: ${i}`}>
+              <figure>
+                <div class="foto">
+                  <picture>
+                    <source srcset={`${IMG}/${t.f}.webp`} type="image/webp" />
+                    <img src={`${IMG}/${t.f}.jpg`} alt={t.alt} width={t.w} height={t.h} loading="lazy" decoding="async" />
+                  </picture>
+                </div>
+                <figcaption>
+                  <strong>{t.t}</strong>
+                  <span>{t.d}, {t.tempo}</span>
+                </figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- ─────────────── processo ─────────────── -->
+      <section id="processo" class="processo" aria-labelledby="titulo-processo">
+        <div class="processo-in">
+          <div class="processo-lado">
+            <h2 id="titulo-processo" data-fade>Como é uma lavagem técnica</h2>
+            <p data-fade style="--i: 1">
+              Seis etapas, sempre nesta ordem. Leva cerca de três horas, e nenhuma
+              delas é pulada para o carro sair mais rápido.
+            </p>
+            <ol class="etapas" aria-label="Etapas da lavagem">
+              {PASSOS.map((p, i) => (
+                <li>
+                  <a href={`#passo-${i + 1}`} data-passo={i + 1} aria-current={i === 0 ? 'step' : undefined}>
+                    <span class="etapa-num">{String(i + 1).padStart(2, '0')}</span>
+                    <span>{p.t}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+            <p class="processo-total">
+              <i class="fa-regular fa-clock" aria-hidden="true"></i>
+              Tempo total: cerca de 3 horas
+            </p>
+          </div>
+
+          <ol class="cartoes">
+            {PASSOS.map((p, i) => (
+              <li id={`passo-${i + 1}`} class="cartao" data-cartao={i + 1}>
+                <div class="cartao-foto">
+                  <picture>
+                    <source srcset={`${IMG}/${p.f}.webp`} type="image/webp" />
+                    <img src={`${IMG}/${p.f}.jpg`} alt="" width="1200" height="800" loading="lazy" decoding="async" />
+                  </picture>
+                  <span class="cartao-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                </div>
+                <div class="cartao-corpo">
+                  <h3><span class="sr">Etapa {i + 1}: </span>{p.t}</h3>
+                  <p>{p.d}</p>
+                  <dl class="cartao-meta">
+                    <div><dt>Produto</dt><dd>{p.produto}</dd></div>
+                    <div><dt>Tempo</dt><dd>{p.tempo}</dd></div>
+                  </dl>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <!-- ─────────────── sobre ─────────────── -->
+      <section id="sobre" class="secao sobre" aria-labelledby="titulo-sobre">
+        <div class="sobre-foto foto" data-fade>
+          <picture>
+            <source srcset={`${IMG}/sobre.webp`} type="image/webp" />
+            <img src={`${IMG}/sobre.jpg`} alt="Detalhista aplicando vitrificação no capô de um carro preto, dentro do estúdio"
+              width="1400" height="934" loading="lazy" decoding="async" />
+          </picture>
+        </div>
+        <div class="sobre-texto">
+          <h2 id="titulo-sobre" data-fade>Quem cuida do seu carro</h2>
+          <p class="sobre-abre" data-fade style="--i: 1">
+            Eu sou o {LOJA.dono}. Comecei lavando o carro do meu pai aos sábados e,
+            em {LOJA.desde}, transformei a garagem dos fundos num estúdio de estética
+            automotiva.
+          </p>
+          <p data-fade style="--i: 2">
+            Trabalho sozinho e atendo um carro por vez. Antes de começar, mostro no
+            seu carro o que dá para corrigir e o que não dá: risco que passou do
+            verniz não sai com polimento, e prefiro dizer isso antes do que cobrar
+            depois.
+          </p>
+          <ul class="sobre-fatos" data-fade style="--i: 3">
+            <li><strong>Desde {LOJA.desde}</strong><span>no mesmo endereço, na {LOJA.bairro}</span></li>
+            <li><strong>Um carro por vez</strong><span>sem fila e sem pressa na cura</span></li>
+            <li><strong>Garagem fechada</strong><span>longe de poeira, sol e chuva</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ─────────────── produtos ─────────────── -->
+      <section id="produtos" class="secao produtos" aria-labelledby="titulo-produtos">
+        <div class="cab">
+          <h2 id="titulo-produtos" data-fade>Produtos que usamos</h2>
+          <p data-fade style="--i: 1">
+            Produto bom não faz milagre, mas produto ruim desfaz trabalho. Esta é a
+            prateleira de hoje, escolhida frasco por frasco.
+          </p>
+        </div>
+
+        <div class="grupos">
+          {PRODUTOS.map((g, gi) => (
+            <section class="grupo" aria-labelledby={`grupo-${gi}`} data-fade style={`--i: ${gi}`}>
+              <h3 id={`grupo-${gi}`}>{g.g}</h3>
+              <ul>
+                {g.itens.map((p) => (
+                  <li class="produto">
+                    <div class="produto-nome">
+                      <strong>{p.nome}</strong>
+                      <span>{p.marca}</span>
+                    </div>
+                    <p>{p.d}</p>
+                    <span class="produto-spec">{p.v}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+        <p class="nota">Nomes e marcas pertencem aos fabricantes. Especificações conforme cada fabricante informa.</p>
+      </section>
+
+      <!-- ─────────────── agendar ─────────────── -->
+      <section id="agendar" class="agendar" aria-labelledby="titulo-agendar">
+        <div class="agendar-in">
+          <div class="agendar-texto">
+            <h2 id="titulo-agendar" data-fade>Agende o seu horário</h2>
+            <p data-fade style="--i: 1">
+              Escolha o dia e a hora, diga qual é o carro e a mensagem sai pronta
+              no WhatsApp. Eu confirmo no mesmo dia.
+            </p>
+          </div>
+          <div class="agendar-acoes" data-fade style="--i: 2">
+            <button class="botao botao-claro botao-grande" type="button" data-abrir-agenda>Agendar horário</button>
+            <a class="agendar-zap" href={`https://wa.me/${LOJA.zap}`} rel="noopener">
+              <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+              Prefere conversar antes? {LOJA.zapFmt}
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ─────────────── rodapé ─────────────── -->
+    <footer id="contato" class="rodape">
+      <div class="rodape-in">
+        <div class="rodape-marca">
+          <span class="marca-selo marca-selo-claro" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M9.5 21.5 A7.4 7.4 0 1 1 22.5 21.5" /><path d="M6 21.5h20" /></svg>
+          </span>
+          <div>
+            <p class="rodape-nome">{LOJA.nome} {LOJA.sub}</p>
+            <p class="rodape-lema">Lavagem técnica, polimento e vitrificação em {LOJA.cidade}.</p>
+          </div>
+        </div>
+
+        <div class="rodape-grade">
+          <div class="rodape-col">
+            <h2>Endereço</h2>
+            <address>{LOJA.rua}<br />{LOJA.bairro}, {LOJA.cidade}, {LOJA.uf}<br />CEP {LOJA.cep}</address>
+          </div>
+          <div class="rodape-col">
+            <h2>Horário</h2>
+            <p>Terça a sábado<br />das 8h às 18h</p>
+            <p class="rodape-fraco">Domingo e segunda fechado</p>
+          </div>
+          <div class="rodape-col">
+            <h2>Contato</h2>
+            <p>
+              <a href={`tel:${LOJA.foneLink}`}>{LOJA.fone}</a><br />
+              <a href={`mailto:${LOJA.email}`}>{LOJA.email}</a>
+            </p>
+          </div>
+          <div class="rodape-col">
+            <h2>Redes sociais</h2>
+            <ul class="redes">
+              {REDES.map((r) => (
+                <li><a href={r.u} rel="noopener" aria-label={r.n}><i class={r.i} aria-hidden="true"></i></a></li>
+              ))}
+            </ul>
+          </div>
+          <div class="rodape-mapa">
+            <iframe
+              title={`Mapa: ${LOJA.rua}, ${LOJA.bairro}, ${LOJA.cidade}`}
+              src={`https://www.google.com/maps?q=${mapaQuery}&z=16&output=embed`}
+              loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+            <a class="rodape-rota" href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+              <i class="fa-solid fa-diamond-turn-right" aria-hidden="true"></i>
+              Como chegar
+            </a>
+          </div>
+        </div>
+
+        <div class="rodape-fim">
+          <span>© 2026 {LOJA.nome} {LOJA.sub}</span>
+          <span>Demonstração de portfólio: empresa, pessoa, endereço e contatos são fictícios. Fotos: <a href="https://www.freepik.com" rel="noopener">Freepik</a>.</span>
+          <a href={import.meta.env.BASE_URL}>Voltar ao portfólio</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- ─────────────── modal de agendamento ─────────────── -->
+    <dialog id="agenda" class="modal" aria-labelledby="agenda-titulo">
+      <form class="modal-in" id="form-agenda" novalidate
+        data-zap={LOJA.zap}
+        data-dias={EXPEDIENTE.dias.join(',')}
+        data-ultima={EXPEDIENTE.ultimaEntrada}>
+        <div class="modal-cab">
+          <div>
+            <h2 id="agenda-titulo">Agendar horário</h2>
+            <p>A mensagem abre pronta no WhatsApp. Você confere antes de enviar.</p>
+          </div>
+          <button class="modal-fechar" type="button" data-fechar-agenda aria-label="Fechar">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="modal-corpo">
+          <div class="campos">
+            <div class="campo">
+              <label for="f-nome">Nome</label>
+              <input id="f-nome" name="nome" type="text" autocomplete="name" maxlength="60"
+                placeholder="Seu nome" aria-describedby="e-nome" />
+              <p class="erro" id="e-nome" aria-live="polite"></p>
+            </div>
+            <div class="campo">
+              <label for="f-carro">Modelo do carro</label>
+              <input id="f-carro" name="carro" type="text" maxlength="60"
+                placeholder="Ex.: Corolla 2021 prata" aria-describedby="e-carro" />
+              <p class="erro" id="e-carro" aria-live="polite"></p>
+            </div>
+            <div class="campo">
+              <label for="f-dia">Dia</label>
+              <div class="seletor">
+                <select id="f-dia" name="dia" aria-describedby="e-dia">
+                  <option value="">Escolha o dia</option>
+                </select>
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+              </div>
+              <p class="erro" id="e-dia" aria-live="polite"></p>
+            </div>
+            <div class="campo">
+              <label for="f-hora">Horário</label>
+              <div class="seletor">
+                <select id="f-hora" name="hora" aria-describedby="d-hora e-hora">
+                  <option value="">Escolha o horário</option>
+                  {HORAS.map((h) => <option value={h}>{h.replace(':00', 'h')}</option>)}
+                </select>
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+              </div>
+              <p class="dica" id="d-hora">Horário de entrada do carro.</p>
+              <p class="erro" id="e-hora" aria-live="polite"></p>
+            </div>
+            <div class="campo campo-largo">
+              <label for="f-msg">Mensagem a mais <span class="opcional">(opcional)</span></label>
+              <textarea id="f-msg" name="msg" rows="3" maxlength="400"
+                placeholder="Serviço que você quer, um risco que incomoda, se precisa buscar o carro…"></textarea>
+            </div>
+          </div>
+
+          <div class="previa">
+            <p class="previa-titulo"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Prévia da mensagem</p>
+            <p class="previa-texto" id="previa" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="modal-pe">
+          <button class="botao botao-cheio botao-grande" type="submit">
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+            Enviar pelo WhatsApp
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </div>
+</Base>
+
+<script>
+  const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const raiz = document.documentElement;
+
+  /* ── fade ao entrar na tela ── */
+  const fades = document.querySelectorAll<HTMLElement>('.lam [data-fade], .lam .cartao');
+  if (reduzido || !('IntersectionObserver' in window)) {
+    fades.forEach((el) => el.classList.add('visto'));
+  } else {
+    const obs = new IntersectionObserver((entradas) => {
+      for (const e of entradas) {
+        if (!e.isIntersecting) continue;
+        e.target.classList.add('visto');
+        obs.unobserve(e.target);
+      }
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.15 });
+    fades.forEach((el) => obs.observe(el));
+  }
+
+  /* ── cabeçalho: transparente sobre a foto, sólido depois dela ── */
+  const topo = document.querySelector<HTMLElement>('.topo')!;
+  const heroi = document.getElementById('inicio')!;
+  new IntersectionObserver(([e]) => {
+    topo.dataset.estado = e.isIntersecting ? 'sobre-foto' : 'solido';
+  }, { rootMargin: '-72px 0px 0px 0px', threshold: 0.92 }).observe(heroi);
+
+  /* ── link da seção atual ── */
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.lam a[data-secao]')];
+  const alvos = [...new Set(links.map((l) => l.dataset.secao!))].map((id) => document.getElementById(id)!);
+  const obsNav = new IntersectionObserver((entradas) => {
+    for (const e of entradas) {
+      if (!e.isIntersecting) continue;
+      for (const l of links) {
+        if (l.dataset.secao === e.target.id) l.setAttribute('aria-current', 'location');
+        else l.removeAttribute('aria-current');
+      }
+    }
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  alvos.forEach((s) => obsNav.observe(s));
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) links.forEach((l) => l.removeAttribute('aria-current'));
+  }, { rootMargin: '-45% 0px -50% 0px' }).observe(heroi);
+
+  /* ── processo: a etapa do cartão que está no meio da tela fica marcada ── */
+  const etapas = [...document.querySelectorAll<HTMLAnchorElement>('.etapas a')];
+  const obsPasso = new IntersectionObserver((entradas) => {
+    for (const e of entradas) {
+      if (!e.isIntersecting) continue;
+      const n = (e.target as HTMLElement).dataset.cartao;
+      etapas.forEach((a) => {
+        if (a.dataset.passo === n) a.setAttribute('aria-current', 'step');
+        else a.removeAttribute('aria-current');
+      });
+    }
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  document.querySelectorAll('.cartao').forEach((c) => obsPasso.observe(c));
+
+  /* ── menu do celular ── */
+  const botaoMenu = topo.querySelector<HTMLButtonElement>('.topo-menu')!;
+  const menu = document.getElementById('menu-movel')!;
+  function abrirMenu(abrir: boolean) {
+    botaoMenu.setAttribute('aria-expanded', String(abrir));
+    botaoMenu.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+    menu.hidden = !abrir;
+    topo.classList.toggle('menu-aberto', abrir);
+  }
+  botaoMenu.addEventListener('click', () => abrirMenu(menu.hidden));
+  menu.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a, button')) abrirMenu(false);
+  });
+  matchMedia('(min-width: 960px)').addEventListener('change', () => abrirMenu(false));
+
+  /* ── modal de agendamento ── */
+  const modal = document.getElementById('agenda') as HTMLDialogElement;
+  const form = document.getElementById('form-agenda') as HTMLFormElement;
+  const campo = <T extends HTMLElement = HTMLInputElement>(n: string) => form.elements.namedItem(n) as unknown as T;
+  const previa = document.getElementById('previa')!;
+  const DIAS = form.dataset.dias!.split(',').map(Number);
+  const ULTIMA = Number(form.dataset.ultima);
+  let quemAbriu: HTMLElement | null = null;
+
+  function abrirAgenda(origem: HTMLElement) {
+    quemAbriu = origem;
+    montarDias();
+    modal.showModal();
+    raiz.classList.add('modal-aberto');
+    campo('nome').focus();
+  }
+  function fecharAgenda() { modal.close(); }
+  modal.addEventListener('close', () => {
+    raiz.classList.remove('modal-aberto');
+    quemAbriu?.focus();
+  });
+  document.querySelectorAll<HTMLElement>('[data-abrir-agenda]').forEach((b) =>
+    b.addEventListener('click', () => abrirAgenda(b)));
+  modal.querySelector('[data-fechar-agenda]')!.addEventListener('click', fecharAgenda);
+  /* clique no fundo escuro fecha; clique dentro do formulário não */
+  modal.addEventListener('click', (e) => { if (e.target === modal) fecharAgenda(); });
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const hoje = () => iso(new Date());
+
+  /* os próximos dez dias abertos; hoje só entra se ainda sobra horário */
+  function montarDias() {
+    const sel = campo<HTMLSelectElement>('dia');
+    const antes = sel.value;
+    const d = new Date();
+    const opcoes: HTMLOptionElement[] = [];
+    for (let i = 0; opcoes.length < 10 && i < 30; i++, d.setDate(d.getDate() + 1)) {
+      if (!DIAS.includes(d.getDay())) continue;
+      if (iso(d) === hoje() && d.getHours() >= ULTIMA) continue;
+      const semana = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+      const rotulo = `${iso(d) === hoje() ? 'Hoje, ' : ''}${semana}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+      opcoes.push(new Option(rotulo.charAt(0).toUpperCase() + rotulo.slice(1), iso(d)));
+    }
+    sel.replaceChildren(new Option('Escolha o dia', ''), ...opcoes);
+    sel.value = opcoes.some((o) => o.value === antes) ? antes : '';
+    atualizarHoras();
+  }
+
+  /* hoje, só a partir da próxima hora cheia */
+  function atualizarHoras() {
+    const dia = campo<HTMLSelectElement>('dia').value;
+    const sel = campo<HTMLSelectElement>('hora');
+    for (const o of sel.options) {
+      if (!o.value) continue;
+      o.disabled = dia === hoje() && Number(o.value.slice(0, 2)) <= new Date().getHours();
+    }
+    if (sel.selectedOptions[0]?.disabled) sel.value = '';
+  }
+
+  function horarioFmt(d: Date) {
+    const dia = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+    return `${dia}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)} às ${pad(d.getHours())}h${pad(d.getMinutes())}`;
+  }
+
+  function valores() {
+    const dia = campo<HTMLSelectElement>('dia').value;
+    const hora = campo<HTMLSelectElement>('hora').value;
+    return {
+      nome: campo('nome').value.trim().replace(/\s+/g, ' '),
+      carro: campo('carro').value.trim().replace(/\s+/g, ' '),
+      dia, hora,
+      horario: dia && hora ? new Date(`${dia}T${hora}`) : null,
+      msg: campo<HTMLTextAreaElement>('msg').value.trim(),
+    };
+  }
+
+  /* o texto é o do cliente, palavra por palavra; a linha de horário é o que o formulário acrescenta */
+  function mensagem(v: ReturnType<typeof valores>) {
+    let t = `olá me chamo ${v.nome} Gostaria de fazer o agendamento de limpeza para o meu carro: ${v.carro}`;
+    t += `\nHorário: ${v.horario ? horarioFmt(v.horario) : ''}`;
+    if (v.msg) t += `\n\nObservação:\n${v.msg}`;
+    return t;
+  }
+
+  function trecho(valor: string, vazio: string) {
+    const s = document.createElement('span');
+    s.className = valor ? 'cheio' : 'vazio';
+    s.textContent = valor || vazio;
+    return s;
+  }
+
+  function desenharPrevia() {
+    const v = valores();
+    previa.replaceChildren(
+      'olá me chamo ', trecho(v.nome, 'seu nome'),
+      ' Gostaria de fazer o agendamento de limpeza para o meu carro: ', trecho(v.carro, 'modelo do carro'),
+      '\nHorário: ', trecho(v.horario ? horarioFmt(v.horario) : '', 'dia e horário'),
+      ...(v.msg ? ['\n\nObservação:\n', trecho(v.msg, '')] : []),
+    );
+  }
+
+  function marcarErro(nome: string, texto: string) {
+    document.getElementById(`e-${nome}`)!.textContent = texto;
+    const el = campo(nome);
+    if (texto) el.setAttribute('aria-invalid', 'true');
+    else el.removeAttribute('aria-invalid');
+  }
+
+  const REGRAS: Record<string, (v: ReturnType<typeof valores>) => string> = {
+    nome: (v) => (v.nome ? '' : 'Diga seu nome para eu saber com quem falo.'),
+    carro: (v) => (v.carro ? '' : 'Qual é o carro? Modelo e ano já ajudam.'),
+    dia: (v) => (v.dia ? '' : 'Escolha o dia.'),
+    hora: (v) => (v.hora ? '' : 'Escolha o horário de entrada.'),
+  };
+
+  form.addEventListener('input', (e) => {
+    const alvo = e.target as HTMLInputElement;
+    if (alvo.name === 'dia') atualizarHoras();
+    desenharPrevia();
+    /* o erro some assim que a pessoa corrige; não aparece enquanto ela digita */
+    if (alvo.getAttribute('aria-invalid') === 'true' && REGRAS[alvo.name]) {
+      marcarErro(alvo.name, REGRAS[alvo.name](valores()));
+    }
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = valores();
+    const erros = Object.entries(REGRAS).map(([n, regra]) => [n, regra(v)] as const);
+    erros.forEach(([n, t]) => marcarErro(n, t));
+    const primeiro = erros.find(([, t]) => t);
+    if (primeiro) { campo(primeiro[0]).focus(); return; }
+    window.open(`https://wa.me/${form.dataset.zap}?text=${encodeURIComponent(mensagem(v))}`, '_blank', 'noopener');
+    fecharAgenda();
+  });
+
+  montarDias();
+  desenharPrevia();
+</script>
+
+<style is:global>
+  :root:has(.lam) {
+    scroll-behavior: smooth;
+    scroll-padding-top: 84px;
+    background: #F0F2F2;
+  }
+  :root.modal-aberto { overflow: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    :root:has(.lam) { scroll-behavior: auto; }
+  }
+
+  .lam {
+    --papel: #F0F2F2;
+    --branco: #FFFFFF;
+    --marinho: #144669;
+    --marinho-hover: #0F3A58;
+    --fundo: #0B2A40;
+    --aco: #B1BEC6;
+    --tinta: #0E2233;
+    --tinta-2: #4A5D6B;
+    --fio: #D7DEE3;
+    --fio-escuro: rgba(177, 190, 198, 0.22);
+
+    --f: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --largura: 1240px;
+    --margem: clamp(20px, 5vw, 64px);
+    --r-foto: 14px;
+    --r-cartao: 18px;
+    --r-ctrl: 10px;
+    --e: cubic-bezier(0.16, 1, 0.3, 1);
+
+    background: var(--papel);
+    color: var(--tinta);
+    font: 400 1.0625rem/1.65 var(--f);
+    -webkit-font-smoothing: antialiased;
+  }
+  .lam *, .lam *::before, .lam *::after { box-sizing: border-box; }
+  .lam ::selection { background: var(--marinho); color: var(--branco); }
+  .lam img { display: block; max-width: 100%; }
+  .lam a { color: inherit; text-underline-offset: 0.2em; }
+  .lam :focus-visible { outline: 2px solid var(--marinho); outline-offset: 3px; border-radius: 6px; }
+  .lam h1, .lam h2, .lam h3, .lam p, .lam figure, .lam dl, .lam dd, .lam ul, .lam ol { margin: 0; padding: 0; }
+  .lam ul, .lam ol { list-style: none; }
+  .lam .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .lam .pular {
+    position: fixed; left: 16px; top: -64px; z-index: 80;
+    padding: 10px 16px; border-radius: var(--r-ctrl);
+    background: var(--marinho); color: var(--branco);
+  }
+  .lam .pular:focus { top: 12px; }
+
+  /* entrada: invisível só com JS e só para quem aceita movimento */
+  .js .lam [data-fade] {
+    opacity: 0;
+    transition: opacity 0.9s var(--e) calc(var(--i, 0) * 0.12s);
+  }
+  .js .lam [data-fade].visto { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .js .lam [data-fade], .js .lam .cartao { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
+
+  /* ─────────────── botões ─────────────── */
+  .lam .botao {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    min-height: 48px; padding: 0 1.35rem;
+    border: 1px solid transparent; border-radius: var(--r-ctrl);
+    font: 600 0.98rem/1 var(--f); letter-spacing: -0.005em;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .lam .botao-cheio { background: var(--marinho); color: var(--branco); }
+  .lam .botao-cheio:hover { background: var(--marinho-hover); }
+  .lam .botao-claro { background: var(--branco); color: var(--marinho); }
+  .lam .botao-claro:hover { background: var(--papel); }
+  .lam .botao-contorno { border-color: rgba(255, 255, 255, 0.55); color: var(--branco); }
+  .lam .botao-contorno:hover { border-color: var(--branco); background: rgba(255, 255, 255, 0.08); }
+  .lam .botao-grande { min-height: 54px; padding: 0 1.7rem; font-size: 1.02rem; }
+  .lam .botao:active { transform: translateY(1px); }
+
+  /* ─────────────── cabeçalho ─────────────── */
+  .lam .topo {
+    position: fixed; inset: 0 0 auto 0; z-index: 50;
+    transition: background-color .3s ease, box-shadow .3s ease, color .3s ease;
+  }
+  .lam .topo[data-estado='sobre-foto'] { color: var(--branco); }
+  .lam .topo[data-estado='solido'], .lam .topo.menu-aberto {
+    color: var(--tinta);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: saturate(1.4) blur(14px);
+    box-shadow: 0 1px 0 var(--fio);
+  }
+  .lam .topo-in {
+    max-width: calc(var(--largura) + 2 * var(--margem));
+    margin: 0 auto; padding: 0 var(--margem);
+    height: 76px; display: flex; align-items: center; gap: 2rem;
+  }
+  .lam .marca { display: inline-flex; align-items: center; gap: 0.7rem; text-decoration: none; margin-right: auto; }
+  .lam .marca-selo {
+    width: 38px; height: 38px; flex: none; border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--marinho); color: var(--branco);
+  }
+  .lam .topo[data-estado='sobre-foto']:not(.menu-aberto) .marca-selo { background: var(--branco); color: var(--marinho); }
+  .lam .marca-selo svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+  .lam .marca-texto { display: grid; line-height: 1.05; }
+  .lam .marca-nome { font-weight: 700; font-size: 1.2rem; letter-spacing: -0.02em; }
+  .lam .marca-sub { font-size: 0.78rem; font-weight: 500; opacity: 0.72; }
+
+  .lam .nav ul { display: flex; gap: 0.3rem; }
+  .lam .nav a {
+    position: relative; display: block; padding: 0.55rem 0.8rem;
+    font-weight: 500; font-size: 0.96rem; text-decoration: none; opacity: 0.82;
+    transition: opacity .2s ease;
+  }
+  .lam .nav a:hover, .lam .nav a[aria-current] { opacity: 1; }
+  .lam .nav a::after {
+    content: ''; position: absolute; left: 0.8rem; right: 0.8rem; bottom: 0.2rem; height: 2px;
+    background: currentColor; border-radius: 2px;
+    transform: scaleX(0); transform-origin: left; transition: transform .35s var(--e);
+  }
+  .lam .nav a[aria-current]::after { transform: scaleX(1); }
+
+  .lam .botao-topo { background: var(--marinho); color: var(--branco); min-height: 44px; }
+  .lam .botao-topo:hover { background: var(--marinho-hover); }
+  .lam .topo[data-estado='sobre-foto']:not(.menu-aberto) .botao-topo { background: var(--branco); color: var(--marinho); }
+
+  .lam .topo-menu {
+    display: none; width: 44px; height: 44px; padding: 0;
+    border: 0; border-radius: var(--r-ctrl); background: transparent; color: inherit; cursor: pointer;
+    flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .lam .topo-menu span { width: 20px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .3s var(--e); }
+  .lam .menu-aberto .topo-menu span:first-child { transform: translateY(4px) rotate(45deg); }
+  .lam .menu-aberto .topo-menu span:last-child { transform: translateY(-4px) rotate(-45deg); }
+
+  .lam .menu-movel { padding: 0.5rem var(--margem) 1.5rem; background: var(--branco); border-top: 1px solid var(--fio); }
+  .lam .menu-movel a {
+    display: block; padding: 0.95rem 0; border-bottom: 1px solid var(--fio);
+    font-size: 1.1rem; font-weight: 500; text-decoration: none;
+  }
+  .lam .menu-movel a[aria-current] { color: var(--marinho); font-weight: 600; }
+  .lam .menu-movel .botao { width: 100%; margin-top: 1.2rem; }
+
+  @media (max-width: 959px) {
+    .lam .nav, .lam .botao-topo { display: none; }
+    .lam .topo-menu { display: inline-flex; }
+    .lam .topo-in { height: 66px; }
+  }
+
+  /* ─────────────── início ─────────────── */
+  .lam .heroi {
+    position: relative; isolation: isolate;
+    min-height: max(640px, min(100svh, 900px));
+    display: grid; grid-template-rows: 1fr auto;
+    color: var(--branco); overflow: hidden;
+  }
+  .lam .heroi-foto, .lam .heroi-foto img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .lam .heroi-foto { z-index: -2; }
+  /* espelhada: o carro vai para a direita e deixa o lado do texto livre */
+  .lam .heroi-foto img { object-fit: cover; object-position: 30% 55%; transform: scaleX(-1); }
+  .lam .heroi-veu {
+    position: absolute; inset: 0; z-index: -1;
+    background:
+      linear-gradient(180deg, rgba(11, 42, 64, 0.7) 0%, rgba(11, 42, 64, 0) 22%),
+      linear-gradient(90deg, rgba(11, 42, 64, 0.94) 0%, rgba(11, 42, 64, 0.82) 34%, rgba(11, 42, 64, 0.25) 62%, rgba(11, 42, 64, 0.05) 80%),
+      linear-gradient(0deg, rgba(11, 42, 64, 0.85) 0%, rgba(11, 42, 64, 0) 30%);
+  }
+  .lam .heroi-in {
+    width: 100%; max-width: calc(var(--largura) + 2 * var(--margem));
+    margin: 0 auto; padding: 150px var(--margem) 64px;
+    display: flex; align-items: center;
+  }
+  .lam .heroi-texto { max-width: 36rem; display: grid; gap: 1.5rem; }
+  .lam .heroi h1 {
+    font-size: clamp(2.5rem, 5.2vw, 4.4rem); line-height: 1.02; font-weight: 600;
+    letter-spacing: -0.035em; text-wrap: balance;
+  }
+  .lam .heroi-lide { font-size: 1.15rem; line-height: 1.6; color: rgba(255, 255, 255, 0.86); max-width: 32rem; }
+  .lam .heroi-acoes { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+
+  .lam .heroi-fatos {
+    width: 100%; max-width: calc(var(--largura) + 2 * var(--margem));
+    margin: 0 auto; padding: 0 var(--margem) 36px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+  }
+  .lam .heroi-fatos li {
+    display: flex; gap: 0.9rem; align-items: flex-start;
+    padding-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: 0.95rem; color: rgba(255, 255, 255, 0.75);
+  }
+  .lam .heroi-fatos i { font-size: 1.05rem; margin-top: 0.2rem; color: var(--branco); width: 1.2rem; text-align: center; }
+  .lam .heroi-fatos span { display: grid; }
+  .lam .heroi-fatos strong { color: var(--branco); font-weight: 600; }
+
+  @media (max-width: 767px) {
+    .lam .heroi { min-height: max(620px, 100svh); }
+    .lam .heroi-foto img { object-position: 70% 50%; }
+    .lam .heroi-veu {
+      background:
+        linear-gradient(180deg, rgba(11, 42, 64, 0.75) 0%, rgba(11, 42, 64, 0.1) 30%, rgba(11, 42, 64, 0.55) 55%, rgba(11, 42, 64, 0.96) 80%);
+    }
+    .lam .heroi-in { align-items: flex-end; padding-top: 120px; padding-bottom: 36px; }
+    .lam .heroi-fatos { grid-template-columns: 1fr; gap: 0; padding-bottom: 28px; }
+    .lam .heroi-fatos li { padding: 0.9rem 0; }
+    .lam .heroi-fatos li:nth-child(3) { display: none; }
+    .lam .heroi-acoes .botao { flex: 1 1 auto; }
+  }
+
+  /* ─────────────── seções claras ─────────────── */
+  .lam .secao {
+    max-width: calc(var(--largura) + 2 * var(--margem));
+    margin: 0 auto; padding: clamp(88px, 11vw, 150px) var(--margem) 0;
+  }
+  .lam .cab {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+    align-items: end; gap: 1.2rem 4rem; margin-bottom: clamp(36px, 5vw, 56px);
+  }
+  .lam h2 {
+    font-size: clamp(2rem, 3.8vw, 3.1rem); line-height: 1.06; font-weight: 600;
+    letter-spacing: -0.03em; text-wrap: balance;
+  }
+  .lam .cab p { color: var(--tinta-2); }
+  .lam .foto { position: relative; overflow: hidden; border-radius: var(--r-foto); background: #1B2B38; }
+  .lam .foto img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--e); }
+
+  @media (max-width: 767px) {
+    .lam .cab { grid-template-columns: 1fr; }
+  }
+
+  /* ─────────────── trabalhos ─────────────── */
+  /* três trabalhos do mesmo tamanho, lado a lado */
+  .lam .galeria { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 24px); }
+  .lam .galeria-item figure { display: flex; flex-direction: column; gap: 0.9rem; }
+  .lam .galeria-item .foto { aspect-ratio: 4 / 3; }
+  .lam .galeria-2 .foto img { object-position: 30% 50%; }
+  .lam .galeria-item:hover .foto img { transform: scale(1.035); }
+  .lam .galeria figcaption { display: grid; gap: 0.1rem; }
+  .lam .galeria figcaption strong { font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; }
+  .lam .galeria figcaption span { color: var(--tinta-2); font-size: 0.95rem; }
+
+  @media (max-width: 899px) {
+    .lam .galeria { grid-template-columns: 1fr; }
+  }
+
+  /* ─────────────── processo ─────────────── */
+  .lam .processo {
+    margin-top: clamp(88px, 11vw, 150px);
+    background: var(--fundo); color: var(--branco);
+  }
+  .lam .processo ::selection { background: var(--branco); color: var(--fundo); }
+  .lam .processo :focus-visible { outline-color: var(--branco); }
+  .lam .processo-in {
+    max-width: calc(var(--largura) + 2 * var(--margem));
+    margin: 0 auto; padding: clamp(88px, 11vw, 140px) var(--margem);
+    display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(40px, 7vw, 110px);
+    align-items: start;
+  }
+  .lam .processo-lado { position: sticky; top: 120px; display: grid; gap: 1.3rem; }
+  .lam .processo-lado > p { color: var(--aco); max-width: 28rem; }
+  .lam .etapas { display: grid; margin-top: 1rem; border-top: 1px solid var(--fio-escuro); }
+  .lam .etapas a {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.85rem 0;
+    text-decoration: none; color: var(--aco); font-weight: 500;
+    transition: color .3s ease, transform .4s var(--e);
+  }
+  .lam .etapas li { border-bottom: 1px solid var(--fio-escuro); }
+  .lam .etapas a:hover { color: var(--branco); }
+  .lam .etapas a[aria-current] { color: var(--branco); transform: translateX(0.6rem); }
+  .lam .etapa-num {
+    font-variant-numeric: tabular-nums; font-size: 0.85rem; font-weight: 600;
+    width: 2.2rem; height: 2.2rem; flex: none; border-radius: 50%;
+    display: grid; place-items: center; border: 1px solid var(--fio-escuro);
+    transition: background-color .3s ease, color .3s ease, border-color .3s ease;
+  }
+  .lam .etapas a[aria-current] .etapa-num { background: var(--branco); color: var(--fundo); border-color: var(--branco); }
+  .lam .processo-total { display: flex; align-items: center; gap: 0.6rem; color: var(--aco); font-size: 0.95rem; }
+
+  .lam .cartoes { display: grid; gap: clamp(24px, 3vw, 36px); }
+  .lam .cartao {
+    background: #10354F; border: 1px solid var(--fio-escuro); border-radius: var(--r-cartao);
+    overflow: hidden;
+  }
+  .js .lam .cartao { opacity: 0; transform: translateY(28px); transition: opacity .9s var(--e), transform .9s var(--e); }
+  .js .lam .cartao.visto { opacity: 1; transform: translateY(0); }
+  .lam .cartao-foto { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #0A2436; }
+  .lam .cartao-foto img { width: 100%; height: 100%; object-fit: cover; }
+  .lam .cartao-num {
+    position: absolute; left: 18px; top: 18px;
+    min-width: 44px; height: 44px; padding: 0 12px; border-radius: 999px;
+    display: grid; place-items: center;
+    background: rgba(11, 42, 64, 0.82); backdrop-filter: blur(6px);
+    font-weight: 600; font-variant-numeric: tabular-nums; font-size: 0.95rem;
+  }
+  .lam .cartao-corpo { padding: clamp(22px, 2.6vw, 32px); display: grid; gap: 0.8rem; }
+  .lam .cartao h3 { font-size: clamp(1.3rem, 2vw, 1.6rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+  .lam .cartao p { color: var(--aco); }
+  .lam .cartao-meta {
+    display: grid; grid-template-columns: 1fr auto; gap: 1.5rem;
+    margin-top: 0.4rem; padding-top: 1rem; border-top: 1px solid var(--fio-escuro);
+    font-size: 0.93rem;
+  }
+  .lam .cartao-meta dt { color: var(--aco); font-size: 0.84rem; }
+  .lam .cartao-meta dd { font-weight: 500; }
+  .lam .cartao-meta div:last-child { text-align: right; }
+
+  @media (max-width: 899px) {
+    .lam .processo-in { grid-template-columns: 1fr; }
+    .lam .processo-lado { position: static; }
+    .lam .etapas { display: none; }
+  }
+
+  /* ─────────────── sobre ─────────────── */
+  .lam .sobre {
+    display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(36px, 6vw, 96px); align-items: center;
+  }
+  .lam .sobre-foto { aspect-ratio: 4 / 4.2; }
+  .lam .sobre-foto img { object-position: 38% 50%; }
+  .lam .sobre-texto { display: grid; gap: 1.2rem; }
+  .lam .sobre-texto p { color: var(--tinta-2); max-width: 34rem; }
+  .lam .sobre-abre { font-size: 1.2rem; line-height: 1.55; color: var(--tinta) !important; }
+  .lam .sobre-fatos { display: grid; margin-top: 0.8rem; border-top: 1px solid var(--fio); }
+  .lam .sobre-fatos li {
+    display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; align-items: baseline;
+    padding: 1rem 0; border-bottom: 1px solid var(--fio);
+  }
+  .lam .sobre-fatos strong { font-weight: 600; }
+  .lam .sobre-fatos span { color: var(--tinta-2); font-size: 0.97rem; }
+
+  @media (max-width: 899px) {
+    .lam .sobre { grid-template-columns: 1fr; }
+    .lam .sobre-foto { aspect-ratio: 4 / 3; }
+    .lam .sobre-fatos li { grid-template-columns: 1fr; gap: 0.1rem; }
+  }
+
+  /* ─────────────── produtos ─────────────── */
+  .lam .grupos { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 2vw, 24px); align-items: start; }
+  .lam .grupo {
+    background: var(--branco); border: 1px solid var(--fio); border-radius: var(--r-cartao);
+    padding: clamp(22px, 2.6vw, 32px);
+  }
+  .lam .grupo h3 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 0.6rem; color: var(--marinho); }
+  .lam .produto {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 1.5rem;
+    padding: 1.05rem 0; border-top: 1px solid var(--fio);
+  }
+  .lam .produto:first-child { border-top: 0; }
+  .lam .produto-nome { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.6rem; }
+  .lam .produto-nome strong { font-weight: 600; letter-spacing: -0.01em; }
+  .lam .produto-nome span { color: var(--tinta-2); font-size: 0.92rem; }
+  .lam .produto p { grid-column: 1; color: var(--tinta-2); font-size: 0.95rem; line-height: 1.55; }
+  .lam .produto-spec {
+    grid-column: 2; grid-row: 1 / span 2; align-self: start;
+    padding: 0.3rem 0.65rem; border-radius: 999px;
+    background: var(--papel); color: var(--marinho);
+    font-size: 0.85rem; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .lam .nota { margin-top: 1.2rem; font-size: 0.86rem; color: var(--tinta-2); }
+
+  @media (max-width: 899px) {
+    .lam .grupos { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 479px) {
+    .lam .produto { grid-template-columns: 1fr; }
+    .lam .produto-spec { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 0.4rem; }
+  }
+
+  /* ─────────────── agendar ─────────────── */
+  .lam .agendar {
+    max-width: calc(var(--largura) + 2 * var(--margem));
+    margin: clamp(88px, 11vw, 150px) auto 0; padding: 0 var(--margem);
+  }
+  .lam .agendar-in {
+    background: var(--marinho); color: var(--branco);
+    border-radius: 24px; padding: clamp(40px, 6vw, 72px);
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2rem 4rem; align-items: center;
+  }
+  .lam .agendar-in :focus-visible { outline-color: var(--branco); }
+  .lam .agendar-texto { display: grid; gap: 1rem; }
+  .lam .agendar-texto p { color: rgba(255, 255, 255, 0.8); max-width: 34rem; }
+  .lam .agendar-acoes { display: grid; gap: 1rem; justify-items: start; }
+  .lam .agendar-zap {
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    color: rgba(255, 255, 255, 0.85); font-size: 0.95rem; text-decoration: none;
+  }
+  .lam .agendar-zap:hover { color: var(--branco); text-decoration: underline; }
+
+  @media (max-width: 899px) {
+    .lam .agendar-in { grid-template-columns: 1fr; }
+    .lam .agendar-acoes, .lam .agendar-acoes .botao { width: 100%; }
+  }
+
+  /* ─────────────── rodapé ─────────────── */
+  .lam .rodape { margin-top: clamp(88px, 11vw, 150px); background: var(--fundo); color: var(--branco); }
+  .lam .rodape :focus-visible { outline-color: var(--branco); }
+  .lam .rodape ::selection { background: var(--branco); color: var(--fundo); }
+  .lam .rodape-in {
+    max-width: calc(var(--largura) + 2 * var(--margem));
+    margin: 0 auto; padding: clamp(64px, 8vw, 96px) var(--margem) 28px;
+  }
+  .lam .rodape-marca { display: flex; align-items: center; gap: 1rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--fio-escuro); }
+  .lam .marca-selo-claro { width: 48px; height: 48px; border-radius: 12px; background: var(--branco); color: var(--fundo); }
+  .lam .marca-selo-claro svg { width: 30px; height: 30px; }
+  .lam .rodape-nome { font-weight: 600; font-size: 1.25rem; letter-spacing: -0.02em; }
+  .lam .rodape-lema { color: var(--aco); font-size: 0.97rem; }
+
+  .lam .rodape-grade {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.6fr);
+    gap: 2.5rem 2rem; padding: 2.5rem 0;
+  }
+  .lam .rodape-col h2 { font-size: 0.95rem; font-weight: 600; letter-spacing: 0; margin-bottom: 0.7rem; }
+  .lam .rodape-col address, .lam .rodape-col p { font-style: normal; color: var(--aco); font-size: 0.95rem; line-height: 1.7; }
+  .lam .rodape-col a { text-decoration: none; }
+  .lam .rodape-col a:hover { color: var(--branco); text-decoration: underline; }
+  .lam .rodape-fraco { margin-top: 0.4rem; font-size: 0.88rem !important; }
+  .lam .redes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .lam .redes a {
+    width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center;
+    border: 1px solid var(--fio-escuro); color: var(--branco); text-decoration: none;
+    transition: background-color .2s ease, color .2s ease;
+  }
+  .lam .redes a:hover { background: var(--branco); color: var(--fundo); text-decoration: none; }
+  .lam .rodape-mapa { display: grid; gap: 0.7rem; align-content: start; }
+  .lam .rodape-mapa iframe {
+    width: 100%; aspect-ratio: 16 / 10; border: 0; border-radius: var(--r-foto);
+    background: #10354F; filter: grayscale(0.6) contrast(1.05);
+  }
+  .lam .rodape-rota { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--branco); font-size: 0.95rem; font-weight: 500; text-decoration: none; }
+  .lam .rodape-rota:hover { text-decoration: underline; }
+
+  .lam .rodape-fim {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem 2rem;
+    padding-top: 1.5rem; border-top: 1px solid var(--fio-escuro);
+    font-size: 0.86rem; color: var(--aco);
+  }
+  .lam .rodape-fim a { color: var(--branco); }
+
+  @media (max-width: 1099px) {
+    .lam .rodape-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lam .rodape-mapa { grid-column: 1 / -1; }
+  }
+  @media (max-width: 479px) {
+    .lam .rodape-grade { grid-template-columns: 1fr; }
+  }
+
+  /* ─────────────── modal ─────────────── */
+  /* sem display na regra base: o [open] nativo continua decidindo se aparece */
+  .lam .modal {
+    margin: auto; padding: 0; border: 0;
+    width: min(640px, calc(100% - 32px)); max-height: min(92dvh, 860px);
+    border-radius: 20px; background: var(--branco); color: var(--tinta);
+    box-shadow: 0 40px 100px -20px rgba(11, 42, 64, 0.55);
+    overflow: hidden;
+  }
+  .lam .modal::backdrop { background: rgba(11, 42, 64, 0.62); backdrop-filter: blur(3px); }
+  .lam .modal[open] { animation: modal-entra .35s var(--e); }
+  .lam .modal[open]::backdrop { animation: fundo-entra .35s ease; }
+  @keyframes modal-entra { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes fundo-entra { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes sobe { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .lam .modal[open], .lam .modal[open]::backdrop { animation: none; }
+  }
+
+  .lam .modal-in { display: flex; flex-direction: column; max-height: inherit; }
+  .lam .modal-cab {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+    padding: 26px 28px 20px; border-bottom: 1px solid var(--fio);
+  }
+  .lam .modal-cab h2 { font-size: 1.5rem; letter-spacing: -0.025em; }
+  .lam .modal-cab p { color: var(--tinta-2); font-size: 0.95rem; margin-top: 0.3rem; }
+  .lam .modal-fechar {
+    width: 40px; height: 40px; flex: none; border: 0; border-radius: var(--r-ctrl);
+    background: var(--papel); color: var(--tinta); cursor: pointer; font-size: 1.05rem;
+  }
+  .lam .modal-fechar:hover { background: var(--fio); }
+  .lam .modal-corpo { padding: 22px 28px; overflow-y: auto; display: grid; gap: 1.3rem; }
+  .lam .modal-pe { padding: 18px 28px 24px; border-top: 1px solid var(--fio); }
+  .lam .modal-pe .botao { width: 100%; }
+
+  .lam .campos { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .lam .campo { display: grid; gap: 0.4rem; align-content: start; }
+  .lam .campo-largo { grid-column: 1 / -1; }
+  .lam .campo label { font-size: 0.92rem; font-weight: 600; }
+  .lam .opcional { font-weight: 400; color: var(--tinta-2); }
+  .lam .campo input, .lam .campo textarea, .lam .campo select {
+    width: 100%; min-height: 48px; padding: 0.7rem 0.9rem;
+    border: 1px solid #C5CFD6; border-radius: var(--r-ctrl);
+    background: var(--branco); color: var(--tinta);
+    font: 400 1rem/1.4 var(--f);
+    transition: border-color .2s ease, box-shadow .2s ease;
+    caret-color: var(--marinho);
+  }
+  .lam .campo textarea { resize: vertical; min-height: 88px; }
+  .lam .campo input::placeholder, .lam .campo textarea::placeholder { color: #6F7F8B; }
+  .lam .campo input:hover, .lam .campo textarea:hover, .lam .campo select:hover { border-color: var(--aco); }
+  .lam .campo input:focus-visible, .lam .campo textarea:focus-visible, .lam .campo select:focus-visible {
+    outline: none; border-color: var(--marinho); box-shadow: 0 0 0 3px rgba(20, 70, 105, 0.18);
+  }
+  .lam .campo [aria-invalid='true'] { border-color: #A3322B; box-shadow: 0 0 0 3px rgba(163, 50, 43, 0.12); }
+  .lam .seletor { position: relative; }
+  .lam .seletor select { appearance: none; padding-right: 2.4rem; cursor: pointer; }
+  .lam .seletor select:has(option[value='']:checked) { color: #6F7F8B; }
+  .lam .seletor i { position: absolute; right: 0.95rem; top: 50%; translate: 0 -50%; font-size: 0.8rem; color: var(--tinta-2); pointer-events: none; }
+  .lam .dica { font-size: 0.84rem; color: var(--tinta-2); }
+  .lam .erro:empty { display: none; }
+  .lam .erro { font-size: 0.86rem; color: #A3322B; font-weight: 500; }
+
+  .lam .previa { background: var(--papel); border-radius: 12px; padding: 16px 18px; }
+  .lam .previa-titulo { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; font-weight: 600; color: var(--marinho); margin-bottom: 0.5rem; }
+  .lam .previa-texto { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.95rem; line-height: 1.55; color: var(--tinta); }
+  .lam .previa-texto .vazio { color: #56666F; background: rgba(177, 190, 198, 0.4); border-radius: 4px; padding: 0 4px; }
+  .lam .previa-texto .cheio { font-weight: 600; }
+
+  @media (max-width: 599px) {
+    .lam .modal {
+      width: 100%; max-width: 100%; max-height: 94dvh;
+      margin: auto 0 0; border-radius: 20px 20px 0 0;
+    }
+    .lam .modal[open] { animation-name: sobe; }
+    .lam .campos { grid-template-columns: 1fr; }
+    .lam .modal-cab, .lam .modal-corpo, .lam .modal-pe { padding-left: 20px; padding-right: 20px; }
+  }
+</style>

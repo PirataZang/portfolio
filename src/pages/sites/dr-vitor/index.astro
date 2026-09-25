@@ -1,0 +1,1256 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  DR. VITOR — cirurgião-dentista, consultório de um profissional só.
+
+  O argumento é a pessoa: quem agenda sabe que vai ser atendido pelo Dr. Vitor
+  da avaliação ao retorno. Por isso ele aparece no início, grande, e volta nas
+  fotos de atendimento e de prótese (o mesmo modelo em todas, fotos reais do
+  Freepik com crédito no rodapé).
+
+  Paleta do cliente: marinho #1F3B4D, azul-aço #376A8A, creme #F5EBDD, grafite
+  #3C3C3C e dourado #C8AC62. O dourado é detalhe (fios, o arco do sorriso do
+  símbolo, preços em fundo escuro); nunca texto sobre fundo claro.
+
+  Mecânica própria: calculadora de orçamento para os procedimentos caros
+  (lentes, clareamento, implante, protocolo). Mostra a faixa de valor e manda
+  o pedido pronto para o WhatsApp.
+
+  Movimento: fade por opacidade e só transform onde anima em loop (anéis do
+  início). Nada de filtro animado, por desempenho.
+*/
+
+const DR = {
+  nome: 'Dr. Vitor',
+  titulo: 'Cirurgião-dentista',
+  cro: 'CRO-SC 14.872',
+  desde: 2012,
+  rua: 'Rua XV de Novembro, 1200, sala 604',
+  bairro: 'Centro',
+  cidade: 'Joinville',
+  uf: 'SC',
+  cep: '89201-600',
+  fone: '(99) 9999-9999',
+  foneLink: '+559999999999',
+  zap: '5599999999999',
+  zapFmt: '(99) 99999-9999',
+  email: 'contato@drvitor.odo.br',
+  insta: 'drvitor.odonto',
+  face: 'drvitorodonto',
+  site: 'https://drvitor.odo.br',
+};
+
+const DIAS_ABERTOS = [1, 2, 3, 4, 5, 6];
+const IMG = `${import.meta.env.BASE_URL}img/dr-vitor`;
+const mapaQuery = encodeURIComponent(`${DR.rua}, ${DR.bairro}, ${DR.cidade} - ${DR.uf}`);
+const brl = (n: number) => n.toLocaleString('pt-BR');
+
+const NAV = [
+  { id: 'inicio', t: 'Início' },
+  { id: 'tratamentos', t: 'Tratamentos' },
+  { id: 'cirurgias', t: 'Cirurgias e próteses' },
+  { id: 'planos', t: 'Planos' },
+  { id: 'orcamento', t: 'Orçamento' },
+  { id: 'contato', t: 'Contato' },
+];
+
+
+const TRATAMENTOS = [
+  { t: 'Clareamento dental', f: 't-clareamento', pos: '40% 50%', alt: 'Paciente de óculos de proteção recebendo clareamento com luz no consultório', d: 'No consultório, com gel de alta concentração e proteção da gengiva. Até 4 tons mais claro em duas sessões.', min: '2 sessões de 1h', preco: 900 },
+  { t: 'Restaurações estéticas', f: 't-restauracao', pos: '45% 50%', alt: 'Luz de fotopolimerização endurecendo a resina de uma restauração', d: 'Resina da cor exata do seu dente, esculpida camada por camada. Sem metal e sem aquele contorno escuro.', min: '40 min por dente', preco: 220 },
+  { t: 'Facetas de resina', f: 't-faceta', pos: '55% 50%', alt: 'Escala de cor encostada no sorriso da paciente para escolher o tom da faceta', d: 'Corrigem cor, formato e pequenos espaços em uma sessão, com desgaste mínimo do dente.', min: '1h por dente', preco: 650 },
+  { t: 'Lentes de contato dental', f: 't-lente', pos: '50% 50%', alt: 'Sorriso de perto com dentes brancos, alinhados e com brilho natural', d: 'Lâminas de porcelana de 0,3 mm, feitas em laboratório. Resistentes a mancha e com brilho natural.', min: '3 consultas', preco: 1800 },
+  { t: 'Limpeza e prevenção', f: 't-limpeza', pos: '50% 40%', alt: 'Paciente sorrindo durante a avaliação com espelho e sonda', d: 'Raspagem, polimento e aplicação de flúor, com avaliação completa e orientação de escovação.', min: '50 min', preco: 180 },
+  { t: 'Tratamento de canal', f: 't-canal', pos: '50% 22%', alt: 'Dr. Vitor analisando a radiografia dos dentes contra a luz', d: 'Com localizador eletrônico e anestesia computadorizada. Na maioria dos casos, resolvido em uma sessão.', min: '1 a 2 sessões', preco: 850 },
+];
+
+const IMPLANTE = [
+  { t: 'Avaliação com tomografia', d: 'Medimos a altura e a espessura do osso para planejar o implante no lugar certo.' },
+  { t: 'Instalação do implante', d: 'Cirurgia com anestesia local, em torno de 1 hora. Você volta para casa no mesmo dia.' },
+  { t: 'Cicatrização', d: 'De 3 a 6 meses para o osso se unir ao implante. Você usa um dente provisório nesse período.' },
+  { t: 'Coroa definitiva', d: 'Coroa de porcelana feita sob medida, com cor e formato iguais aos dos dentes vizinhos.' },
+];
+
+const CIRURGIAS = [
+  { t: 'Implante unitário', d: 'Repõe um dente perdido sem desgastar os vizinhos.', preco: 3200 },
+  { t: 'Extração de siso', d: 'Com planejamento por tomografia e sedação, se você preferir.', preco: 450 },
+  { t: 'Enxerto ósseo', d: 'Recupera o volume de osso para receber implante.', preco: 1500 },
+  { t: 'Prótese total', d: 'Dentadura nova, confortável e com aparência natural.', preco: 2400 },
+  { t: 'Protocolo fixo', d: 'Arcada inteira fixa sobre 4 a 6 implantes.', preco: 18000 },
+];
+
+const PLANOS = [
+  {
+    id: 'prevencao', nome: 'Prevenção', preco: 99, sub: 'Para manter o sorriso saudável',
+    itens: ['1 limpeza completa por mês', 'Avaliação com o Dr. Vitor a cada visita', 'Aplicação de flúor'],
+    bonus: ['10% de desconto em restaurações'],
+  },
+  {
+    id: 'cuidado', nome: 'Cuidado Total', preco: 179, sub: 'O mais escolhido pelos pacientes', destaque: true,
+    itens: ['1 limpeza completa por mês', 'Radiografia digital a cada 6 meses', 'Urgência sem custo no horário do consultório', '1 restauração simples por semestre'],
+    bonus: ['15% de desconto em clareamento e facetas', 'Clareamento caseiro de brinde no 1º ano'],
+  },
+  {
+    id: 'familia', nome: 'Família', preco: 349, sub: 'Até 4 pessoas no mesmo plano',
+    itens: ['1 limpeza por mês para cada pessoa', 'Radiografias e urgências incluídas', 'Atendimento para crianças a partir de 4 anos'],
+    bonus: ['20% de desconto em qualquer tratamento', 'Prioridade na agenda aos sábados'],
+  },
+];
+
+/* faixas de referência do consultório; o valor final sai só depois da avaliação */
+const ORCAMENTO = [
+  { id: 'lentes', t: 'Lentes de contato dental', un: 'dente', min: 1800, max: 2500, qtd: true, qMin: 2, qMax: 20, qIni: 8, dica: 'O mais comum é de 6 a 10 dentes, os que aparecem no sorriso.' },
+  { id: 'clareamento', t: 'Clareamento', opcoes: [
+    { id: 'consultorio', t: 'No consultório', min: 900, max: 1100 },
+    { id: 'caseiro', t: 'Caseiro com moldeira', min: 650, max: 800 },
+    { id: 'combinado', t: 'Combinado: consultório e caseiro', min: 1300, max: 1600 },
+  ] },
+  { id: 'implante', t: 'Implante com coroa', un: 'implante', min: 3200, max: 4500, qtd: true, qMin: 1, qMax: 10, qIni: 1, dica: 'Inclui implante, componente e coroa de porcelana.' },
+  { id: 'protocolo', t: 'Protocolo fixo', un: 'arcada', min: 18000, max: 28000, qtd: true, qMin: 1, qMax: 2, qIni: 1, dica: 'Arcada inteira fixa sobre implantes. Cada arcada é superior ou inferior.' },
+];
+
+const CANAIS = [
+  { i: 'fa-brands fa-whatsapp', t: 'WhatsApp', v: DR.zapFmt, u: `https://wa.me/${DR.zap}` },
+  { i: 'fa-solid fa-phone', t: 'Telefone', v: DR.fone, u: `tel:${DR.foneLink}` },
+  { i: 'fa-brands fa-instagram', t: 'Instagram', v: `@${DR.insta}`, u: `https://instagram.com/${DR.insta}` },
+  { i: 'fa-regular fa-envelope', t: 'E-mail', v: DR.email, u: `mailto:${DR.email}` },
+];
+const REDES = [
+  { n: 'Instagram', i: 'fa-brands fa-instagram', u: `https://instagram.com/${DR.insta}` },
+  { n: 'WhatsApp', i: 'fa-brands fa-whatsapp', u: `https://wa.me/${DR.zap}` },
+  { n: 'Facebook', i: 'fa-brands fa-facebook-f', u: `https://facebook.com/${DR.face}` },
+];
+
+const titulo = `${DR.nome}, cirurgião-dentista em ${DR.cidade} | Implantes, lentes e clareamento`;
+const descricao = `Consultório do ${DR.nome} em ${DR.cidade}: clareamento, lentes de contato dental, implantes e próteses, com atendimento feito por ele do início ao fim. Planos mensais a partir de R$ 99.`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Dentist',
+  name: `${DR.nome}, ${DR.titulo}`,
+  description: descricao,
+  url: DR.site,
+  image: `${DR.site}/img/dr-vitor/vitor.jpg`,
+  telephone: DR.foneLink,
+  email: DR.email,
+  priceRange: 'R$ 180 – R$ 28.000',
+  address: { '@type': 'PostalAddress', streetAddress: DR.rua, addressLocality: DR.cidade, addressRegion: DR.uf, postalCode: DR.cep, addressCountry: 'BR' },
+  openingHoursSpecification: [
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '08:00', closes: '19:00' },
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '08:00', closes: '12:00' },
+  ],
+  sameAs: REDES.filter((r) => r.n !== 'WhatsApp').map((r) => r.u),
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta name="theme-color" content="#1F3B4D" />
+    <link rel="canonical" href={DR.site} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:image" content={`${DR.site}/img/dr-vitor/vitor.jpg`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" />
+    <link rel="preload" as="image" href={`${IMG}/vitor-recorte.webp`} type="image/webp" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </Fragment>
+
+  <div class="odo">
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <!-- símbolo: o V do nome apoiado no arco de um sorriso -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="simbolo" viewBox="0 0 40 40">
+          <path d="M11 9l9 17 9-17" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M8 29c7 5 17 5 24 0" fill="none" stroke="#C8AC62" stroke-width="3" stroke-linecap="round" />
+        </symbol>
+        <symbol id="arco" viewBox="0 0 120 24">
+          <path d="M4 4c30 22 82 22 112 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- ─────────────── cabeçalho ─────────────── -->
+    <header class="topo">
+      <div class="topo-in">
+        <a class="marca" href="#inicio" aria-label={`${DR.nome}, voltar ao início`}>
+          <svg class="marca-simbolo" aria-hidden="true"><use href="#simbolo" /></svg>
+          <span class="marca-texto"><strong>{DR.nome}</strong><span>{DR.titulo}</span></span>
+        </a>
+        <nav class="nav" aria-label="Seções da página">
+          <ul>{NAV.map((n) => <li><a href={`#${n.id}`} data-secao={n.id}>{n.t}</a></li>)}</ul>
+        </nav>
+        <button class="botao botao-marinho botao-topo" type="button" data-abrir-agenda>Agendar consulta</button>
+        <button class="topo-menu" type="button" aria-expanded="false" aria-controls="menu-movel" aria-label="Abrir menu">
+          <span></span><span></span>
+        </button>
+      </div>
+      <nav id="menu-movel" class="menu-movel" aria-label="Seções da página" hidden>
+        <ul>{NAV.map((n) => <li><a href={`#${n.id}`} data-secao={n.id}>{n.t}</a></li>)}</ul>
+        <button class="botao botao-marinho" type="button" data-abrir-agenda>Agendar consulta</button>
+      </nav>
+    </header>
+
+    <main id="conteudo">
+      <!-- ─────────────── início: capa de revista ─────────────── -->
+      <section id="inicio" class="heroi" aria-labelledby="titulo-inicio">
+        <!-- painel marinho com o nome gigante em contorno e o Dr. Vitor recortado na frente -->
+        <div class="painel" aria-hidden="true">
+          <span class="painel-nome">VITOR</span>
+          <svg class="painel-arco" viewBox="0 0 600 300"><path d="M40 40c120 260 400 260 520 0" /></svg>
+          <span class="forma forma-anel"></span>
+          <span class="forma forma-ponto"></span>
+        </div>
+        <picture class="retrato">
+          <source srcset={`${IMG}/vitor-recorte.webp`} type="image/webp" />
+          <img src={`${IMG}/vitor-recorte.png`} width="1100" height="1392" fetchpriority="high"
+            alt="Dr. Vitor, cirurgião-dentista, de jaleco branco, sorrindo com os braços cruzados" />
+        </picture>
+        <p class="assinatura">
+          <strong>{DR.nome}</strong>
+          <span>{DR.titulo}<br />{DR.cro}</span>
+        </p>
+
+        <div class="heroi-in">
+          <div class="heroi-texto">
+            <p class="heroi-selo entra"><svg aria-hidden="true"><use href="#simbolo" /></svg>Consultório particular em {DR.cidade}</p>
+            <h1 id="titulo-inicio" class="entra" style="--i: 1">Um dentista só seu, do primeiro exame ao sorriso pronto.</h1>
+            <p class="heroi-lide entra" style="--i: 2">
+              Sou o Dr. Vitor. Faço pessoalmente cada etapa do seu tratamento, do
+              clareamento ao implante. Sem troca de profissional no meio do caminho.
+            </p>
+            <div class="heroi-acoes entra" style="--i: 3">
+              <button class="botao botao-marinho botao-grande" type="button" data-abrir-agenda>Agendar avaliação</button>
+              <a class="link-seta" href="#orcamento">Simular um orçamento</a>
+            </div>
+            <dl class="regua entra" style="--i: 4">
+              <div><dt>Desde</dt><dd>{DR.desde}</dd></div>
+              <div><dt>Sábados</dt><dd>8h às 12h</dd></div>
+              <div><dt>Parcelamento</dt><dd>até 12x</dd></div>
+              <div><dt>Esta semana</dt><dd><span class="ponto-vivo" aria-hidden="true"></span>com horários</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <ul class="faixa" aria-label="Tratamentos oferecidos">
+          {['Clareamento', 'Lentes de contato', 'Implantes', 'Facetas', 'Próteses', 'Restaurações', 'Canal'].map((t) => (
+            <li class="faixa-item"><svg aria-hidden="true"><use href="#arco" /></svg>{t}</li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- ─────────────── tratamentos: vitrine de fotos + tabela de valores ─────────────── -->
+      <section id="tratamentos" class="secao tem-formas" aria-labelledby="titulo-tratamentos">
+        <span class="forma forma-disco" style="right: -140px; top: 60px" aria-hidden="true"></span>
+        <svg class="forma forma-arco" style="left: -20px; top: 44%" viewBox="0 0 120 24" aria-hidden="true"><use href="#arco" /></svg>
+        <div class="cab">
+          <div>
+            <svg class="cab-arco" aria-hidden="true"><use href="#arco" /></svg>
+            <h2 id="titulo-tratamentos" data-fade>Tratamentos e valores</h2>
+          </div>
+          <p data-fade style="--i: 1">
+            Valores de referência do consultório. O valor exato sai na avaliação,
+            com radiografia digital, antes de começar qualquer tratamento.
+          </p>
+        </div>
+
+        <div class="honorarios" data-fade style="--i: 2">
+          <!-- fotos empilhadas: a do tratamento escolhido aparece por cima, com fade -->
+          <div class="vitrine">
+            {TRATAMENTOS.map((t, k) => (
+              <picture class={k === 0 ? 'vitrine-foto ativa' : 'vitrine-foto'} data-foto={k}>
+                <source srcset={`${IMG}/${t.f}.webp`} type="image/webp" />
+                <img src={`${IMG}/${t.f}.jpg`} alt={t.alt} width={t.f === 't-canal' ? 1100 : 1400} height={t.f === 't-canal' ? 1650 : 933}
+                  style={`object-position: ${t.pos}`} loading={k === 0 ? 'eager' : 'lazy'} decoding="async" />
+              </picture>
+            ))}
+            <p class="vitrine-legenda"><span id="vit-nome">{TRATAMENTOS[0].t}</span><span id="vit-tempo">{TRATAMENTOS[0].min}</span></p>
+          </div>
+
+          <!-- tabela de valores: a linha escolhida abre com a descrição -->
+          <div class="tabela">
+            <p class="tabela-titulo">Tabela de valores <span>{DR.nome}</span></p>
+            <ul class="tabela-lista">
+              {TRATAMENTOS.map((t, k) => (
+                <li class={k === 0 ? 'item aberto' : 'item'}>
+                  <button class="linha" type="button" aria-expanded={k === 0 ? 'true' : 'false'} aria-controls={`trat-${k}`} data-trat-idx={k} data-tempo={t.min}>
+                    <span class="linha-nome"><strong>{t.t}</strong><small>{t.min}</small></span>
+                    <span class="linha-pontos" aria-hidden="true"></span>
+                    <span class="linha-preco"><small>a partir de</small>R$ {brl(t.preco)}</span>
+                  </button>
+                  <div class="item-corpo" id={`trat-${k}`}>
+                    <div class="item-dentro">
+                      <p>{t.d}</p>
+                      <button class="botao botao-marinho" type="button" data-abrir-agenda data-trat={t.t} tabindex={k === 0 ? 0 : -1}>Agendar {t.t.toLowerCase()}</button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p class="tabela-nota">Parcelamos em até 12x no cartão. Planos mensais têm desconto nestes valores.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── cirurgias e próteses ─────────────── -->
+      <section id="cirurgias" class="cirurgias tem-formas" aria-labelledby="titulo-cirurgias">
+        <span class="forma forma-grade" style="left: 3%; bottom: 8%" aria-hidden="true"></span>
+        <span class="forma forma-ponto" style="left: 46%; top: 12%" aria-hidden="true"></span>
+        <div class="cirurgias-in">
+          <div class="cab cab-escuro">
+            <div>
+              <svg class="cab-arco" aria-hidden="true"><use href="#arco" /></svg>
+              <h2 id="titulo-cirurgias" data-fade>Cirurgias e próteses</h2>
+            </div>
+            <p data-fade style="--i: 1">
+              Implantes, extrações e próteses completas feitas no próprio consultório,
+              com planejamento por tomografia e o mesmo dentista em todas as etapas.
+            </p>
+          </div>
+
+          <div class="implante">
+            <div class="implante-fotos" data-fade>
+              <picture class="implante-foto-grande">
+                <source srcset={`${IMG}/implante.webp`} type="image/webp" />
+                <img src={`${IMG}/implante.jpg`} alt="Cirurgia de implante dentário em andamento, com o motor de implante sobre a bancada" width="1400" height="993" loading="lazy" decoding="async" />
+              </picture>
+              <div class="implante-selo">
+                <strong>1 hora</strong>
+                <span>é o tempo médio da cirurgia de um implante</span>
+              </div>
+            </div>
+            <div class="implante-texto">
+              <h3 data-fade>Como é feito um implante</h3>
+              <ol class="etapas">
+                {IMPLANTE.map((e, k) => (
+                  <li data-fade style={`--i: ${k}`}>
+                    <span class="etapa-num">{k + 1}</span>
+                    <div><strong>{e.t}</strong><p>{e.d}</p></div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+
+          <div class="proteses">
+            <figure class="protese-foto" data-fade>
+              <picture>
+                <source srcset={`${IMG}/protese.webp`} type="image/webp" />
+                <img src={`${IMG}/protese.jpg`} alt="Dr. Vitor segurando um modelo de prótese dentária completa" width="1400" height="933" loading="lazy" decoding="async" />
+              </picture>
+            </figure>
+            <div class="protese-lista" data-fade style="--i: 1">
+              <h3>Procedimentos</h3>
+              <ul>
+                {CIRURGIAS.map((c) => (
+                  <li>
+                    <div><strong>{c.t}</strong><span>{c.d}</span></div>
+                    <span class="protese-preco"><small>a partir de</small>R$ {brl(c.preco)}</span>
+                  </li>
+                ))}
+              </ul>
+              <a class="botao botao-dourado" href="#orcamento">Simular orçamento de cirurgia</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── planos ─────────────── -->
+      <section id="planos" class="secao tem-formas" aria-labelledby="titulo-planos">
+        <span class="forma forma-disco forma-disco-p" style="left: -60px; top: 34%" aria-hidden="true"></span>
+        <span class="forma forma-anel" style="right: 2%; top: 90px" aria-hidden="true"></span>
+        <div class="cab cab-centro">
+          <svg class="cab-arco" aria-hidden="true"><use href="#arco" /></svg>
+          <h2 id="titulo-planos" data-fade>Planos mensais</h2>
+          <p data-fade style="--i: 1">Limpeza todo mês com o Dr. Vitor e desconto nos tratamentos. Sem carência para limpeza e sem fidelidade depois de 12 meses.</p>
+        </div>
+        <ul class="planos">
+          {PLANOS.map((p, k) => (
+            <li class={p.destaque ? 'plano plano-destaque' : 'plano'} data-fade style={`--i: ${k}`}>
+              {p.destaque && <span class="plano-fita">Mais escolhido</span>}
+              <h3>{p.nome}</h3>
+              <p class="plano-sub">{p.sub}</p>
+              <p class="plano-preco"><span class="moeda">R$</span>{brl(p.preco)}<span class="por">por mês</span></p>
+              <ul class="plano-lista">
+                {p.itens.map((it) => <li><i class="fa-solid fa-check" aria-hidden="true"></i>{it}</li>)}
+                {p.bonus.map((b) => <li class="plano-bonus"><i class="fa-solid fa-star" aria-hidden="true"></i><span><span class="sr">Vantagem: </span>{b}</span></li>)}
+              </ul>
+              <button class={p.destaque ? 'botao botao-dourado' : 'botao botao-marinho'} type="button" data-abrir-agenda data-obs={`Quero assinar o plano ${p.nome}.`}>Assinar o {p.nome}</button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- ─────────────── orçamento ─────────────── -->
+      <section id="orcamento" class="orcamento tem-formas" aria-labelledby="titulo-orcamento">
+        <span class="forma forma-anel forma-anel-g" style="right: 10px; top: -60px" aria-hidden="true"></span>
+        <div class="orcamento-in">
+          <div class="orcamento-texto">
+            <svg class="cab-arco" aria-hidden="true"><use href="#arco" /></svg>
+            <h2 id="titulo-orcamento" data-fade>Simule o seu orçamento</h2>
+            <p data-fade style="--i: 1">
+              Para lentes, clareamento e cirurgias, veja uma faixa de valor antes da
+              consulta. O valor exato sai na avaliação, depois do exame.
+            </p>
+            <figure class="orcamento-foto" data-fade style="--i: 2">
+              <picture>
+                <source srcset={`${IMG}/sorriso.webp`} type="image/webp" />
+                <img src={`${IMG}/sorriso.jpg`} alt="Paciente sorrindo e olhando o resultado do tratamento no espelho" width="1400" height="933" loading="lazy" decoding="async" />
+              </picture>
+            </figure>
+          </div>
+
+          <form class="calc" id="calc" data-fade style="--i: 1" data-zap={DR.zap}>
+            <fieldset class="calc-proc">
+              <legend>O que você quer fazer?</legend>
+              <div class="calc-opcoes">
+                {ORCAMENTO.map((o, k) => (
+                  <label class="calc-op">
+                    <input type="radio" name="proc" value={o.id} checked={k === 0} />
+                    <span>{o.t}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {ORCAMENTO.map((o, k) => (
+              <div class="calc-detalhe" data-proc={o.id} hidden={k !== 0}
+                data-min={o.min} data-max={o.max} data-un={o.un} data-nome={o.t}>
+                {o.qtd && (
+                  <div class="calc-qtd">
+                    <label for={`q-${o.id}`}>Quantos {o.un === 'dente' ? 'dentes' : o.un === 'implante' ? 'implantes' : 'arcadas'}?</label>
+                    <div class="contador">
+                      <button type="button" data-passo="-1" aria-label="Diminuir"><i class="fa-solid fa-minus" aria-hidden="true"></i></button>
+                      <input id={`q-${o.id}`} type="number" inputmode="numeric" min={o.qMin} max={o.qMax} value={o.qIni} />
+                      <button type="button" data-passo="1" aria-label="Aumentar"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+                    </div>
+                    <p class="calc-dica">{o.dica}</p>
+                  </div>
+                )}
+                {o.opcoes && (
+                  <fieldset class="calc-tipo">
+                    <legend>Qual tipo?</legend>
+                    {o.opcoes.map((op, j) => (
+                      <label class="calc-op calc-op-linha">
+                        <input type="radio" name={`tipo-${o.id}`} value={op.id} checked={j === 0} data-min={op.min} data-max={op.max} data-nome={op.t} />
+                        <span>{op.t}</span>
+                        <small>R$ {brl(op.min)} a {brl(op.max)}</small>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
+              </div>
+            ))}
+
+            <div class="calc-resultado" aria-live="polite">
+              <p class="calc-rotulo">Faixa estimada</p>
+              <p class="calc-valor"><span id="calc-min">R$ 0</span> a <span id="calc-max">R$ 0</span></p>
+              <p class="calc-parcela" id="calc-parcela"></p>
+            </div>
+            <button class="botao botao-dourado botao-grande" type="submit">
+              <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Pedir orçamento pelo WhatsApp
+            </button>
+            <p class="calc-nota">Valores de referência do consultório. Não substituem a avaliação.</p>
+          </form>
+        </div>
+      </section>
+
+      <!-- ─────────────── contato ─────────────── -->
+      <section id="contato" class="secao contato tem-formas" aria-labelledby="titulo-contato">
+        <svg class="forma forma-arco forma-arco-g" style="right: 4%; top: 70px" viewBox="0 0 120 24" aria-hidden="true"><use href="#arco" /></svg>
+        <span class="forma forma-ponto" style="left: 48%; bottom: 40px" aria-hidden="true"></span>
+        <div class="contato-cartao">
+          <figure class="contato-foto" data-fade>
+            <picture>
+              <source srcset={`${IMG}/espelho.webp`} type="image/webp" />
+              <img src={`${IMG}/espelho.jpg`} alt="Dr. Vitor mostrando o resultado para uma paciente sorridente com um espelho" width="1400" height="933" loading="lazy" decoding="async" />
+            </picture>
+          </figure>
+          <div class="contato-texto">
+            <svg class="cab-arco" aria-hidden="true"><use href="#arco" /></svg>
+            <h2 id="titulo-contato" data-fade>Agende sua consulta</h2>
+            <p data-fade style="--i: 1">
+              Escolha o tratamento e o dia. A mensagem sai pronta no WhatsApp e a
+              secretária confirma o horário com você.
+            </p>
+            <button class="botao botao-marinho botao-grande" type="button" data-abrir-agenda data-fade style="--i: 2">
+              <i class="fa-regular fa-calendar" aria-hidden="true"></i> Agendar consulta
+            </button>
+            <ul class="canais" data-fade style="--i: 3">
+              {CANAIS.map((c) => (
+                <li><a href={c.u} rel="noopener">
+                  <span class="canal-icone"><i class={c.i} aria-hidden="true"></i></span>
+                  <span class="canal-texto"><strong>{c.t}</strong><span>{c.v}</span></span>
+                </a></li>
+              ))}
+            </ul>
+            <dl class="horarios" data-fade style="--i: 4">
+              <div><dt>Segunda a sexta</dt><dd>8h às 19h</dd></div>
+              <div><dt>Sábado</dt><dd>8h às 12h</dd></div>
+              <div><dt>Urgência</dt><dd>Pelo WhatsApp</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ─────────────── rodapé ─────────────── -->
+    <footer class="rodape">
+      <svg class="rodape-arco" aria-hidden="true"><use href="#arco" /></svg>
+      <div class="rodape-in">
+        <div class="rodape-grade">
+          <div class="rodape-marca">
+            <a class="marca marca-clara" href="#inicio">
+              <svg class="marca-simbolo" aria-hidden="true"><use href="#simbolo" /></svg>
+              <span class="marca-texto"><strong>{DR.nome}</strong><span>{DR.titulo}</span></span>
+            </a>
+            <p>Clareamento, lentes, implantes e próteses em {DR.cidade}, com um único dentista cuidando de todo o tratamento. {DR.cro}.</p>
+            <ul class="redes">
+              {REDES.map((r) => <li><a href={r.u} rel="noopener" aria-label={r.n}><i class={r.i} aria-hidden="true"></i></a></li>)}
+            </ul>
+          </div>
+          <div class="rodape-col">
+            <h2>Navegue</h2>
+            <ul>{NAV.slice(1).map((n) => <li><a href={`#${n.id}`}>{n.t}</a></li>)}</ul>
+          </div>
+          <div class="rodape-col">
+            <h2>Consultório</h2>
+            <address>{DR.rua}<br />{DR.bairro}, {DR.cidade}, {DR.uf}<br />CEP {DR.cep}</address>
+            <p><a href={`tel:${DR.foneLink}`}>{DR.fone}</a><br /><a href={`mailto:${DR.email}`}>{DR.email}</a></p>
+          </div>
+          <div class="rodape-mapa">
+            <iframe title={`Mapa: ${DR.rua}, ${DR.cidade}`}
+              src={`https://www.google.com/maps?q=${mapaQuery}&z=16&output=embed`}
+              loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+            <a href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+              <i class="fa-solid fa-location-dot" aria-hidden="true"></i> Como chegar
+            </a>
+          </div>
+        </div>
+        <div class="rodape-fim">
+          <span>© 2026 {DR.nome}, {DR.titulo}</span>
+          <span>Demonstração de portfólio: profissional, registro, preços e contatos são fictícios. Fotos: <a href="https://www.freepik.com" rel="noopener">Freepik</a>.</span>
+          <a href={import.meta.env.BASE_URL}>Voltar ao portfólio</a>
+        </div>
+      </div>
+    </footer>
+
+    <a class="zap-flutua" href={`https://wa.me/${DR.zap}`} rel="noopener" aria-label="Conversar com o Dr. Vitor no WhatsApp">
+      <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+    </a>
+
+    <!-- ─────────────── modal de agendamento ─────────────── -->
+    <dialog id="agenda" class="modal" aria-labelledby="agenda-titulo">
+      <form class="modal-in" id="form-agenda" novalidate data-zap={DR.zap} data-dias={DIAS_ABERTOS.join(',')}>
+        <div class="modal-cab">
+          <div>
+            <h2 id="agenda-titulo">Agendar consulta</h2>
+            <p>A mensagem abre pronta no WhatsApp. Você confere antes de enviar.</p>
+          </div>
+          <button class="modal-fechar" type="button" data-fechar-agenda aria-label="Fechar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        </div>
+        <div class="modal-corpo">
+          <div class="campos">
+            <div class="campo campo-largo">
+              <label for="f-nome">Nome</label>
+              <input id="f-nome" name="nome" type="text" autocomplete="name" maxlength="60" placeholder="Seu nome" aria-describedby="e-nome" />
+              <p class="erro" id="e-nome" aria-live="polite"></p>
+            </div>
+            <div class="campo campo-largo">
+              <label for="f-trat">Tratamento</label>
+              <div class="seletor">
+                <select id="f-trat" name="trat" aria-describedby="e-trat">
+                  <option value="">Escolha o tratamento</option>
+                  <option>Avaliação inicial</option>
+                  {TRATAMENTOS.map((t) => <option>{t.t}</option>)}
+                  {CIRURGIAS.map((c) => <option>{c.t}</option>)}
+                </select>
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+              </div>
+              <p class="erro" id="e-trat" aria-live="polite"></p>
+            </div>
+            <div class="campo">
+              <label for="f-dia">Dia</label>
+              <div class="seletor">
+                <select id="f-dia" name="dia" aria-describedby="e-dia"><option value="">Escolha o dia</option></select>
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+              </div>
+              <p class="erro" id="e-dia" aria-live="polite"></p>
+            </div>
+            <fieldset class="campo periodo">
+              <legend>Período</legend>
+              <div class="periodo-op">
+                <label><input type="radio" name="periodo" value="manhã" checked /><span>Manhã</span></label>
+                <label><input type="radio" name="periodo" value="tarde" /><span>Tarde</span></label>
+              </div>
+            </fieldset>
+            <div class="campo campo-largo">
+              <label for="f-obs">Observação <span class="opcional">(opcional)</span></label>
+              <textarea id="f-obs" name="obs" rows="3" maxlength="400" placeholder="Dor, sensibilidade, um dente que incomoda, se tem plano…"></textarea>
+            </div>
+          </div>
+          <div class="previa">
+            <p class="previa-titulo"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Prévia da mensagem</p>
+            <p class="previa-texto" id="previa" aria-live="polite"></p>
+          </div>
+        </div>
+        <div class="modal-pe">
+          <button class="botao botao-marinho botao-grande" type="submit"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Enviar pelo WhatsApp</button>
+        </div>
+      </form>
+    </dialog>
+  </div>
+</Base>
+
+<script>
+  const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const raiz = document.documentElement;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const brl = (n: number) => `R$ ${Math.round(n).toLocaleString('pt-BR')}`;
+
+  /* ── fade ao entrar na tela ── */
+  const fades = document.querySelectorAll<HTMLElement>('.odo [data-fade]');
+  if (reduzido || !('IntersectionObserver' in window)) fades.forEach((el) => el.classList.add('visto'));
+  else {
+    const obs = new IntersectionObserver((es) => {
+      for (const e of es) if (e.isIntersecting) { e.target.classList.add('visto'); obs.unobserve(e.target); }
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.15 });
+    fades.forEach((el) => obs.observe(el));
+  }
+
+
+  /* ── tratamentos: a linha escolhida abre e troca a foto da vitrine ── */
+  const itens = [...document.querySelectorAll<HTMLLIElement>('.tabela-lista .item')];
+  const fotos = [...document.querySelectorAll<HTMLElement>('.vitrine-foto')];
+  function abrirItem(k: number) {
+    itens.forEach((li, j) => {
+      const on = j === k;
+      li.classList.toggle('aberto', on);
+      li.querySelector('.linha')!.setAttribute('aria-expanded', String(on));
+      li.querySelector<HTMLElement>('.item-dentro .botao')!.tabIndex = on ? 0 : -1;
+    });
+    fotos.forEach((f, j) => f.classList.toggle('ativa', j === k));
+    const linha = itens[k].querySelector<HTMLElement>('.linha')!;
+    document.getElementById('vit-nome')!.textContent = linha.querySelector('strong')!.textContent;
+    document.getElementById('vit-tempo')!.textContent = linha.dataset.tempo!;
+  }
+  itens.forEach((li, k) => li.querySelector('.linha')!.addEventListener('click', () => abrirItem(k)));
+
+  /* ── link da seção atual ── */
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.odo a[data-secao]')];
+  const secoes = [...new Set(links.map((l) => l.dataset.secao!))].map((id) => document.getElementById(id)!);
+  const obsNav = new IntersectionObserver((es) => {
+    for (const e of es) if (e.isIntersecting) links.forEach((l) => {
+      if (l.dataset.secao === e.target.id) l.setAttribute('aria-current', 'location'); else l.removeAttribute('aria-current');
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  secoes.forEach((s) => obsNav.observe(s));
+
+  /* ── menu do celular ── */
+  const topo = document.querySelector<HTMLElement>('.topo')!;
+  const botaoMenu = topo.querySelector<HTMLButtonElement>('.topo-menu')!;
+  const menu = document.getElementById('menu-movel')!;
+  function abrirMenu(abrir: boolean) {
+    botaoMenu.setAttribute('aria-expanded', String(abrir));
+    botaoMenu.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+    menu.hidden = !abrir; topo.classList.toggle('menu-aberto', abrir);
+  }
+  botaoMenu.addEventListener('click', () => abrirMenu(menu.hidden));
+  menu.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a, button')) abrirMenu(false); });
+  matchMedia('(min-width: 1180px)').addEventListener('change', () => abrirMenu(false));
+
+  /* ── calculadora de orçamento ── */
+  const calc = document.getElementById('calc') as HTMLFormElement;
+  const detalhes = [...calc.querySelectorAll<HTMLElement>('.calc-detalhe')];
+  const saidaMin = document.getElementById('calc-min')!;
+  const saidaMax = document.getElementById('calc-max')!;
+  const saidaParcela = document.getElementById('calc-parcela')!;
+
+  function estado() {
+    const proc = (calc.querySelector<HTMLInputElement>('input[name="proc"]:checked'))!.value;
+    const d = detalhes.find((x) => x.dataset.proc === proc)!;
+    const tipo = d.querySelector<HTMLInputElement>('input[type="radio"]:checked');
+    const qtdEl = d.querySelector<HTMLInputElement>('input[type="number"]');
+    let qtd = 1;
+    if (qtdEl) {
+      qtd = Math.min(Number(qtdEl.max), Math.max(Number(qtdEl.min), Math.round(Number(qtdEl.value) || Number(qtdEl.min))));
+    }
+    const min = Number(tipo?.dataset.min ?? d.dataset.min) * qtd;
+    const max = Number(tipo?.dataset.max ?? d.dataset.max) * qtd;
+    const un = d.dataset.un;
+    const plural = un === 'dente' ? 'dentes' : un === 'implante' ? 'implantes' : 'arcadas';
+    const desc = tipo ? `${d.dataset.nome} (${tipo.dataset.nome})` : `${d.dataset.nome}, ${qtd} ${qtd === 1 ? un : plural}`;
+    return { proc, d, min, max, desc };
+  }
+
+  function atualizarCalc() {
+    const s = estado();
+    detalhes.forEach((x) => (x.hidden = x !== s.d));
+    saidaMin.textContent = brl(s.min);
+    saidaMax.textContent = brl(s.max);
+    saidaParcela.textContent = `ou em até 12x a partir de ${brl(s.min / 12)} sem juros`;
+  }
+
+  calc.addEventListener('change', atualizarCalc);
+  calc.addEventListener('input', atualizarCalc);
+  calc.querySelectorAll<HTMLButtonElement>('[data-passo]').forEach((b) => b.addEventListener('click', () => {
+    const input = b.parentElement!.querySelector<HTMLInputElement>('input')!;
+    const v = Math.min(Number(input.max), Math.max(Number(input.min), (Number(input.value) || 0) + Number(b.dataset.passo)));
+    input.value = String(v);
+    atualizarCalc();
+  }));
+  calc.querySelectorAll<HTMLInputElement>('input[type="number"]').forEach((i) => i.addEventListener('blur', () => {
+    i.value = String(Math.min(Number(i.max), Math.max(Number(i.min), Math.round(Number(i.value) || Number(i.min)))));
+    atualizarCalc();
+  }));
+  calc.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const s = estado();
+    const msg = `Olá, Dr. Vitor! Fiz a simulação no site e gostaria de um orçamento para: ${s.desc}.\nFaixa estimada: ${brl(s.min)} a ${brl(s.max)}.\nPodemos agendar uma avaliação?`;
+    window.open(`https://wa.me/${calc.dataset.zap}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+  });
+  atualizarCalc();
+
+  /* ── modal de agendamento ── */
+  const modal = document.getElementById('agenda') as HTMLDialogElement;
+  const form = document.getElementById('form-agenda') as HTMLFormElement;
+  const campo = <T extends HTMLElement = HTMLInputElement>(n: string) => form.elements.namedItem(n) as unknown as T;
+  const previa = document.getElementById('previa')!;
+  const DIAS = form.dataset.dias!.split(',').map(Number);
+  let quemAbriu: HTMLElement | null = null;
+  let ultimaSugestao = '';
+  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  function montarDias() {
+    const sel = campo<HTMLSelectElement>('dia');
+    const antes = sel.value;
+    const d = new Date(); const hoje = iso(d);
+    const ops: HTMLOptionElement[] = [];
+    for (let i = 0; ops.length < 12 && i < 30; i++, d.setDate(d.getDate() + 1)) {
+      if (!DIAS.includes(d.getDay())) continue;
+      if (iso(d) === hoje && new Date().getHours() >= 17) continue;
+      const txt = `${iso(d) === hoje ? 'Hoje, ' : ''}${d.toLocaleDateString('pt-BR', { weekday: 'long' })}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+      ops.push(new Option(txt.charAt(0).toUpperCase() + txt.slice(1), iso(d)));
+    }
+    sel.replaceChildren(new Option('Escolha o dia', ''), ...ops);
+    sel.value = ops.some((o) => o.value === antes) ? antes : '';
+  }
+
+  function abrirAgenda(origem: HTMLElement) {
+    quemAbriu = origem;
+    montarDias();
+    if (origem.dataset.trat) campo<HTMLSelectElement>('trat').value = origem.dataset.trat;
+    const obs = campo<HTMLTextAreaElement>('obs');
+    const sug = origem.dataset.obs;
+    if (sug && (!obs.value.trim() || obs.value === ultimaSugestao)) { obs.value = sug; ultimaSugestao = sug; }
+    desenharPrevia();
+    modal.showModal();
+    raiz.classList.add('modal-aberto');
+    campo('nome').focus();
+  }
+  modal.addEventListener('close', () => { raiz.classList.remove('modal-aberto'); quemAbriu?.focus(); });
+  document.querySelectorAll<HTMLElement>('[data-abrir-agenda]').forEach((b) => b.addEventListener('click', () => abrirAgenda(b)));
+  modal.querySelector('[data-fechar-agenda]')!.addEventListener('click', () => modal.close());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+
+  function valores() {
+    const dia = campo<HTMLSelectElement>('dia').value;
+    return {
+      nome: campo('nome').value.trim().replace(/\s+/g, ' '),
+      trat: campo<HTMLSelectElement>('trat').value,
+      dia,
+      diaFmt: dia ? new Date(`${dia}T12:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '',
+      periodo: (form.querySelector<HTMLInputElement>('input[name="periodo"]:checked'))!.value,
+      obs: campo<HTMLTextAreaElement>('obs').value.trim(),
+    };
+  }
+  function mensagem(v: ReturnType<typeof valores>) {
+    let t = `Olá, Dr. Vitor! Meu nome é ${v.nome} e gostaria de agendar: ${v.trat}.\nDia: ${v.diaFmt}, de ${v.periodo}.`;
+    if (v.obs) t += `\n\nObservação:\n${v.obs}`;
+    return t;
+  }
+  function trecho(valor: string, vazio: string) {
+    const s = document.createElement('span');
+    s.className = valor ? 'cheio' : 'vazio'; s.textContent = valor || vazio; return s;
+  }
+  function desenharPrevia() {
+    const v = valores();
+    previa.replaceChildren(
+      'Olá, Dr. Vitor! Meu nome é ', trecho(v.nome, 'seu nome'),
+      ' e gostaria de agendar: ', trecho(v.trat, 'tratamento'), '.\nDia: ', trecho(v.diaFmt, 'dia escolhido'), `, de ${v.periodo}.`,
+      ...(v.obs ? ['\n\nObservação:\n', trecho(v.obs, '')] : []),
+    );
+  }
+  const REGRAS: Record<string, (v: ReturnType<typeof valores>) => string> = {
+    nome: (v) => (v.nome ? '' : 'Digite seu nome.'),
+    trat: (v) => (v.trat ? '' : 'Escolha o tratamento, ou "Avaliação inicial" se ainda não sabe.'),
+    dia: (v) => (v.dia ? '' : 'Escolha o dia da consulta.'),
+  };
+  function marcarErro(n: string, t: string) {
+    document.getElementById(`e-${n}`)!.textContent = t;
+    const el = campo(n); if (t) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid');
+  }
+  form.addEventListener('input', (e) => {
+    const a = e.target as HTMLInputElement;
+    desenharPrevia();
+    if (a.getAttribute('aria-invalid') === 'true' && REGRAS[a.name]) marcarErro(a.name, REGRAS[a.name](valores()));
+  });
+  form.addEventListener('change', desenharPrevia);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = valores();
+    const erros = Object.entries(REGRAS).map(([n, r]) => [n, r(v)] as const);
+    erros.forEach(([n, t]) => marcarErro(n, t));
+    const p = erros.find(([, t]) => t);
+    if (p) { campo(p[0]).focus(); return; }
+    window.open(`https://wa.me/${form.dataset.zap}?text=${encodeURIComponent(mensagem(v))}`, '_blank', 'noopener');
+    modal.close();
+  });
+  montarDias();
+  desenharPrevia();
+</script>
+
+<style is:global>
+  :root:has(.odo) { scroll-behavior: smooth; scroll-padding-top: 84px; background: #FFFFFF; }
+  :root.modal-aberto { overflow: hidden; }
+  @media (prefers-reduced-motion: reduce) { :root:has(.odo) { scroll-behavior: auto; } }
+
+  .odo {
+    --marinho: #1F3B4D;
+    --marinho-fundo: #172E3D;
+    --aco: #376A8A;
+    --creme: #F5EBDD;
+    --creme-claro: #FBF6EF;
+    --grafite: #3C3C3C;
+    --dourado: #C8AC62;
+    --dourado-escuro: #7A6425;
+    --branco: #FFFFFF;
+    --texto-2: #56616A;
+    --fio: #E7DDCF;
+    --fio-escuro: rgba(245, 235, 221, 0.16);
+
+    --f-titulo: 'Sora', system-ui, sans-serif;
+    --f: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --largura: 1240px;
+    --margem: clamp(20px, 5vw, 64px);
+    --e: cubic-bezier(0.25, 1, 0.5, 1);
+    --suave: cubic-bezier(0.45, 0, 0.25, 1);
+
+    background: var(--branco);
+    color: var(--grafite);
+    font: 400 1.0625rem/1.65 var(--f);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  .odo *, .odo *::before, .odo *::after { box-sizing: border-box; }
+  .odo ::selection { background: var(--dourado); color: var(--marinho); }
+  .odo img { display: block; max-width: 100%; }
+  .odo a { color: inherit; text-underline-offset: 0.2em; }
+  .odo :focus-visible { outline: 2px solid var(--aco); outline-offset: 3px; border-radius: 6px; }
+  .odo h1, .odo h2, .odo h3, .odo p, .odo ul, .odo ol, .odo figure, .odo dl, .odo dd { margin: 0; padding: 0; }
+  .odo ul, .odo ol { list-style: none; }
+  .odo h1, .odo h2, .odo h3 { font-family: var(--f-titulo); color: var(--marinho); letter-spacing: -0.025em; text-wrap: balance; }
+  .odo h2 { font-size: clamp(2rem, 3.8vw, 3rem); line-height: 1.1; font-weight: 600; }
+  .odo .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .odo .pular { position: fixed; left: 16px; top: -64px; z-index: 80; padding: 10px 16px; border-radius: 10px; background: var(--marinho); color: var(--branco); }
+  .odo .pular:focus { top: 12px; }
+
+  .js .odo [data-fade] { opacity: 0; transform: translateY(18px); transition: opacity 1.3s var(--suave) calc(var(--i, 0) * 0.12s), transform 1.5s var(--e) calc(var(--i, 0) * 0.12s); }
+  .js .odo [data-fade].visto { opacity: 1; transform: none; }
+  .js .odo .entra { opacity: 0; animation: entra 1.6s var(--e) forwards; animation-delay: calc(0.2s + var(--i, 0) * 0.16s); }
+  @keyframes entra { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+  .js .odo .retrato { opacity: 0; animation: sobe 1.8s var(--e) .3s forwards; }
+  .js .odo .painel-nome, .js .odo .assinatura { opacity: 0; animation: entra 1.8s var(--e) .7s forwards; }
+  @keyframes sobe { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .js .odo [data-fade], .js .odo .entra, .js .odo .retrato, .js .odo .painel-nome, .js .odo .assinatura { opacity: 1; transform: none; transition: none; animation: none; } }
+
+  /* ─────────────── botões ─────────────── */
+  .odo .botao {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    min-height: 50px; padding: 0 1.5rem; border: 0; border-radius: 12px;
+    font: 600 1rem/1 var(--f); text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition: background-color .45s var(--suave), color .45s var(--suave), transform .45s var(--suave);
+  }
+  .odo .botao:active { transform: translateY(1px); }
+  .odo .botao-marinho { background: var(--marinho); color: var(--branco); }
+  .odo .botao-marinho:hover { background: var(--aco); }
+  .odo .botao-dourado { background: var(--dourado); color: var(--marinho); }
+  .odo .botao-dourado:hover { background: #D6BD78; }
+  .odo .botao-grande { min-height: 56px; padding: 0 1.8rem; font-size: 1.04rem; }
+  .odo .link-seta { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--marinho); text-decoration: none; border-bottom: 2px solid var(--dourado); padding-bottom: 2px; }
+  .odo .link-seta::after { content: ''; width: 16px; height: 2px; background: currentColor; transform-origin: left; transition: transform .3s var(--e); }
+  .odo .link-seta:hover::after { transform: scaleX(1.5); }
+
+  /* ─────────────── cabeçalho ─────────────── */
+  .odo .topo { position: fixed; inset: 0 0 auto 0; z-index: 50; background: rgba(255, 255, 255, 0.98); box-shadow: 0 1px 0 var(--fio); }
+  .odo .topo-in { max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: 0 var(--margem); height: 78px; display: flex; align-items: center; gap: 1.5rem; }
+  .odo .marca { display: inline-flex; align-items: center; gap: 0.65rem; margin-right: auto; text-decoration: none; color: var(--marinho); }
+  .odo .marca-simbolo { width: 40px; height: 40px; }
+  .odo .marca-texto { display: grid; line-height: 1.1; }
+  .odo .marca-texto strong { font: 600 1.2rem/1.1 var(--f-titulo); letter-spacing: -0.02em; }
+  .odo .marca-texto span { font-size: 0.8rem; color: var(--texto-2); }
+  .odo .nav ul { display: flex; gap: 0.2rem; }
+  .odo .nav a { position: relative; display: block; padding: 0.55rem 0.7rem; font-size: 0.95rem; font-weight: 500; text-decoration: none; color: var(--texto-2); transition: color .2s ease; }
+  .odo .nav a:hover, .odo .nav a[aria-current] { color: var(--marinho); }
+  .odo .nav a::after { content: ''; position: absolute; left: 0.7rem; right: 0.7rem; bottom: 0.15rem; height: 2px; background: var(--dourado); transform: scaleX(0); transform-origin: left; transition: transform .35s var(--e); }
+  .odo .nav a[aria-current]::after, .odo .nav a:hover::after { transform: scaleX(1); }
+  .odo .botao-topo { min-height: 44px; padding: 0 1.2rem; }
+  .odo .topo-menu { display: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--creme-claro); color: var(--marinho); flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+  .odo .topo-menu span { width: 18px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .3s var(--e); }
+  .odo .menu-aberto .topo-menu span:first-child { transform: translateY(4px) rotate(45deg); }
+  .odo .menu-aberto .topo-menu span:last-child { transform: translateY(-4px) rotate(-45deg); }
+  .odo .menu-movel { padding: 0.5rem var(--margem) 1.5rem; border-top: 1px solid var(--fio); background: var(--branco); }
+  .odo .menu-movel a { display: block; padding: 0.9rem 0; border-bottom: 1px solid var(--fio); font-size: 1.1rem; font-weight: 500; text-decoration: none; color: var(--marinho); }
+  .odo .menu-movel .botao { width: 100%; margin-top: 1.2rem; }
+  @media (max-width: 1179px) { .odo .nav { display: none; } .odo .topo-menu { display: inline-flex; } .odo .topo-in { height: 68px; gap: 0.75rem; } }
+  @media (max-width: 479px) { .odo .botao-topo { display: none; } }
+
+  /* ─────────────── início ─────────────── */
+  .odo .heroi { position: relative; overflow: hidden; isolation: isolate; background: var(--creme-claro); }
+  .odo .heroi-in {
+    position: relative; z-index: 3; max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto;
+    min-height: max(660px, min(100svh, 880px));
+    padding: calc(78px + clamp(48px, 7vw, 96px)) var(--margem) clamp(56px, 7vw, 88px);
+    display: flex; align-items: center;
+  }
+  .odo .heroi-texto { display: grid; gap: 1.5rem; width: min(100%, 36rem); }
+  .odo .heroi-selo { display: inline-flex; align-items: center; gap: 0.55rem; justify-self: start; font-size: 0.92rem; font-weight: 600; color: var(--aco); }
+  .odo .heroi-selo svg { width: 26px; height: 26px; color: var(--marinho); }
+  .odo .heroi h1 { font-size: clamp(2.5rem, 4.6vw, 4.1rem); line-height: 1.04; font-weight: 600; letter-spacing: -0.035em; }
+  .odo .heroi-lide { font-size: 1.12rem; color: var(--texto-2); max-width: 32rem; }
+  .odo .heroi-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.8rem; }
+  .odo .regua { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 0 1.8rem; margin-top: 0.8rem; padding-top: 1.3rem; border-top: 1px solid var(--fio); }
+  .odo .regua dt { font-size: 0.82rem; color: var(--texto-2); }
+  .odo .regua dd { display: flex; align-items: center; gap: 0.45rem; font: 600 1.05rem/1.3 var(--f-titulo); color: var(--marinho); }
+  .odo .ponto-vivo { width: 9px; height: 9px; border-radius: 50%; background: #3F9B6B; box-shadow: 0 0 0 4px rgba(63, 155, 107, 0.18); flex: none; }
+
+  /* painel marinho: ocupa a direita inteira, com a curva do sorriso no canto */
+  .odo .painel {
+    position: absolute; z-index: 0; top: 0; bottom: 0; right: 0; width: 44%;
+    background: var(--marinho); border-bottom-left-radius: 260px; overflow: hidden;
+  }
+  .odo .painel-nome {
+    position: absolute; left: 50%; top: 13%; translate: -50% 0;
+    font: 700 clamp(7rem, 15vw, 15rem)/0.8 var(--f-titulo); letter-spacing: -0.04em;
+    color: transparent; -webkit-text-stroke: 1.5px rgba(200, 172, 98, 0.55); white-space: nowrap; user-select: none;
+  }
+  .odo .painel-arco { position: absolute; left: 6%; right: 6%; bottom: 20%; width: 88%; fill: none; stroke: var(--dourado); stroke-width: 3; stroke-linecap: round; opacity: 0.9; }
+  .odo .retrato {
+    position: absolute; z-index: 1; bottom: 0; right: calc(22% - min(19vw, 270px));
+    width: min(38vw, 540px); pointer-events: none;
+  }
+  .odo .retrato img { width: 100%; height: auto; }
+  .odo .assinatura {
+    position: absolute; z-index: 2; right: max(var(--margem), calc((100% - var(--largura)) / 2)); bottom: 44px;
+    display: grid; gap: 0.2rem; padding-left: 0.9rem; border-left: 2px solid var(--dourado);
+    color: #C9D3DA; font-size: 0.88rem; line-height: 1.45; text-shadow: 0 1px 12px rgba(23, 46, 61, 0.6);
+  }
+  .odo .assinatura strong { font: 600 1.1rem/1.2 var(--f-titulo); color: var(--branco); }
+
+  /* formas decorativas fixas */
+  .odo .forma { position: absolute; pointer-events: none; }
+  .odo .forma-anel { width: 120px; height: 120px; border-radius: 50%; border: 1.5px solid rgba(200, 172, 98, 0.6); }
+  .odo .forma-ponto { width: 16px; height: 16px; border-radius: 50%; background: var(--dourado); }
+  .odo .painel .forma-anel { left: 10%; top: 58%; }
+  .odo .painel .forma-ponto { right: 14%; top: 10%; width: 18px; height: 18px; }
+  .odo .tem-formas { position: relative; }
+  .odo .tem-formas > :not(.forma) { position: relative; z-index: 1; }
+  .odo .forma-disco { width: 320px; height: 320px; border-radius: 50%; background: var(--creme); z-index: 0; }
+  .odo .forma-disco-p { width: 200px; height: 200px; }
+  .odo .forma-arco { width: 140px; height: 28px; color: var(--dourado); }
+  .odo .forma-arco-g { width: 220px; height: 44px; }
+  .odo .forma-anel-g { width: 180px; height: 180px; }
+  .odo .forma-grade { width: 150px; height: 150px; background-image: radial-gradient(rgba(200, 172, 98, 0.5) 1.5px, transparent 1.5px); background-size: 18px 18px; }
+  @media (max-width: 767px) { .odo .forma-disco { width: 200px; height: 200px; } .odo .forma-arco-g, .odo .forma-anel-g { display: none; } }
+
+
+  @media (max-width: 1099px) {
+    .odo .regua { grid-template-columns: repeat(2, auto); gap: 0.9rem 2rem; }
+  }
+  @media (max-width: 899px) {
+    .odo .heroi { display: flex; flex-direction: column; }
+    .odo .painel { position: relative; width: 100%; height: 440px; flex: none; border-bottom-left-radius: 0; border-radius: 0 0 0 120px; }
+    .odo .painel-nome { top: 22%; font-size: 34vw; }
+    .odo .retrato { right: 50%; translate: 50% 0; bottom: auto; top: calc(68px + 440px - min(80vw, 330px) * 1.265); width: min(80vw, 330px); }
+    .odo .assinatura { display: none; }
+    .odo .heroi-in { min-height: 0; padding-top: 32px; }
+    .odo .painel { margin-top: 68px; }
+    .odo .heroi-acoes .botao { flex: 1 1 100%; }
+  }
+
+  /* faixa fixa: antes deslizava, mas a animação contínua de uma camada tão larga travava o início */
+  .odo .faixa {
+    position: relative; z-index: 3; background: var(--marinho); color: var(--creme);
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem 0; padding: 1.1rem var(--margem);
+  }
+  .odo .faixa-item { display: inline-flex; align-items: center; gap: 0.9rem; padding: 0 1.1rem; font: 500 1.02rem/1 var(--f-titulo); white-space: nowrap; }
+  .odo .faixa-item svg { width: 30px; height: 7px; color: var(--dourado); }
+  @media (max-width: 767px) {
+    .odo .faixa { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+    .odo .faixa::-webkit-scrollbar { display: none; }
+  }
+
+  /* ─────────────── cabeçalhos de seção ─────────────── */
+  .odo .secao { max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(88px, 11vw, 140px) var(--margem) 0; }
+  .odo .cab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 28rem); align-items: end; gap: 1rem 4rem; margin-bottom: clamp(36px, 5vw, 56px); }
+  .odo .cab p { color: var(--texto-2); }
+  .odo .cab-arco { display: block; width: 72px; height: 16px; color: var(--dourado); margin-bottom: 0.9rem; }
+  .odo .cab-centro { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .odo .cab-centro p { max-width: 38rem; }
+  .odo .cab-escuro h2 { color: var(--branco); }
+  .odo .cab-escuro p { color: #C9D3DA; }
+  @media (max-width: 767px) { .odo .cab { grid-template-columns: 1fr; } }
+
+  /* ─────────────── tratamentos: vitrine de fotos + tabela ─────────────── */
+  .odo .honorarios { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(18px, 2.4vw, 32px); align-items: stretch; }
+  .odo .vitrine { position: relative; min-height: 560px; border-radius: 28px; overflow: hidden; background: var(--marinho); }
+  .odo .vitrine-foto { position: absolute; inset: 0; opacity: 0; transition: opacity 1s var(--suave); }
+  .odo .vitrine-foto.ativa { opacity: 1; }
+  .odo .vitrine-foto img { width: 100%; height: 100%; object-fit: cover; }
+  .odo .vitrine::after { content: ''; position: absolute; inset: 55% 0 0; background: linear-gradient(180deg, rgba(23, 46, 61, 0) 0%, rgba(23, 46, 61, 0.78) 100%); pointer-events: none; }
+  .odo .vitrine-legenda { position: absolute; z-index: 1; left: 26px; right: 26px; bottom: 24px; display: grid; gap: 0.2rem; color: #DCE3E8; font-size: 0.92rem; }
+  .odo .vitrine-legenda span:first-child { font: 600 1.45rem/1.2 var(--f-titulo); color: var(--branco); }
+
+  .odo .tabela { display: flex; flex-direction: column; padding: clamp(22px, 3vw, 34px); border-radius: 28px; background: var(--creme-claro); border: 1px solid var(--fio); }
+  .odo .tabela-titulo { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding-bottom: 1rem; margin-bottom: 0.3rem; border-bottom: 2px solid var(--marinho); font: 600 1.1rem/1.2 var(--f-titulo); color: var(--marinho); }
+  .odo .tabela-titulo span { font: 500 0.88rem/1 var(--f); color: var(--texto-2); }
+  .odo .item { border-bottom: 1px solid var(--fio); }
+  .odo .item:last-child { border-bottom: 0; }
+  .odo .linha { width: 100%; display: flex; align-items: flex-end; gap: 0.8rem; padding: 1.05rem 0; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; color: var(--grafite); }
+  .odo .linha-nome { display: grid; gap: 0.15rem; }
+  .odo .linha-nome strong { font: 600 1.05rem/1.25 var(--f-titulo); color: var(--marinho); transition: color .5s var(--suave); }
+  .odo .linha-nome small { font-size: 0.84rem; color: var(--texto-2); }
+  .odo .linha-pontos { flex: 1; min-width: 20px; margin-bottom: 0.45rem; border-bottom: 2px dotted #CDBFA8; }
+  .odo .linha-preco { display: grid; text-align: right; font: 600 1.15rem/1.1 var(--f-titulo); color: var(--marinho); white-space: nowrap; }
+  .odo .linha-preco small { font: 500 0.72rem/1.3 var(--f); color: var(--texto-2); }
+  .odo .linha:hover .linha-nome strong, .odo .item.aberto .linha-nome strong { color: var(--aco); }
+  .odo .item-corpo { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .7s var(--suave); }
+  .odo .item.aberto .item-corpo { grid-template-rows: 1fr; }
+  .odo .item-dentro { overflow: hidden; display: grid; gap: 0.9rem; justify-items: start; }
+  .odo .item-dentro p { font-size: 0.97rem; color: var(--texto-2); max-width: 46ch; opacity: 0; transition: opacity .5s var(--suave); }
+  .odo .item-dentro .botao { min-height: 44px; margin-bottom: 1.2rem; opacity: 0; transition: opacity .5s var(--suave), background-color .45s var(--suave); }
+  .odo .item.aberto .item-dentro p, .odo .item.aberto .item-dentro .botao { opacity: 1; transition-delay: .2s; }
+  .odo .tabela-nota { margin-top: auto; padding-top: 1.2rem; font-size: 0.88rem; color: var(--texto-2); }
+  @media (max-width: 959px) { .odo .honorarios { grid-template-columns: 1fr; } .odo .vitrine { min-height: 0; aspect-ratio: 4 / 3; } }
+  @media (max-width: 599px) { .odo .vitrine { aspect-ratio: 1 / 1.05; } }
+  @media (max-width: 479px) { .odo .linha-nome strong { font-size: 0.98rem; } .odo .item-dentro .botao { width: 100%; white-space: normal; } }
+  @media (prefers-reduced-motion: reduce) { .odo .vitrine-foto, .odo .item-corpo, .odo .item-dentro * { transition: none; } }
+
+  /* ─────────────── cirurgias ─────────────── */
+  .odo .cirurgias { margin-top: clamp(88px, 11vw, 140px); background: var(--marinho); color: #C9D3DA; position: relative; overflow: hidden; }
+  .odo .cirurgias::before {
+    content: ''; position: absolute; right: -180px; top: -180px; width: 560px; height: 560px; border-radius: 50%;
+    border: 1.5px solid rgba(200, 172, 98, 0.35); box-shadow: 0 0 0 60px rgba(200, 172, 98, 0.04), 0 0 0 120px rgba(200, 172, 98, 0.03); pointer-events: none;
+  }
+  .odo .cirurgias ::selection { background: var(--dourado); color: var(--marinho); }
+  .odo .cirurgias :focus-visible { outline-color: var(--dourado); }
+  .odo .cirurgias-in { position: relative; max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(80px, 10vw, 128px) var(--margem); }
+  .odo .implante { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 88px); align-items: center; }
+  .odo .implante-fotos { position: relative; }
+  .odo .implante-foto-grande { display: block; aspect-ratio: 4 / 3.3; overflow: hidden; border-radius: 26px; }
+  .odo .implante-foto-grande img { width: 100%; height: 100%; object-fit: cover; }
+  .odo .implante-selo {
+    position: absolute; right: -24px; bottom: -28px; display: grid; gap: 0.2rem; max-width: 210px;
+    padding: 1.1rem 1.2rem; border-radius: 20px; background: var(--dourado); color: var(--marinho);
+    box-shadow: 0 24px 40px -20px rgba(0, 0, 0, 0.5);
+  }
+  .odo .implante-selo strong { font: 600 1.9rem/1 var(--f-titulo); }
+  .odo .implante-selo span { font-size: 0.9rem; font-weight: 500; line-height: 1.4; }
+  .odo .implante-texto h3 { font-size: clamp(1.5rem, 2.4vw, 2rem); color: var(--branco); margin-bottom: 1.6rem; }
+  .odo .etapas { display: grid; position: relative; }
+  .odo .etapas::before { content: ''; position: absolute; left: 19px; top: 20px; bottom: 20px; width: 1.5px; background: linear-gradient(var(--dourado), rgba(200, 172, 98, 0.15)); }
+  .odo .etapas li { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 1.1rem; padding: 0 0 1.5rem; }
+  .odo .etapas li:last-child { padding-bottom: 0; }
+  .odo .etapa-num { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--marinho); border: 1.5px solid var(--dourado); color: var(--dourado); font: 600 0.95rem/1 var(--f-titulo); position: relative; }
+  .odo .etapas strong { display: block; font: 600 1.08rem/1.3 var(--f-titulo); color: var(--branco); margin: 0.45rem 0 0.25rem; }
+  .odo .etapas p { font-size: 0.97rem; }
+
+  .odo .proteses { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(24px, 3vw, 40px); margin-top: clamp(72px, 9vw, 112px); align-items: stretch; }
+  .odo .protese-foto { position: relative; overflow: hidden; border-radius: 26px; min-height: 380px; }
+  .odo .protese-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 78% 40%; }
+  .odo .protese-lista { padding: clamp(26px, 3vw, 40px); border-radius: 26px; background: var(--marinho-fundo); border: 1px solid var(--fio-escuro); display: grid; gap: 1.2rem; align-content: start; }
+  .odo .protese-lista h3 { font-size: 1.4rem; color: var(--branco); }
+  .odo .protese-lista li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.95rem 0; border-top: 1px solid var(--fio-escuro); }
+  .odo .protese-lista li:first-child { border-top: 0; padding-top: 0; }
+  .odo .protese-lista li div { display: grid; }
+  .odo .protese-lista li strong { color: var(--branco); font-weight: 600; }
+  .odo .protese-lista li div span { font-size: 0.92rem; }
+  .odo .protese-preco { display: grid; text-align: right; font: 600 1.15rem/1.15 var(--f-titulo); color: var(--dourado); white-space: nowrap; }
+  .odo .protese-preco small { font: 500 0.75rem/1.2 var(--f); color: #A9B6BF; }
+  .odo .protese-lista .botao { justify-self: start; margin-top: 0.4rem; }
+  @media (max-width: 959px) {
+    .odo .implante, .odo .proteses { grid-template-columns: 1fr; }
+    .odo .implante-selo { right: 12px; bottom: -24px; }
+    .odo .implante-texto { margin-top: 1.5rem; }
+    .odo .protese-foto { min-height: 0; aspect-ratio: 4 / 3; }
+  }
+  @media (max-width: 479px) { .odo .protese-lista .botao { width: 100%; white-space: normal; text-align: center; } }
+
+  /* ─────────────── planos ─────────────── */
+  .odo .planos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 24px); align-items: stretch; }
+  .odo .plano { position: relative; display: flex; flex-direction: column; gap: 1rem; height: 100%; padding: clamp(26px, 3vw, 36px); border-radius: 26px; background: var(--creme-claro); border: 1px solid var(--fio); }
+  .odo .plano h3 { font-size: 1.5rem; font-weight: 600; }
+  .odo .plano-sub { font-size: 0.95rem; color: var(--texto-2); margin-top: -0.6rem; }
+  .odo .plano-preco { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem; font: 600 3rem/1 var(--f-titulo); letter-spacing: -0.03em; color: var(--marinho); padding: 0.5rem 0 1.1rem; border-bottom: 1px solid var(--fio); }
+  .odo .moeda { font: 600 1.05rem/1 var(--f); letter-spacing: 0; }
+  .odo .por { font: 500 0.9rem/1 var(--f); letter-spacing: 0; color: var(--texto-2); margin-left: 0.3rem; }
+  .odo .plano-lista { display: grid; gap: 0.75rem; flex: 1; align-content: start; }
+  .odo .plano-lista li { display: flex; gap: 0.7rem; align-items: baseline; font-size: 0.98rem; }
+  .odo .plano-lista i { width: 1.1rem; flex: none; color: var(--aco); font-size: 0.85rem; }
+  .odo .plano-bonus { padding: 0.45rem 0.7rem; border-radius: 10px; background: rgba(200, 172, 98, 0.16); }
+  .odo .plano-bonus i { color: var(--dourado-escuro); }
+  .odo .plano .botao { width: 100%; margin-top: 0.6rem; }
+  .odo .plano-destaque { background: var(--marinho); border-color: var(--marinho); color: #C9D3DA; box-shadow: 0 30px 60px -30px rgba(31, 59, 77, 0.7); }
+  .odo .plano-destaque h3, .odo .plano-destaque .plano-preco { color: var(--branco); }
+  .odo .plano-destaque .plano-sub, .odo .plano-destaque .por { color: #A9B6BF; }
+  .odo .plano-destaque .plano-preco { border-color: var(--fio-escuro); }
+  .odo .plano-destaque .plano-lista i { color: var(--dourado); }
+  .odo .plano-destaque .plano-bonus { background: rgba(200, 172, 98, 0.14); color: var(--creme); }
+  .odo .plano-destaque .plano-bonus i { color: var(--dourado); }
+  .odo .plano-destaque :focus-visible { outline-color: var(--dourado); }
+  .odo .plano-fita { position: absolute; top: -14px; left: 50%; translate: -50% 0; padding: 0.35rem 1rem; border-radius: 999px; background: var(--dourado); color: var(--marinho); font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+  @media (max-width: 959px) { .odo .planos { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; gap: 28px; } }
+
+  /* ─────────────── orçamento ─────────────── */
+  .odo .orcamento { max-width: calc(var(--largura) + 2 * var(--margem)); margin: clamp(88px, 11vw, 140px) auto 0; padding: 0 var(--margem); }
+  .odo .orcamento .forma-anel { border-color: var(--dourado); z-index: 2 !important; }
+  .odo .orcamento-in { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 72px); padding: clamp(32px, 5vw, 64px); border-radius: 32px; background: var(--creme); align-items: start; }
+  .odo .orcamento-texto { display: grid; gap: 1.1rem; }
+  .odo .orcamento-texto > p { color: var(--texto-2); }
+  .odo .orcamento-foto { margin-top: 0.8rem; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 22px; }
+  .odo .orcamento-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 35% 50%; }
+  .odo .calc { display: grid; gap: 1.3rem; padding: clamp(24px, 3vw, 36px); border-radius: 26px; background: var(--branco); box-shadow: 0 30px 60px -36px rgba(31, 59, 77, 0.45); }
+  .odo .calc fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  .odo .calc legend, .odo .calc-qtd label { display: block; margin-bottom: 0.7rem; font: 600 1rem/1.3 var(--f-titulo); color: var(--marinho); padding: 0; }
+  .odo .calc-opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .odo .calc-op { position: relative; display: block; cursor: pointer; }
+  .odo .calc-op input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .odo .calc-op span { display: flex; align-items: center; min-height: 54px; padding: 0.6rem 0.9rem; border-radius: 14px; border: 1.5px solid var(--fio); background: var(--creme-claro); font-weight: 600; font-size: 0.95rem; color: var(--marinho); transition: border-color .2s ease, background-color .2s ease, color .2s ease; }
+  .odo .calc-op:hover span { border-color: var(--aco); }
+  .odo .calc-op input:checked + span { background: var(--marinho); border-color: var(--marinho); color: var(--branco); }
+  .odo .calc-op input:focus-visible + span { outline: 2px solid var(--aco); outline-offset: 3px; }
+  .odo .calc-op-linha { display: grid; }
+  .odo .calc-op-linha span { justify-content: space-between; }
+  .odo .calc-op-linha small { position: absolute; right: 0.9rem; top: 50%; translate: 0 -50%; font-size: 0.85rem; color: var(--texto-2); pointer-events: none; }
+  .odo .calc-op-linha input:checked ~ small { color: var(--creme); }
+  .odo .calc-tipo { display: grid; gap: 0.5rem; }
+  .odo .contador { display: inline-flex; align-items: center; border: 1.5px solid var(--fio); border-radius: 14px; overflow: hidden; }
+  .odo .contador button { width: 50px; height: 50px; border: 0; background: var(--creme-claro); color: var(--marinho); cursor: pointer; font-size: 0.9rem; }
+  .odo .contador button:hover { background: var(--creme); }
+  .odo .contador input { width: 70px; height: 50px; border: 0; text-align: center; font: 600 1.2rem/1 var(--f-titulo); color: var(--marinho); background: var(--branco); -moz-appearance: textfield; }
+  .odo .contador input::-webkit-outer-spin-button, .odo .contador input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .odo .calc-dica { font-size: 0.88rem; color: var(--texto-2); margin-top: 0.6rem; }
+  .odo .calc-resultado { padding: 1.2rem 1.3rem; border-radius: 18px; background: var(--marinho); color: #C9D3DA; }
+  .odo .calc-rotulo { font-size: 0.88rem; }
+  .odo .calc-valor { font: 600 clamp(1.5rem, 2.8vw, 2.1rem)/1.2 var(--f-titulo); color: var(--branco); letter-spacing: -0.02em; margin: 0.2rem 0; }
+  .odo .calc-valor span { color: var(--dourado); }
+  .odo .calc-parcela { font-size: 0.9rem; }
+  .odo .calc .botao { width: 100%; }
+  .odo .calc-nota { font-size: 0.82rem; color: var(--texto-2); text-align: center; }
+  @media (max-width: 959px) { .odo .orcamento-in { grid-template-columns: 1fr; } .odo .orcamento-foto { display: none; } }
+  @media (max-width: 479px) { .odo .calc-opcoes { grid-template-columns: 1fr; } .odo .orcamento-in { padding: 24px 16px; } .odo .calc .botao { white-space: normal; text-align: center; } }
+
+  /* ─────────────── contato ─────────────── */
+  .odo .contato-cartao { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
+  .odo .contato-foto { aspect-ratio: 4 / 4.2; overflow: hidden; border-radius: 26px 180px 26px 26px; }
+  .odo .contato-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 40% 50%; }
+  .odo .contato-texto { display: grid; gap: 1.2rem; justify-items: start; }
+  .odo .contato-texto > p { color: var(--texto-2); max-width: 32rem; }
+  .odo .canais { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; width: 100%; margin-top: 0.4rem; }
+  .odo .canais a { display: flex; align-items: center; gap: 0.8rem; height: 100%; padding: 0.85rem 1rem; border-radius: 16px; border: 1px solid var(--fio); background: var(--creme-claro); text-decoration: none; transition: border-color .2s ease; }
+  .odo .canais a:hover { border-color: var(--dourado); }
+  .odo .canal-icone { width: 42px; height: 42px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--marinho); color: var(--dourado); }
+  .odo .canal-texto { display: grid; min-width: 0; }
+  .odo .canal-texto strong { color: var(--marinho); }
+  .odo .canal-texto span { font-size: 0.9rem; color: var(--texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .odo .horarios { display: grid; grid-template-columns: repeat(3, auto); gap: 0 2rem; padding-top: 1.1rem; border-top: 1px solid var(--fio); width: 100%; }
+  .odo .horarios dt { font-size: 0.85rem; color: var(--texto-2); }
+  .odo .horarios dd { font: 600 1.02rem/1.3 var(--f-titulo); color: var(--marinho); }
+  @media (max-width: 899px) { .odo .contato-cartao { grid-template-columns: 1fr; } .odo .contato-foto { aspect-ratio: 4 / 3; border-radius: 26px 120px 26px 26px; } }
+  @media (max-width: 479px) { .odo .canais { grid-template-columns: 1fr; } .odo .horarios { grid-template-columns: 1fr; gap: 0.6rem; } .odo .contato-texto .botao { width: 100%; } }
+
+  /* ─────────────── rodapé ─────────────── */
+  .odo .rodape { position: relative; margin-top: clamp(88px, 11vw, 140px); background: var(--marinho-fundo); color: #A9B6BF; }
+  .odo .rodape-arco { position: absolute; left: 50%; top: -1px; width: 220px; height: 44px; translate: -50% 0; color: var(--dourado); }
+  .odo .rodape :focus-visible { outline-color: var(--dourado); }
+  .odo .rodape-in { max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(64px, 8vw, 96px) var(--margem) 28px; }
+  .odo .rodape-grade { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1.5fr); gap: 2.5rem; padding-bottom: 2.5rem; }
+  .odo .marca-clara { color: var(--branco); margin-bottom: 1rem; }
+  .odo .marca-clara .marca-texto span { color: #A9B6BF; }
+  .odo .rodape-marca p { font-size: 0.95rem; max-width: 22rem; }
+  .odo .redes { display: flex; gap: 0.5rem; margin-top: 1.2rem; }
+  .odo .redes a { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; border: 1px solid var(--fio-escuro); color: var(--creme); transition: background-color .2s ease, color .2s ease; }
+  .odo .redes a:hover { background: var(--dourado); color: var(--marinho); }
+  .odo .rodape-col h2 { font: 600 1rem/1.2 var(--f-titulo); color: var(--branco); margin-bottom: 0.9rem; letter-spacing: 0; }
+  .odo .rodape-col ul { display: grid; gap: 0.45rem; }
+  .odo .rodape-col a, .odo .rodape-col address, .odo .rodape-col p { font-size: 0.95rem; font-style: normal; text-decoration: none; line-height: 1.65; }
+  .odo .rodape-col p { margin-top: 0.8rem; }
+  .odo .rodape-col a:hover { color: var(--branco); text-decoration: underline; }
+  .odo .rodape-mapa { display: grid; gap: 0.7rem; align-content: start; }
+  .odo .rodape-mapa iframe { width: 100%; aspect-ratio: 16 / 11; border: 0; border-radius: 20px; background: #22404F; filter: grayscale(0.4); }
+  .odo .rodape-mapa a { color: var(--creme); font-size: 0.95rem; font-weight: 500; text-decoration: none; }
+  .odo .rodape-mapa a i { color: var(--dourado); margin-right: 0.3rem; }
+  .odo .rodape-fim { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem 2rem; padding-top: 1.5rem; border-top: 1px solid var(--fio-escuro); font-size: 0.86rem; }
+  .odo .rodape-fim a { color: var(--creme); }
+  @media (max-width: 1099px) { .odo .rodape-grade { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 559px) { .odo .rodape-grade { grid-template-columns: 1fr; } }
+
+  .odo .zap-flutua { position: fixed; right: 22px; bottom: 22px; z-index: 45; width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: var(--dourado); color: var(--marinho); font-size: 1.7rem; text-decoration: none; box-shadow: 0 16px 36px -12px rgba(31, 59, 77, 0.55); transition: transform .3s var(--e); }
+  .odo .zap-flutua:hover { transform: scale(1.08); }
+
+  /* ─────────────── modal ─────────────── */
+  .odo .modal { margin: auto; padding: 0; border: 0; width: min(580px, calc(100% - 32px)); max-height: min(92dvh, 860px); border-radius: 24px; background: var(--branco); color: var(--grafite); overflow: hidden; box-shadow: 0 40px 100px -20px rgba(23, 46, 61, 0.6); }
+  .odo .modal::backdrop { background: rgba(23, 46, 61, 0.6); }
+  .odo .modal[open] { animation: modal-entra .35s var(--e); }
+  @keyframes modal-entra { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .odo .modal[open] { animation: none; } }
+  .odo .modal-in { display: flex; flex-direction: column; max-height: inherit; }
+  .odo .modal-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 26px 28px 18px; border-bottom: 1px solid var(--fio); background: var(--creme-claro); }
+  .odo .modal-cab h2 { font-size: 1.55rem; }
+  .odo .modal-cab p { color: var(--texto-2); font-size: 0.95rem; margin-top: 0.3rem; }
+  .odo .modal-fechar { width: 40px; height: 40px; flex: none; border: 0; border-radius: 12px; background: var(--branco); color: var(--marinho); cursor: pointer; font-size: 1.05rem; }
+  .odo .modal-corpo { display: grid; gap: 1.1rem; padding: 22px 28px; overflow-y: auto; }
+  .odo .modal-pe { padding: 16px 28px 24px; border-top: 1px solid var(--fio); }
+  .odo .modal-pe .botao { width: 100%; }
+  .odo .campos { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .odo .campo { display: grid; gap: 0.4rem; align-content: start; }
+  .odo .campo-largo { grid-column: 1 / -1; }
+  .odo .campo > label, .odo .periodo legend { font-weight: 600; font-size: 0.95rem; color: var(--marinho); padding: 0; }
+  .odo .opcional { font-weight: 400; color: var(--texto-2); }
+  .odo .campo input, .odo .campo select, .odo .campo textarea { width: 100%; min-height: 50px; padding: 0.75rem 1rem; border: 1.5px solid #DCD2C3; border-radius: 12px; background: var(--branco); color: var(--grafite); font: 400 1rem/1.4 var(--f); caret-color: var(--aco); transition: border-color .2s ease, box-shadow .2s ease; }
+  .odo .campo textarea { resize: vertical; min-height: 90px; }
+  .odo .campo input::placeholder, .odo .campo textarea::placeholder { color: #7A8288; }
+  .odo .campo input:focus-visible, .odo .campo select:focus-visible, .odo .campo textarea:focus-visible { outline: none; border-color: var(--aco); box-shadow: 0 0 0 4px rgba(55, 106, 138, 0.16); }
+  .odo .campo [aria-invalid='true'] { border-color: #B0352B; box-shadow: 0 0 0 4px rgba(176, 53, 43, 0.1); }
+  .odo .seletor { position: relative; }
+  .odo .seletor select { appearance: none; padding-right: 2.6rem; cursor: pointer; }
+  .odo .seletor select:has(option[value='']:checked) { color: #7A8288; }
+  .odo .seletor i { position: absolute; right: 1rem; top: 50%; translate: 0 -50%; font-size: 0.8rem; color: var(--aco); pointer-events: none; }
+  .odo fieldset.periodo { border: 0; margin: 0; padding: 0; min-width: 0; }
+  .odo .periodo-op { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.4rem; }
+  .odo .periodo-op label { position: relative; cursor: pointer; }
+  .odo .periodo-op input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+  .odo .periodo-op span { display: grid; place-items: center; min-height: 50px; border-radius: 12px; border: 1.5px solid #DCD2C3; font-weight: 600; color: var(--marinho); }
+  .odo .periodo-op input:checked + span { background: var(--marinho); border-color: var(--marinho); color: var(--branco); }
+  .odo .periodo-op input:focus-visible + span { outline: 2px solid var(--aco); outline-offset: 3px; }
+  .odo .erro:empty { display: none; }
+  .odo .erro { font-size: 0.87rem; font-weight: 500; color: #B0352B; }
+  .odo .previa { padding: 16px 18px; border-radius: 14px; background: var(--creme-claro); border: 1px solid var(--fio); }
+  .odo .previa-titulo { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.9rem; font-weight: 600; color: var(--aco); }
+  .odo .previa-texto { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.95rem; line-height: 1.55; }
+  .odo .previa-texto .vazio { padding: 0 4px; border-radius: 4px; background: var(--creme); color: var(--texto-2); }
+  .odo .previa-texto .cheio { font-weight: 600; color: var(--marinho); }
+  @media (max-width: 599px) {
+    .odo .modal { width: 100%; max-width: 100%; max-height: 94dvh; margin: auto 0 0; border-radius: 22px 22px 0 0; }
+    .odo .campos { grid-template-columns: 1fr; }
+    .odo .modal-cab, .odo .modal-corpo, .odo .modal-pe { padding-left: 20px; padding-right: 20px; }
+  }
+</style>

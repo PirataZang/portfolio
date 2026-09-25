@@ -1,0 +1,1640 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  SPA FLORAL — spa e relaxamento em Florianópolis.
+
+  Página clara, com a cor forte guardada para onde ela precisa chamar: o
+  início inteiro em roxo, com a foto dentro de um arco e flores desenhadas em
+  lilás e lima; o resto em branco e lilás bem claro, com o roxo e a lima só nos
+  detalhes (preços, selos, o cartão de carimbos).
+
+  Público: mulheres, na maioria. A seção de bônus é um cartão-fidelidade de
+  verdade (cinco carimbos, o quinto vale um tratamento de beleza). Ele se
+  preenche quando entra na tela, que é o único movimento com intenção de
+  chamar atenção; o resto só aparece com fade.
+
+  Agendar: todo botão leva ao contato; lá (e nos cartões de preço) abre um
+  <dialog> com nome, dia e observação, que monta a mensagem do WhatsApp.
+
+  Fotos reais do Freepik (licença gratuita com crédito no rodapé).
+*/
+
+const SPA = {
+  nome: 'Spa Floral',
+  fundadora: 'Helena Duarte',
+  desde: 2014,
+  rua: 'Rua Bocaiúva, 2100',
+  bairro: 'Centro',
+  cidade: 'Florianópolis',
+  uf: 'SC',
+  cep: '88015-530',
+  fone: '(99) 9999-9999',
+  foneLink: '+559999999999',
+  zap: '5599999999999',
+  zapFmt: '(99) 99999-9999',
+  email: 'contato@spafloral.com.br',
+  insta: 'spafloral',
+  tiktok: 'spafloral',
+  face: 'spafloral',
+  site: 'https://spafloral.com.br',
+};
+
+/* segunda a sábado, 9h às 20h; o modal só oferece esses dias */
+const DIAS_ABERTOS = [1, 2, 3, 4, 5, 6];
+
+const IMG = `${import.meta.env.BASE_URL}img/spa-floral`;
+
+const mapaQuery = encodeURIComponent(`${SPA.rua}, ${SPA.bairro}, ${SPA.cidade} - ${SPA.uf}, ${SPA.cep}`);
+
+const NAV = [
+  { id: 'inicio', t: 'Início' },
+  { id: 'tratamentos', t: 'Tratamentos' },
+  { id: 'bonus', t: 'Bônus' },
+  { id: 'quem-somos', t: 'Quem somos' },
+  { id: 'especial', t: 'Especial' },
+  { id: 'ocasioes', t: 'Ocasiões' },
+  { id: 'precos', t: 'Preços' },
+  { id: 'contato', t: 'Contato' },
+];
+
+const TRATAMENTOS = [
+  { f: 't-massagem', t: 'Massagem relaxante', preco: 180, min: '50 min', d: 'Movimentos lentos e firmes com óleo morno, das costas aos pés. Para soltar o corpo e desligar a cabeça.', alt: 'Terapeuta massageando as costas de uma cliente, com velas acesas ao fundo' },
+  { f: 't-pedras', t: 'Pedras quentes', preco: 260, min: '80 min', d: 'Pedras de basalto aquecidas nos pontos de tensão. O calor chega fundo na musculatura e alivia dores nas costas.', alt: 'Terapeuta colocando pedras quentes nas costas de uma cliente deitada na maca' },
+  { f: 't-drenagem', t: 'Drenagem linfática', preco: 190, min: '60 min', d: 'Pressão suave e ritmada que ajuda a reduzir inchaço e a sensação de pernas pesadas.', alt: 'Mãos de terapeuta fazendo drenagem linfática na perna de uma cliente' },
+  { f: 't-reflexologia', t: 'Reflexologia podal', preco: 140, min: '40 min', d: 'Pressão nos pontos dos pés ligados a cada parte do corpo. Relaxa como uma massagem inteira.', alt: 'Terapeuta pressionando pontos da sola do pé de uma cliente' },
+  { f: 't-aromaterapia', t: 'Aromaterapia', preco: 210, min: '50 min', d: 'Massagem com óleos essenciais escolhidos na hora: lavanda para dormir melhor, laranja-doce para animar.', alt: 'Frascos de óleos essenciais e um difusor de aromas sobre uma bandeja' },
+  { f: 't-esfoliacao', t: 'Esfoliação corporal', preco: 170, min: '45 min', d: 'Sal marinho, óleo de amêndoas e flores secas. A pele sai lisa, macia e pronta para hidratar.', alt: 'Terapeuta espalhando sal marinho nas costas de uma cliente' },
+  { f: 't-facial', t: 'Limpeza de pele', preco: 230, min: '70 min', d: 'Higienização, extração delicada e máscara calmante. Indicada uma vez por mês.', alt: 'Cliente de roupão relaxando com máscara facial branca no rosto' },
+  { f: 't-banho', t: 'Banho de pétalas', preco: 150, min: '30 min', d: 'Imersão em água morna com pétalas frescas e chá de camomila servido na banheira.', alt: 'Mulher na banheira cheia de pétalas de flores tomando uma xícara de chá' },
+];
+
+const OCASIOES = [
+  {
+    id: 'noiva', aba: 'Dia da Noiva', f: 'noiva', t: 'Dia da Noiva',
+    alt: 'Noiva de robe de renda sorrindo com uma taça de espumante, sentada numa poltrona clara',
+    d: 'Uma manhã inteira só sua na semana do casamento: pele preparada para a maquiagem, corpo leve e a cabeça longe da lista de convidados.',
+    itens: ['Esfoliação e hidratação corporal', 'Limpeza de pele com máscara iluminadora', 'Massagem relaxante de 60 min', 'Espumante e frutas para você e uma madrinha'],
+    de: 1180, por: 890, dur: '4 horas', por_quem: 'para a noiva',
+  },
+  {
+    id: 'gestante', aba: 'Gestante', f: 'gestante', t: 'Spa da Gestante',
+    alt: 'Gestante descansando numa banheira com pétalas de flores cor-de-rosa',
+    d: 'Massagem adaptada a cada fase da gravidez, com almofadas de apoio e terapeuta treinada. Alivia as costas, os pés inchados e o cansaço.',
+    itens: ['Massagem para gestantes de 60 min', 'Drenagem linfática nas pernas', 'Escalda-pés com pétalas', 'A partir do 2º trimestre, com liberação médica'],
+    de: 420, por: 360, dur: '1h45', por_quem: 'por sessão',
+  },
+  {
+    id: 'mae-filha', aba: 'Mãe e filha', f: 'mae-filha', t: 'Mãe e Filha',
+    alt: 'Mãe e filha pequena de roupão branco rindo com máscara facial no rosto',
+    d: 'Uma tarde para as duas, lado a lado na mesma sala. Para filhas a partir de 8 anos.',
+    itens: ['Máscara facial suave para as duas', 'Massagem relaxante (mãe 50 min, filha 25 min)', 'Esmaltação com cores florais', 'Chocolate quente e frutas no jardim'],
+    de: 490, por: 420, dur: '2 horas', por_quem: 'para as duas',
+  },
+  {
+    id: 'amigas', aba: 'Amigas', f: 'amigas', t: 'Amigas no Spa',
+    alt: 'Duas amigas de roupão e toalha no cabelo brindando sentadas na maca do spa',
+    d: 'Para comemorar aniversário, despedida de solteira ou só a amizade. De duas a quatro amigas na mesma sala.',
+    itens: ['Escalda-pés com pétalas', 'Massagem relaxante de 50 min', 'Banho de pétalas no jardim', 'Espumante ou suco natural'],
+    de: 480, por: 399, dur: '2h30', por_quem: 'por pessoa',
+  },
+];
+
+const DEPOIMENTOS = [
+  { q: 'Saí da pedra quente parecendo que tinha dormido dez horas. O chá no jardim depois da sessão é o que me faz voltar todo mês.', n: 'Marina S.', s: 'Plano Equilíbrio' },
+  { q: 'Fiz o Dia da Noiva com a minha irmã uma semana antes do casamento. A pele ficou linda nas fotos e eu cheguei calma no altar.', n: 'Juliana R.', s: 'Dia da Noiva' },
+  { q: 'Grávida de sete meses e com as costas travadas. A terapeuta entendeu cada incômodo e eu saí andando leve. Virei cliente fixa.', n: 'Camila T.', s: 'Spa da Gestante' },
+];
+
+const VALES = [150, 300, 500, 800];
+
+const MIMOS = [
+  { i: 'fa-solid fa-cake-candles', t: 'Aniversariante do mês', d: 'Escalda-pés com pétalas de cortesia em qualquer sessão.' },
+  { i: 'fa-solid fa-user-group', t: 'Traga uma amiga', d: 'Na primeira visita dela, as duas ganham 15% de desconto.' },
+  { i: 'fa-solid fa-mug-hot', t: 'Depois de toda sessão', d: 'Chá de flores, frutas da estação e água aromatizada no jardim.' },
+];
+
+const RITUAL = [
+  { t: 'Escalda-pés com pétalas', min: '15 min' },
+  { t: 'Esfoliação com sal e flores secas', min: '25 min' },
+  { t: 'Massagem com óleo floral morno', min: '60 min' },
+  { t: 'Banho de pétalas à luz de velas', min: '30 min' },
+];
+
+const PLANOS = [
+  {
+    id: 'essencial', nome: 'Essencial', preco: 390, sub: 'Duas pausas por mês, sem pensar em agenda',
+    itens: ['2 massagens relaxantes de 50 min', 'Chá de flores e frutas em toda visita'],
+    bonus: ['2 carimbos no Cartão Floral por mês'],
+  },
+  {
+    id: 'equilibrio', nome: 'Equilíbrio', preco: 690, sub: 'O plano mais escolhido pelas clientes', destaque: true,
+    itens: ['2 sessões de pedras quentes de 80 min', '1 reflexologia podal de 40 min', 'Escalda-pés com pétalas em toda visita'],
+    bonus: ['3 carimbos no Cartão Floral por mês', '10% de desconto em tratamentos avulsos', 'Hidratação para as mãos de cortesia'],
+  },
+  {
+    id: 'floral', nome: 'Floral Completo', preco: 1190, sub: 'O spa inteiro, todo mês',
+    itens: ['1 Ritual das Pétalas completo (2h10)', '2 massagens à sua escolha', '1 limpeza de pele de 70 min', 'Espumante ou suco natural no jardim'],
+    bonus: ['5 carimbos por mês: um mimo de beleza garantido', '15% de desconto em tratamentos avulsos', 'Kit de óleo floral para levar'],
+  },
+];
+
+const CANAIS = [
+  { i: 'fa-brands fa-whatsapp', t: 'WhatsApp', v: SPA.zapFmt, u: `https://wa.me/${SPA.zap}` },
+  { i: 'fa-brands fa-instagram', t: 'Instagram', v: `@${SPA.insta}`, u: `https://instagram.com/${SPA.insta}` },
+  { i: 'fa-solid fa-phone', t: 'Telefone', v: SPA.fone, u: `tel:${SPA.foneLink}` },
+  { i: 'fa-brands fa-tiktok', t: 'TikTok', v: `@${SPA.tiktok}`, u: `https://tiktok.com/@${SPA.tiktok}` },
+  { i: 'fa-regular fa-envelope', t: 'E-mail', v: SPA.email, u: `mailto:${SPA.email}` },
+  { i: 'fa-brands fa-facebook-f', t: 'Facebook', v: `/${SPA.face}`, u: `https://facebook.com/${SPA.face}` },
+];
+
+const REDES = CANAIS.filter((c) => ['Instagram', 'WhatsApp', 'TikTok', 'Facebook'].includes(c.t));
+
+const titulo = `${SPA.nome} | Massagens, pedras quentes e rituais de relaxamento em ${SPA.cidade}`;
+const descricao =
+  `Spa em ${SPA.cidade}: massagem relaxante, pedras quentes, drenagem, limpeza de pele e o Ritual das Pétalas. A cada 5 sessões, um tratamento de beleza por nossa conta. Segunda a sábado, 9h às 20h.`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'DaySpa',
+  name: SPA.nome,
+  description: descricao,
+  url: SPA.site,
+  image: `${SPA.site}/img/spa-floral/heroi.jpg`,
+  telephone: SPA.foneLink,
+  email: SPA.email,
+  priceRange: 'R$ 140 – R$ 1.190',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: SPA.rua,
+    addressLocality: SPA.cidade,
+    addressRegion: SPA.uf,
+    postalCode: SPA.cep,
+    addressCountry: 'BR',
+  },
+  openingHoursSpecification: [{
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    opens: '09:00',
+    closes: '20:00',
+  }],
+  sameAs: REDES.filter((r) => r.t !== 'WhatsApp').map((r) => r.u),
+};
+
+const brl = (n: number) => n.toLocaleString('pt-BR');
+
+/* o título entra palavra por palavra; o h1 guarda a frase inteira para leitor de tela */
+const TITULO = 'Respire. O resto é com a gente.';
+const PALAVRAS = TITULO.split(' ');
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta name="theme-color" content="#8829B3" />
+    <link rel="canonical" href={SPA.site} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:image" content={`${SPA.site}/img/spa-floral/heroi.jpg`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&display=swap" />
+    <link rel="preload" as="image" href={`${IMG}/heroi.webp`} type="image/webp" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </Fragment>
+
+  <div class="flo">
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <!-- flor usada no logo, nos carimbos e no enfeite do início -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <linearGradient id="brilho-petala" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity="0.75" />
+          <stop offset="0.55" stop-color="#fff" stop-opacity="0" />
+        </linearGradient>
+        <symbol id="petala" viewBox="0 0 24 34">
+          <path d="M12 0C21 6 24 18 18 28c-2 3.5-4 6-6 6s-4-2.5-6-6C0 18 3 6 12 0Z" fill="currentColor" />
+          <path d="M12 0C21 6 24 18 18 28c-2 3.5-4 6-6 6s-4-2.5-6-6C0 18 3 6 12 0Z" fill="url(#brilho-petala)" />
+          <path d="M12 3v27" stroke="#fff" stroke-opacity="0.35" stroke-width="0.6" fill="none" />
+        </symbol>
+        <filter id="desfoque-petala" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.8" /></filter>
+        <symbol id="petala-suave" viewBox="-5 -5 34 44">
+          <g filter="url(#desfoque-petala)">
+            <path d="M12 0C21 6 24 18 18 28c-2 3.5-4 6-6 6s-4-2.5-6-6C0 18 3 6 12 0Z" fill="currentColor" />
+            <path d="M12 0C21 6 24 18 18 28c-2 3.5-4 6-6 6s-4-2.5-6-6C0 18 3 6 12 0Z" fill="url(#brilho-petala)" />
+          </g>
+        </symbol>
+        <symbol id="flor" viewBox="0 0 40 40">
+          <g>
+            <ellipse cx="20" cy="9.5" rx="6.2" ry="9" />
+            <ellipse cx="20" cy="9.5" rx="6.2" ry="9" transform="rotate(72 20 20)" />
+            <ellipse cx="20" cy="9.5" rx="6.2" ry="9" transform="rotate(144 20 20)" />
+            <ellipse cx="20" cy="9.5" rx="6.2" ry="9" transform="rotate(216 20 20)" />
+            <ellipse cx="20" cy="9.5" rx="6.2" ry="9" transform="rotate(288 20 20)" />
+          </g>
+          <circle cx="20" cy="20" r="5" class="miolo" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- ─────────────── cabeçalho ─────────────── -->
+    <header class="topo" data-estado="sobre-foto">
+      <div class="topo-in">
+        <a class="marca" href="#inicio" aria-label={`${SPA.nome}, voltar ao início`}>
+          <svg class="marca-flor" aria-hidden="true"><use href="#flor" /></svg>
+          <span>{SPA.nome}</span>
+        </a>
+        <nav class="nav" aria-label="Seções da página">
+          <ul>{NAV.map((n) => <li><a href={`#${n.id}`} data-secao={n.id}>{n.t}</a></li>)}</ul>
+        </nav>
+        <a class="botao botao-roxo botao-topo" href="#contato">Agendar visita</a>
+        <button class="topo-menu" type="button" aria-expanded="false" aria-controls="menu-movel" aria-label="Abrir menu">
+          <span></span><span></span>
+        </button>
+      </div>
+      <nav id="menu-movel" class="menu-movel" aria-label="Seções da página" hidden>
+        <ul>{NAV.map((n) => <li><a href={`#${n.id}`} data-secao={n.id}>{n.t}</a></li>)}</ul>
+        <a class="botao botao-roxo" href="#contato">Agendar visita</a>
+      </nav>
+    </header>
+
+    <main id="conteudo">
+      <!-- ─────────────── início ─────────────── -->
+      <section id="inicio" class="heroi" aria-labelledby="titulo-inicio">
+        <div class="heroi-foto">
+          <picture>
+            <source srcset={`${IMG}/heroi.webp`} type="image/webp" />
+            <img src={`${IMG}/heroi.jpg`} width="2000" height="1333" fetchpriority="high"
+              alt="Mulher de olhos fechados recebendo massagem facial, deitada sobre flores" />
+          </picture>
+        </div>
+        <div class="heroi-veu" aria-hidden="true"></div>
+        <!-- pétalas com volume: as grandes estão perto da câmera e saem desfocadas -->
+        <div class="petalas" aria-hidden="true">
+          <svg class="petala" style="--x:61.3%;--d:22.6s;--dl:-22.3s;--s:38px;--sw:77px;--r:333deg;--b:5px;color:#F6D9FF"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:88.9%;--d:13.4s;--dl:-13.0s;--s:30px;--sw:77px;--r:332deg;--b:4px;color:var(--lilas)"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:8.8%;--d:15.8s;--dl:-10.4s;--s:24px;--sw:72px;--r:194deg;--b:2.5px;color:var(--lima)"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:54.0%;--d:22.2s;--dl:-0.4s;--s:18px;--sw:33px;--r:143deg;--b:1px;color:#FFFFFF"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:20.8%;--d:26.5s;--dl:-10.9s;--s:16px;--sw:66px;--r:36deg;--b:0px;color:#E9B8FF"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:16.8%;--d:23.2s;--dl:-3.5s;--s:14px;--sw:20px;--r:2deg;--b:0px;color:#F6D9FF"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:23.3%;--d:17.8s;--dl:-27.5s;--s:12px;--sw:72px;--r:148deg;--b:0px;color:var(--lilas)"><use href="#petala" /></svg>
+        </div>
+
+        <div class="heroi-in">
+          <div class="heroi-texto">
+            <h1 id="titulo-inicio" aria-label={TITULO}>
+              {PALAVRAS.map((w, i) => (
+                <Fragment><span class="palavra" aria-hidden="true" style={`--w: ${i}`}>{w}</span>{' '}</Fragment>
+              ))}
+            </h1>
+            <p class="heroi-lide surge" style="--d: 1.5s">
+              Massagens, pedras quentes e rituais com pétalas frescas no centro de {SPA.cidade}.
+              Você chega, desliga o celular e a gente cuida do resto.
+            </p>
+            <div class="heroi-acoes surge" style="--d: 1.9s">
+              <a class="botao botao-lima botao-grande" href="#contato">Agendar visita</a>
+              <a class="link-claro" href="#tratamentos">Ver tratamentos e preços</a>
+            </div>
+            <p class="heroi-hora surge" style="--d: 2.2s">
+              <i class="fa-regular fa-clock" aria-hidden="true"></i>
+              Segunda a sábado, das 9h às 20h, na {SPA.rua}
+            </p>
+          </div>
+        </div>
+
+        <!-- selo do bônus, girando devagar -->
+        <a class="selo-giro surge" style="--d: 2.4s" href="#bonus" aria-label="A cada 5 sessões, um tratamento de beleza por nossa conta">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <defs><path id="circulo-selo" d="M60,60 m-45,0 a45,45 0 1,1 90,0 a45,45 0 1,1 -90,0" /></defs>
+            <g class="selo-texto">
+              <text><textPath href="#circulo-selo" textLength="268">A cada 5 sessões, um tratamento de beleza por nossa conta</textPath></text>
+            </g>
+            <use href="#flor" x="40" y="40" width="40" height="40" />
+          </svg>
+        </a>
+      </section>
+
+      <!-- três tratamentos em destaque, saindo da base da foto -->
+      <ul class="destaques" aria-label="Tratamentos em destaque">
+        {[TRATAMENTOS[0], TRATAMENTOS[1], TRATAMENTOS[7]].map((t, i) => (
+          <li class="surge" style={`--d: ${2.3 + i * 0.15}s`}>
+            <a class="destaque" href="#tratamentos">
+              <picture>
+                <source srcset={`${IMG}/${t.f}.webp`} type="image/webp" />
+                <img src={`${IMG}/${t.f}.jpg`} alt="" width="1000" height="750" loading="lazy" decoding="async" />
+              </picture>
+              <span class="destaque-texto">
+                <strong>{t.t}</strong>
+                <span class="destaque-meta"><span>{t.min}</span><span class="destaque-preco">R$ {brl(t.preco)}</span></span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      <!-- ─────────────── tratamentos: painéis que abrem ─────────────── -->
+      <section id="tratamentos" class="secao com-petalas" aria-labelledby="titulo-tratamentos">
+        <div class="petalas petalas-fundo" aria-hidden="true">
+          <svg class="petala" style="--x:2%;--t:-2%;--d:16.1s;--dl:-3.0s;--s:17px;--sw:36px;--r:57deg;--b:3px;color:var(--lilas)"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:4.5%;--t:30%;--d:18.5s;--dl:-20.5s;--s:14px;--sw:37px;--r:69deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:6%;--t:-4%;--d:21.9s;--dl:-12.1s;--s:17px;--sw:45px;--r:10deg;--b:1.5px;color:#E4B8F7"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:95%;--t:5%;--d:19.8s;--dl:-5.6s;--s:17px;--sw:33px;--r:111deg;--b:1.5px;color:var(--roxo)"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:97%;--t:11%;--d:22.4s;--dl:-14.8s;--s:23px;--sw:40px;--r:104deg;--b:0px;color:#F6D9FF"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:99%;--t:42%;--d:25.2s;--dl:-26.7s;--s:12px;--sw:37px;--r:333deg;--b:0px;color:var(--lilas)"><use href="#petala" /></svg>
+        </div>
+        <div class="cab">
+          <h2 id="titulo-tratamentos" data-fade>Tratamentos</h2>
+          <p data-fade style="--i: 1">
+            Cada sessão começa com uma conversa rápida sobre como você está se
+            sentindo. A terapeuta ajusta a pressão, o óleo e a música a partir dela.
+          </p>
+        </div>
+        <!-- o fade fica no invólucro: no próprio ul ele sobrescreveria a transição dos painéis -->
+        <div data-fade style="--i: 2">
+        <ul class="paineis" data-paineis>
+          {TRATAMENTOS.map((t, i) => (
+            <li class={i === 0 ? 'painel ativo' : 'painel'}>
+              <picture class="painel-foto">
+                <source srcset={`${IMG}/${t.f}.webp`} type="image/webp" />
+                <img src={`${IMG}/${t.f}.jpg`} alt={t.alt} width="1000" height="750" loading="lazy" decoding="async" />
+              </picture>
+              <button class="painel-gatilho" type="button" aria-expanded={i === 0 ? 'true' : 'false'} aria-controls={`painel-${i}`}>
+                <span class="painel-rotulo">{t.t}</span>
+                <span class="painel-mais" aria-hidden="true"><i class="fa-solid fa-plus"></i></span>
+                <span class="sr">: ver detalhes e preço</span>
+              </button>
+              <div class="painel-info" id={`painel-${i}`} inert={i !== 0}>
+                <span class="duracao duracao-clara"><i class="fa-regular fa-clock" aria-hidden="true"></i>{t.min}</span>
+                <h3>{t.t}</h3>
+                <p>{t.d}</p>
+                <div class="painel-pe">
+                  <p class="painel-preco"><span>A partir de</span><strong>R$ {brl(t.preco)}</strong></p>
+                  <button class="botao botao-lima" type="button" data-abrir-agenda data-obs={`Quero agendar: ${t.t}.`}>Agendar</button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        </div>
+      </section>
+
+      <!-- ─────────────── bônus ─────────────── -->
+      <section id="bonus" class="bonus" aria-labelledby="titulo-bonus">
+        <div class="bonus-in">
+          <div class="bonus-texto">
+            <h2 id="titulo-bonus" data-fade>A cada 5 sessões, um tratamento de beleza por nossa conta</h2>
+            <p data-fade style="--i: 1">
+              Toda sessão rende um carimbo no seu Cartão Floral. No quinto, você
+              escolhe um tratamento de beleza sem pagar nada: limpeza de pele,
+              esfoliação corporal ou hidratação capilar com óleos florais.
+            </p>
+
+            <div class="cartao-floral" aria-label="Exemplo do Cartão Floral com quatro carimbos e o quinto de presente" role="img">
+              <div class="cartao-floral-topo">
+                <span class="cartao-floral-nome">Cartão Floral</span>
+                <span>{SPA.nome}</span>
+              </div>
+              <ol class="carimbos">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <li class={n === 5 ? 'carimbo carimbo-presente' : 'carimbo'} style={`--n: ${n}`}>
+                    <svg aria-hidden="true"><use href="#flor" /></svg>
+                    <span>{n === 5 ? 'Presente' : `${n}ª`}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+
+          <div class="bonus-lado">
+            <div class="bonus-foto" data-fade>
+              <picture>
+                <source srcset={`${IMG}/bonus.webp`} type="image/webp" />
+                <img src={`${IMG}/bonus.jpg`} alt="Duas amigas de roupão relaxando no lounge do spa com bebidas nas mãos"
+                  width="1600" height="1067" loading="lazy" decoding="async" />
+              </picture>
+            </div>
+            <ul class="mimos">
+              {MIMOS.map((m, i) => (
+                <li data-fade style={`--i: ${i}`}>
+                  <span class="mimo-icone"><i class={m.i} aria-hidden="true"></i></span>
+                  <div><strong>{m.t}</strong><span>{m.d}</span></div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── quem somos ─────────────── -->
+      <section id="quem-somos" class="secao quem" aria-labelledby="titulo-quem">
+        <div class="quem-foto" data-fade>
+          <picture>
+            <source srcset={`${IMG}/sobre.webp`} type="image/webp" />
+            <img src={`${IMG}/sobre.jpg`} alt="Cliente de toalha descansando numa poltrona no jardim de inverno do spa, cercada de plantas"
+              width="1600" height="1067" loading="lazy" decoding="async" />
+          </picture>
+        </div>
+        <div class="quem-texto">
+          <h2 id="titulo-quem" data-fade>Quem somos</h2>
+          <p class="quem-abre" data-fade style="--i: 1">
+            O {SPA.nome} nasceu em {SPA.desde}, quando a fisioterapeuta {SPA.fundadora} transformou
+            uma casa antiga do centro num lugar para descansar de verdade.
+          </p>
+          <p data-fade style="--i: 2">
+            Hoje somos seis terapeutas formadas em massoterapia e estética, cinco
+            salas silenciosas e um jardim de inverno onde o chá é servido depois de
+            cada sessão. As flores vêm toda semana de um produtor de Antônio Carlos
+            e decoram as salas, os banhos e os rituais.
+          </p>
+          <ul class="quem-fatos" data-fade style="--i: 3">
+            <li><strong>Desde {SPA.desde}</strong><span>na mesma casa, no centro</span></li>
+            <li><strong>6 terapeutas</strong><span>todas com formação e registro</span></li>
+            <li><strong>Flores frescas</strong><span>trocadas toda semana</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ─────────────── especial ─────────────── -->
+      <section id="especial" class="especial" aria-labelledby="titulo-especial">
+        <div class="especial-in">
+          <div class="especial-fotos" data-fade>
+            <div class="especial-foto-grande">
+              <picture>
+                <source srcset={`${IMG}/especial.webp`} type="image/webp" />
+                <img src={`${IMG}/especial.jpg`} alt="Mulher deitada na maca com pétalas de rosa vermelha nas costas e flores brancas no cabelo"
+                  width="1800" height="1200" loading="lazy" decoding="async" />
+              </picture>
+            </div>
+            <div class="especial-foto-pequena">
+              <picture>
+                <source srcset={`${IMG}/especial-velas.webp`} type="image/webp" />
+                <img src={`${IMG}/especial-velas.jpg`} alt="Velas aromáticas acesas entre pétalas secas de rosa numa tigela de madeira"
+                  width="1000" height="1250" loading="lazy" decoding="async" />
+              </picture>
+            </div>
+          </div>
+
+          <div class="especial-texto">
+            <p class="selo-especial" data-fade>Tratamento especial</p>
+            <h2 id="titulo-especial" data-fade style="--i: 1">Ritual das Pétalas</h2>
+            <p data-fade style="--i: 2">
+              Duas horas com pétalas de rosa, lírio e jasmim, massagem feita por
+              terapeuta experiente e velas aromáticas de lavanda e ylang-ylang
+              acesas do começo ao fim.
+            </p>
+            <ol class="ritual" data-fade style="--i: 3">
+              {RITUAL.map((r, i) => (
+                <li>
+                  <span class="ritual-num">{i + 1}</span>
+                  <span class="ritual-nome">{r.t}</span>
+                  <span class="ritual-min">{r.min}</span>
+                </li>
+              ))}
+            </ol>
+            <div class="especial-pe" data-fade style="--i: 4">
+              <p><strong>2h10 no total</strong> Incluído no plano Floral Completo.</p>
+              <a class="botao botao-roxo" href="#precos">Ver planos</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── ocasiões: pacotes em abas ─────────────── -->
+      <section id="ocasioes" class="ocasioes" aria-labelledby="titulo-ocasioes">
+        <div class="ocasioes-in">
+          <div class="cab">
+            <h2 id="titulo-ocasioes" data-fade>Para cada ocasião</h2>
+            <p data-fade style="--i: 1">Pacotes montados para os momentos que pedem um cuidado a mais, com preço fechado e tudo incluído.</p>
+          </div>
+          <div class="abas" role="tablist" aria-label="Pacotes por ocasião" data-fade style="--i: 2">
+            {OCASIOES.map((o, i) => (
+              <button class="aba" type="button" role="tab" id={`aba-${o.id}`} aria-controls={`pacote-${o.id}`}
+                aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>{o.aba}</button>
+            ))}
+          </div>
+          {OCASIOES.map((o, i) => (
+            <div class="pacote" role="tabpanel" id={`pacote-${o.id}`} aria-labelledby={`aba-${o.id}`} hidden={i !== 0}>
+              <div class="pacote-foto">
+                <picture>
+                  <source srcset={`${IMG}/${o.f}.webp`} type="image/webp" />
+                  <img src={`${IMG}/${o.f}.jpg`} alt={o.alt} width="1400" height="933" loading="lazy" decoding="async" />
+                </picture>
+              </div>
+              <div class="pacote-cartao">
+                <span class="duracao"><i class="fa-regular fa-clock" aria-hidden="true"></i>{o.dur}</span>
+                <h3>{o.t}</h3>
+                <p>{o.d}</p>
+                <ul class="pacote-lista">
+                  {o.itens.map((it) => <li><i class="fa-solid fa-check" aria-hidden="true"></i>{it}</li>)}
+                </ul>
+                <div class="pacote-pe">
+                  <p class="pacote-preco">
+                    <s><span class="sr">De </span>R$ {brl(o.de)}</s>
+                    <strong><span class="sr">por </span>R$ {brl(o.por)}</strong>
+                    <span>{o.por_quem}</span>
+                  </p>
+                  <button class="botao botao-roxo" type="button" data-abrir-agenda data-obs={`Quero o pacote ${o.t}.`}>Quero este pacote</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- ─────────────── preços ─────────────── -->
+      <section id="precos" class="secao com-petalas" aria-labelledby="titulo-precos">
+        <!-- pétalas de fundo, atrás dos cartões; só transform, então não pesa -->
+        <div class="petalas petalas-fundo" aria-hidden="true">
+          <svg class="petala" style="--x:6.5%;--t:12%;--d:22.8s;--dl:-11.0s;--s:17px;--sw:33px;--r:29deg;--b:0px;color:var(--lilas)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:6.7%;--t:3%;--d:17.3s;--dl:-0.9s;--s:16px;--sw:19px;--r:185deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:6.4%;--t:48%;--d:21.2s;--dl:-22.4s;--s:22px;--sw:22px;--r:293deg;--b:0px;color:#E4B8F7"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:1.5%;--t:17%;--d:15.9s;--dl:-12.3s;--s:19px;--sw:30px;--r:328deg;--b:0px;color:var(--roxo)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:4.6%;--t:21%;--d:16.8s;--dl:-20.8s;--s:17px;--sw:32px;--r:298deg;--b:0px;color:var(--lilas)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:95.5%;--t:24%;--d:16.3s;--dl:-2.6s;--s:12px;--sw:22px;--r:302deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:96.2%;--t:37%;--d:18.6s;--dl:-9.6s;--s:15px;--sw:23px;--r:281deg;--b:0px;color:#E4B8F7"><use href="#petala" /></svg>
+        </div>
+        <div class="cab cab-centro">
+          <h2 id="titulo-precos" data-fade>Preços</h2>
+          <p data-fade style="--i: 1">Planos mensais para quem quer se cuidar sempre. As sessões são marcadas no dia que for melhor para você, e os carimbos do Cartão Floral valem em todos.</p>
+        </div>
+        <ul class="planos">
+          {PLANOS.map((p, i) => (
+            <li class={p.destaque ? 'plano plano-destaque' : 'plano'} data-fade style={`--i: ${i}`}>
+              {p.destaque && <span class="plano-fita">Mais escolhido</span>}
+              <h3>{p.nome}</h3>
+              <p class="plano-sub">{p.sub}</p>
+              <p class="plano-preco"><span class="moeda">R$</span>{brl(p.preco)}<span class="por">por mês</span></p>
+              <ul class="plano-lista">
+                {p.itens.map((it) => <li><i class="fa-solid fa-check" aria-hidden="true"></i>{it}</li>)}
+                {p.bonus.map((b) => <li class="plano-bonus"><i class="fa-solid fa-gift" aria-hidden="true"></i><span><span class="sr">Bônus: </span>{b}</span></li>)}
+              </ul>
+              <button class={p.destaque ? 'botao botao-lima' : 'botao botao-roxo'} type="button"
+                data-abrir-agenda data-plano={p.nome}>Quero o {p.nome}</button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- ─────────────── depoimentos ─────────────── -->
+      <section id="depoimentos" class="secao" aria-labelledby="titulo-depoimentos">
+        <div class="cab cab-centro">
+          <h2 id="titulo-depoimentos" data-fade>O que dizem as clientes</h2>
+        </div>
+        <ul class="depoimentos">
+          {DEPOIMENTOS.map((d, i) => (
+            <li class="depoimento" data-fade style={`--i: ${i}`}>
+              <span class="estrelas" role="img" aria-label="Nota 5 de 5">
+                {[1, 2, 3, 4, 5].map(() => <i class="fa-solid fa-star" aria-hidden="true"></i>)}
+              </span>
+              <blockquote><p>{d.q}</p></blockquote>
+              <p class="depoimento-quem"><strong>{d.n}</strong><span>{d.s}</span></p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- ─────────────── vale-presente ─────────────── -->
+      <section id="presente" class="presente" aria-labelledby="titulo-presente">
+        <div class="presente-in" data-fade>
+          <picture class="presente-foto">
+            <source srcset={`${IMG}/presente.webp`} type="image/webp" />
+            <img src={`${IMG}/presente.jpg`} alt="Mulher relaxando de olhos fechados numa piscina aquecida ao entardecer" width="2000" height="1121" loading="lazy" decoding="async" />
+          </picture>
+          <div class="petalas" aria-hidden="true">
+          <svg class="petala" style="--x:35.8%;--t:14%;--d:20.7s;--dl:-12.2s;--s:16px;--sw:30px;--r:20deg;--b:1.5px;color:var(--lilas)"><use href="#petala-suave" /></svg>
+          <svg class="petala" style="--x:65.2%;--t:33%;--d:26.5s;--dl:-0.0s;--s:23px;--sw:39px;--r:4deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:56.5%;--t:-8%;--d:18.5s;--dl:-14.1s;--s:16px;--sw:44px;--r:191deg;--b:0px;color:#E4B8F7"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:59.7%;--t:45%;--d:22.1s;--dl:-20.6s;--s:15px;--sw:40px;--r:18deg;--b:0px;color:var(--roxo)"><use href="#petala" /></svg>
+          <svg class="petala" style="--x:34.1%;--t:29%;--d:20.0s;--dl:-10.4s;--s:18px;--sw:23px;--r:116deg;--b:0px;color:#F6D9FF"><use href="#petala" /></svg>
+          </div>
+          <div class="presente-texto">
+            <h2 id="titulo-presente">Dê um dia no Spa Floral de presente</h2>
+            <p>O vale-presente serve para qualquer tratamento, pacote ou plano, e vale por seis meses. Chega por WhatsApp, pronto para encaminhar.</p>
+            <div class="vales" aria-label="Valores do vale-presente">
+              {VALES.map((v) => (
+                <button class="vale" type="button" data-abrir-agenda data-obs={`Quero um vale-presente de R$ ${v}.`}>R$ {v}</button>
+              ))}
+            </div>
+            <button class="botao botao-lima botao-grande" type="button" data-abrir-agenda data-obs="Quero comprar um vale-presente.">Comprar vale-presente</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── contato ─────────────── -->
+      <section id="contato" class="contato" aria-labelledby="titulo-contato">
+        <div class="contato-in">
+          <div class="contato-texto">
+            <h2 id="titulo-contato" data-fade>Agende sua visita</h2>
+            <p data-fade style="--i: 1">
+              Diga seu nome e o dia que prefere. A mensagem sai pronta no WhatsApp e
+              a gente responde com os horários livres.
+            </p>
+            <button class="botao botao-roxo botao-grande" type="button" data-abrir-agenda data-fade style="--i: 2">
+              <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+              Agende sua visita
+            </button>
+            <p class="contato-horario" data-fade style="--i: 3">
+              <i class="fa-regular fa-clock" aria-hidden="true"></i>
+              Segunda a sábado, das 9h às 20h
+            </p>
+          </div>
+          <ul class="canais">
+            {CANAIS.map((c, i) => (
+              <li data-fade style={`--i: ${i}`}>
+                <a href={c.u} rel="noopener">
+                  <span class="canal-icone"><i class={c.i} aria-hidden="true"></i></span>
+                  <span class="canal-texto"><strong>{c.t}</strong><span>{c.v}</span></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <!-- ─────────────── rodapé ─────────────── -->
+    <footer class="rodape">
+      <div class="rodape-in">
+        <div class="rodape-grade">
+          <div class="rodape-marca">
+            <a class="marca marca-clara" href="#inicio">
+              <svg class="marca-flor" aria-hidden="true"><use href="#flor" /></svg>
+              <span>{SPA.nome}</span>
+            </a>
+            <p>Spa e relaxamento no centro de {SPA.cidade}. Massagens, rituais com flores e tratamentos de beleza desde {SPA.desde}.</p>
+            <ul class="redes">
+              {REDES.map((r) => <li><a href={r.u} rel="noopener" aria-label={r.t}><i class={r.i} aria-hidden="true"></i></a></li>)}
+            </ul>
+          </div>
+          <div class="rodape-col">
+            <h2>Navegue</h2>
+            <ul>{NAV.slice(1).map((n) => <li><a href={`#${n.id}`}>{n.t}</a></li>)}</ul>
+          </div>
+          <div class="rodape-col">
+            <h2>Visite</h2>
+            <address>{SPA.rua}<br />{SPA.bairro}, {SPA.cidade}, {SPA.uf}<br />CEP {SPA.cep}</address>
+            <p>Segunda a sábado<br />das 9h às 20h</p>
+            <p><a href={`tel:${SPA.foneLink}`}>{SPA.fone}</a><br /><a href={`mailto:${SPA.email}`}>{SPA.email}</a></p>
+          </div>
+          <div class="rodape-mapa">
+            <iframe title={`Mapa: ${SPA.rua}, ${SPA.bairro}, ${SPA.cidade}`}
+              src={`https://www.google.com/maps?q=${mapaQuery}&z=16&output=embed`}
+              loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+            <a href={`https://www.google.com/maps/search/?api=1&query=${mapaQuery}`} rel="noopener">
+              <i class="fa-solid fa-location-dot" aria-hidden="true"></i> Abrir no Google Maps
+            </a>
+          </div>
+        </div>
+        <div class="rodape-fim">
+          <span>© 2026 {SPA.nome}</span>
+          <span>Demonstração de portfólio: empresa, pessoas, preços e contatos são fictícios. Fotos: <a href="https://www.freepik.com" rel="noopener">Freepik</a>.</span>
+          <a href={import.meta.env.BASE_URL}>Voltar ao portfólio</a>
+        </div>
+      </div>
+    </footer>
+
+    <a class="zap-flutua" href={`https://wa.me/${SPA.zap}`} rel="noopener" aria-label="Conversar com o Spa Floral no WhatsApp">
+      <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+    </a>
+
+    <!-- ─────────────── modal ─────────────── -->
+    <dialog id="agenda" class="modal" aria-labelledby="agenda-titulo">
+      <form class="modal-in" id="form-agenda" novalidate data-zap={SPA.zap} data-dias={DIAS_ABERTOS.join(',')}>
+        <div class="modal-cab">
+          <div>
+            <h2 id="agenda-titulo">Agende sua visita</h2>
+            <p>Abrimos o WhatsApp com a mensagem pronta. É só conferir e enviar.</p>
+          </div>
+          <button class="modal-fechar" type="button" data-fechar-agenda aria-label="Fechar">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="modal-corpo">
+          <div class="campo">
+            <label for="f-nome">Nome</label>
+            <input id="f-nome" name="nome" type="text" autocomplete="name" maxlength="60" placeholder="Seu nome" aria-describedby="e-nome" />
+            <p class="erro" id="e-nome" aria-live="polite"></p>
+          </div>
+          <div class="campo">
+            <label for="f-dia">Dia</label>
+            <div class="seletor">
+              <select id="f-dia" name="dia" aria-describedby="d-dia e-dia"><option value="">Escolha o dia</option></select>
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </div>
+            <p class="dica" id="d-dia">O horário a gente combina pelo WhatsApp.</p>
+            <p class="erro" id="e-dia" aria-live="polite"></p>
+          </div>
+          <div class="campo">
+            <label for="f-obs">Observação <span class="opcional">(opcional)</span></label>
+            <textarea id="f-obs" name="obs" rows="3" maxlength="400"
+              placeholder="Tratamento que você quer, se vem com alguém, alguma restrição…"></textarea>
+          </div>
+          <div class="previa">
+            <p class="previa-titulo"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Prévia da mensagem</p>
+            <p class="previa-texto" id="previa" aria-live="polite"></p>
+          </div>
+        </div>
+        <div class="modal-pe">
+          <button class="botao botao-roxo botao-grande" type="submit">
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Enviar pelo WhatsApp
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </div>
+</Base>
+
+<script>
+  const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const raiz = document.documentElement;
+
+  /* ── fade ao entrar na tela; o cartão floral carimba quando aparece ── */
+  const alvosFade = document.querySelectorAll<HTMLElement>('.flo [data-fade], .flo .cartao-floral');
+  if (reduzido || !('IntersectionObserver' in window)) {
+    alvosFade.forEach((el) => el.classList.add('visto'));
+  } else {
+    const obs = new IntersectionObserver((entradas) => {
+      for (const e of entradas) {
+        if (!e.isIntersecting) continue;
+        e.target.classList.add('visto');
+        obs.unobserve(e.target);
+      }
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.2 });
+    alvosFade.forEach((el) => obs.observe(el));
+  }
+
+  const heroi = document.getElementById('inicio')!;
+
+  /* ── animações contínuas param quando a seção sai da tela ── */
+  const obsFora = new IntersectionObserver((entradas) => {
+    for (const e of entradas) e.target.classList.toggle('fora', !e.isIntersecting);
+  }, { rootMargin: '100px 0px' });
+  obsFora.observe(heroi);
+  document.querySelectorAll('.petalas-fundo, .presente .petalas').forEach((el) => obsFora.observe(el));
+
+  /* ── cabeçalho transparente sobre a foto, branco depois dela ── */
+  const topoEl = document.querySelector<HTMLElement>('.topo')!;
+  /* sólido assim que a base da foto passa por baixo do cabeçalho */
+  let pedidoTopo = 0;
+  const estadoTopo = () => {
+    pedidoTopo = 0;
+    topoEl.dataset.estado = heroi.getBoundingClientRect().bottom > topoEl.offsetHeight + 8 ? 'sobre-foto' : 'solido';
+  };
+  addEventListener('scroll', () => { if (!pedidoTopo) pedidoTopo = requestAnimationFrame(estadoTopo); }, { passive: true });
+  addEventListener('resize', estadoTopo);
+  estadoTopo();
+
+  /* ── tratamentos: um painel aberto por vez; mouse, toque ou teclado ── */
+  const listaPaineis = document.querySelector<HTMLElement>('[data-paineis]')!;
+  const paineis = [...listaPaineis.children] as HTMLElement[];
+  const empilhado = matchMedia('(max-width: 899px)');
+  let painelAtivo = 0;
+  function abrirPainel(i: number) {
+    painelAtivo = i;
+    paineis.forEach((li, k) => {
+      const on = k === i;
+      li.classList.toggle('ativo', on);
+      li.querySelector('.painel-gatilho')!.setAttribute('aria-expanded', String(on));
+      (li.querySelector('.painel-info') as HTMLElement).inert = !on;
+    });
+    if (empilhado.matches) {
+      listaPaineis.style.gridTemplateColumns = '';
+      listaPaineis.style.gridTemplateRows = paineis.map((_, k) => (k === i ? '470px' : '88px')).join(' ');
+    } else {
+      listaPaineis.style.gridTemplateRows = '';
+      listaPaineis.style.gridTemplateColumns = paineis.map((_, k) => (k === i ? '5fr' : '1fr')).join(' ');
+    }
+  }
+  paineis.forEach((li, k) => {
+    const g = li.querySelector<HTMLButtonElement>('.painel-gatilho')!;
+    g.addEventListener('click', () => abrirPainel(k));
+    g.addEventListener('focus', () => abrirPainel(k));
+    let espera = 0;
+    li.addEventListener('mouseenter', () => {
+      if (empilhado.matches || !matchMedia('(hover: hover)').matches) return;
+      espera = window.setTimeout(() => abrirPainel(k), 120);
+    });
+    li.addEventListener('mouseleave', () => clearTimeout(espera));
+  });
+  empilhado.addEventListener('change', () => abrirPainel(painelAtivo));
+  abrirPainel(0);
+
+  /* ── ocasiões: abas com setas do teclado ── */
+  const abas = [...document.querySelectorAll<HTMLButtonElement>('.aba')];
+  function escolherAba(i: number, foco = false) {
+    abas.forEach((a, k) => {
+      const on = k === i;
+      a.setAttribute('aria-selected', String(on));
+      a.tabIndex = on ? 0 : -1;
+      document.getElementById(a.getAttribute('aria-controls')!)!.hidden = !on;
+    });
+    if (foco) abas[i].focus();
+  }
+  abas.forEach((a, k) => {
+    a.addEventListener('click', () => escolherAba(k));
+    a.addEventListener('keydown', (e) => {
+      const n = abas.length;
+      if (e.key === 'ArrowRight') { e.preventDefault(); escolherAba((k + 1) % n, true); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); escolherAba((k - 1 + n) % n, true); }
+      if (e.key === 'Home') { e.preventDefault(); escolherAba(0, true); }
+      if (e.key === 'End') { e.preventDefault(); escolherAba(n - 1, true); }
+    });
+  });
+
+  /* ── link da seção atual no cabeçalho ── */
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.flo a[data-secao]')];
+  const secoes = [...new Set(links.map((l) => l.dataset.secao!))].map((id) => document.getElementById(id)!);
+  const obsNav = new IntersectionObserver((entradas) => {
+    for (const e of entradas) {
+      if (!e.isIntersecting) continue;
+      links.forEach((l) => {
+        if (l.dataset.secao === e.target.id) l.setAttribute('aria-current', 'location');
+        else l.removeAttribute('aria-current');
+      });
+    }
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  secoes.forEach((s) => obsNav.observe(s));
+
+  /* ── menu do celular ── */
+  const topo = document.querySelector<HTMLElement>('.topo')!;
+  const botaoMenu = topo.querySelector<HTMLButtonElement>('.topo-menu')!;
+  const menu = document.getElementById('menu-movel')!;
+  function abrirMenu(abrir: boolean) {
+    botaoMenu.setAttribute('aria-expanded', String(abrir));
+    botaoMenu.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+    menu.hidden = !abrir;
+    topo.classList.toggle('menu-aberto', abrir);
+  }
+  botaoMenu.addEventListener('click', () => abrirMenu(menu.hidden));
+  menu.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) abrirMenu(false); });
+  matchMedia('(min-width: 1240px)').addEventListener('change', () => abrirMenu(false));
+
+  /* ── modal de agendamento ── */
+  const modal = document.getElementById('agenda') as HTMLDialogElement;
+  const form = document.getElementById('form-agenda') as HTMLFormElement;
+  const campo = <T extends HTMLElement = HTMLInputElement>(n: string) => form.elements.namedItem(n) as unknown as T;
+  const previa = document.getElementById('previa')!;
+  const DIAS = form.dataset.dias!.split(',').map(Number);
+  let quemAbriu: HTMLElement | null = null;
+  let ultimaSugestao = '';
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  /* os próximos 12 dias abertos; hoje só até as 18h, para dar tempo de encaixar */
+  function montarDias() {
+    const sel = campo<HTMLSelectElement>('dia');
+    const antes = sel.value;
+    const d = new Date();
+    const hoje = iso(d);
+    const opcoes: HTMLOptionElement[] = [];
+    for (let i = 0; opcoes.length < 12 && i < 30; i++, d.setDate(d.getDate() + 1)) {
+      if (!DIAS.includes(d.getDay())) continue;
+      if (iso(d) === hoje && new Date().getHours() >= 18) continue;
+      const semana = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+      const txt = `${iso(d) === hoje ? 'Hoje, ' : ''}${semana}, ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+      opcoes.push(new Option(txt.charAt(0).toUpperCase() + txt.slice(1), iso(d)));
+    }
+    sel.replaceChildren(new Option('Escolha o dia', ''), ...opcoes);
+    sel.value = opcoes.some((o) => o.value === antes) ? antes : '';
+  }
+
+  function abrirAgenda(origem: HTMLElement) {
+    quemAbriu = origem;
+    montarDias();
+    const plano = origem.dataset.plano;
+    const sugestao = plano ? `Quero assinar o plano ${plano}.` : origem.dataset.obs;
+    const obs = campo<HTMLTextAreaElement>('obs');
+    /* troca a sugestão anterior, mas nunca apaga o que a pessoa escreveu */
+    if (sugestao && (!obs.value.trim() || obs.value === ultimaSugestao)) { obs.value = sugestao; ultimaSugestao = sugestao; }
+    desenharPrevia();
+    modal.showModal();
+    raiz.classList.add('modal-aberto');
+    campo('nome').focus();
+  }
+  modal.addEventListener('close', () => { raiz.classList.remove('modal-aberto'); quemAbriu?.focus(); });
+  document.querySelectorAll<HTMLElement>('[data-abrir-agenda]').forEach((b) => b.addEventListener('click', () => abrirAgenda(b)));
+  modal.querySelector('[data-fechar-agenda]')!.addEventListener('click', () => modal.close());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+
+  function valores() {
+    const dia = campo<HTMLSelectElement>('dia').value;
+    return {
+      nome: campo('nome').value.trim().replace(/\s+/g, ' '),
+      dia,
+      diaFmt: dia ? new Date(`${dia}T12:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '',
+      obs: campo<HTMLTextAreaElement>('obs').value.trim(),
+    };
+  }
+
+  function mensagem(v: ReturnType<typeof valores>) {
+    let t = `Olá! Meu nome é ${v.nome} e gostaria de agendar uma visita ao Spa Floral para ${v.diaFmt}.`;
+    if (v.obs) t += `\n\nObservação:\n${v.obs}`;
+    return t;
+  }
+
+  function trecho(valor: string, vazio: string) {
+    const s = document.createElement('span');
+    s.className = valor ? 'cheio' : 'vazio';
+    s.textContent = valor || vazio;
+    return s;
+  }
+
+  function desenharPrevia() {
+    const v = valores();
+    previa.replaceChildren(
+      'Olá! Meu nome é ', trecho(v.nome, 'seu nome'),
+      ' e gostaria de agendar uma visita ao Spa Floral para ', trecho(v.diaFmt, 'dia escolhido'), '.',
+      ...(v.obs ? ['\n\nObservação:\n', trecho(v.obs, '')] : []),
+    );
+  }
+
+  const REGRAS: Record<string, (v: ReturnType<typeof valores>) => string> = {
+    nome: (v) => (v.nome ? '' : 'Digite seu nome para a gente saber com quem fala.'),
+    dia: (v) => (v.dia ? '' : 'Escolha o dia da visita.'),
+  };
+
+  function marcarErro(nome: string, texto: string) {
+    document.getElementById(`e-${nome}`)!.textContent = texto;
+    const el = campo(nome);
+    if (texto) el.setAttribute('aria-invalid', 'true');
+    else el.removeAttribute('aria-invalid');
+  }
+
+  form.addEventListener('input', (e) => {
+    const alvo = e.target as HTMLInputElement;
+    desenharPrevia();
+    if (alvo.getAttribute('aria-invalid') === 'true' && REGRAS[alvo.name]) marcarErro(alvo.name, REGRAS[alvo.name](valores()));
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = valores();
+    const erros = Object.entries(REGRAS).map(([n, r]) => [n, r(v)] as const);
+    erros.forEach(([n, t]) => marcarErro(n, t));
+    const primeiro = erros.find(([, t]) => t);
+    if (primeiro) { campo(primeiro[0]).focus(); return; }
+    window.open(`https://wa.me/${form.dataset.zap}?text=${encodeURIComponent(mensagem(v))}`, '_blank', 'noopener');
+    modal.close();
+  });
+
+  montarDias();
+  desenharPrevia();
+</script>
+
+<style is:global>
+  :root:has(.flo) { scroll-behavior: smooth; scroll-padding-top: 84px; background: #FFFFFF; }
+  :root.modal-aberto { overflow: hidden; }
+  @media (prefers-reduced-motion: reduce) { :root:has(.flo) { scroll-behavior: auto; } }
+
+  .flo {
+    --branco: #FFFFFF;
+    --nevoa: #FAF4FF;
+    --lilas-claro: #F1E3FA;
+    --roxo: #8829B3;
+    --roxo-escuro: #6B2090;
+    --lilas: #D26EFF;
+    --lima: #DAFF6E;
+    --verde: #88B30A;
+    --tinta: #2A0E38;
+    --tinta-2: #5E4A69;
+    --fio: #EADCF3;
+
+    --f-titulo: 'Bodoni Moda', 'Didot', Georgia, serif;
+    --f: 'Albert Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --largura: 1240px;
+    --margem: clamp(20px, 5vw, 64px);
+    --e: cubic-bezier(0.16, 1, 0.3, 1);
+
+    background: var(--branco);
+    color: var(--tinta);
+    font: 400 1.0625rem/1.65 var(--f);
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+  }
+  .flo *, .flo *::before, .flo *::after { box-sizing: border-box; }
+  .flo ::selection { background: var(--lima); color: var(--tinta); }
+  .flo img { display: block; max-width: 100%; }
+  .flo a { color: inherit; text-underline-offset: 0.2em; }
+  .flo :focus-visible { outline: 2px solid var(--roxo); outline-offset: 3px; border-radius: 6px; }
+  .flo h1, .flo h2, .flo h3, .flo p, .flo ul, .flo ol, .flo figure { margin: 0; padding: 0; }
+  .flo ul, .flo ol { list-style: none; }
+  .flo h1, .flo h2, .flo h3 { font-family: var(--f-titulo); font-weight: 500; letter-spacing: -0.02em; text-wrap: balance; }
+  .flo h2 { font-size: clamp(2.1rem, 4vw, 3.2rem); line-height: 1.1; }
+  .flo .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .flo .pular { position: fixed; left: 16px; top: -64px; z-index: 80; padding: 10px 16px; border-radius: 12px; background: var(--roxo); color: var(--branco); }
+  .flo .pular:focus { top: 12px; }
+
+  .js .flo [data-fade] { opacity: 0; transition: opacity 0.9s var(--e) calc(var(--i, 0) * 0.1s); }
+  .js .flo [data-fade].visto { opacity: 1; }
+  .js .flo .entra { opacity: 0; animation: entra 1s var(--e) forwards; animation-delay: calc(0.15s + var(--i, 0) * 0.12s); }
+  @keyframes entra { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .js .flo [data-fade], .js .flo .entra { opacity: 1; transition: none; animation: none; }
+  }
+
+  /* ─────────────── botões ─────────────── */
+  .flo .botao {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    min-height: 50px; padding: 0 1.5rem; border: 1.5px solid transparent; border-radius: 999px;
+    font: 600 1rem/1 var(--f); text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .flo .botao:active { transform: translateY(1px); }
+  .flo .botao-roxo { background: var(--roxo); color: var(--branco); }
+  .flo .botao-roxo:hover { background: var(--roxo-escuro); }
+  .flo .botao-lima { background: var(--lima); color: var(--tinta); }
+  .flo .botao-lima:hover { background: #CDF55A; }
+  .flo .botao-contorno { border-color: rgba(255, 255, 255, 0.6); color: var(--branco); }
+  .flo .botao-contorno:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--branco); }
+  .flo .botao-grande { min-height: 56px; padding: 0 1.9rem; font-size: 1.05rem; }
+
+  /* ─────────────── cabeçalho ─────────────── */
+  .flo .topo {
+    position: fixed; inset: 0 0 auto 0; z-index: 50;
+    transition: background-color .35s ease, box-shadow .35s ease, color .35s ease;
+  }
+  .flo .topo[data-estado='solido'], .flo .topo.menu-aberto {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 1px 0 var(--fio);
+  }
+  .flo .topo-in {
+    max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: 0 var(--margem);
+    height: 80px; display: flex; align-items: center; gap: 1.5rem;
+  }
+  .flo .marca { display: inline-flex; align-items: center; gap: 0.6rem; margin-right: auto; text-decoration: none; font: 500 1.55rem/1 var(--f-titulo); color: var(--roxo); }
+  .flo .marca-flor { width: 34px; height: 34px; fill: var(--roxo); }
+  .flo .marca-flor .miolo { fill: var(--lima); }
+  .flo .nav ul { display: flex; gap: 0.1rem; }
+  .flo .nav a {
+    position: relative; display: block; padding: 0.5rem 0.75rem; border-radius: 999px;
+    font-size: 0.95rem; font-weight: 500; text-decoration: none; color: var(--tinta-2);
+    transition: color .2s ease, background-color .2s ease;
+  }
+  .flo .nav a:hover { color: var(--roxo); background: var(--nevoa); }
+  .flo .nav a[aria-current] { color: var(--roxo); background: var(--lilas-claro); font-weight: 600; }
+  .flo .botao-topo { min-height: 44px; padding: 0 1.2rem; }
+  /* sobre a foto: tudo em branco */
+  .flo .topo[data-estado='sobre-foto']:not(.menu-aberto) .marca { color: var(--branco); }
+  .flo .topo[data-estado='sobre-foto']:not(.menu-aberto) .marca-flor { fill: var(--branco); }
+  .flo .topo[data-estado='sobre-foto']:not(.menu-aberto) .nav a { color: rgba(255, 255, 255, 0.86); }
+  .flo .topo[data-estado='sobre-foto']:not(.menu-aberto) .nav a:hover,
+  .flo .topo[data-estado='sobre-foto']:not(.menu-aberto) .nav a[aria-current] { color: var(--branco); background: rgba(255, 255, 255, 0.14); }
+  .flo .topo[data-estado='sobre-foto']:not(.menu-aberto) .botao-topo { background: var(--branco); color: var(--roxo); }
+  .flo .topo[data-estado='sobre-foto']:not(.menu-aberto) .topo-menu { background: rgba(255, 255, 255, 0.16); color: var(--branco); }
+  .flo .topo[data-estado='sobre-foto'] :focus-visible { outline-color: var(--branco); }
+  .flo .topo-menu {
+    display: none; width: 44px; height: 44px; border: 0; border-radius: 999px; background: var(--nevoa); color: var(--roxo);
+    flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+  }
+  .flo .topo-menu span { width: 18px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .3s var(--e); }
+  .flo .menu-aberto .topo-menu span:first-child { transform: translateY(4px) rotate(45deg); }
+  .flo .menu-aberto .topo-menu span:last-child { transform: translateY(-4px) rotate(-45deg); }
+  .flo .menu-movel { padding: 0.5rem var(--margem) 1.5rem; border-top: 1px solid var(--fio); background: var(--branco); }
+  .flo .menu-movel a:not(.botao) { display: block; padding: 0.9rem 0; border-bottom: 1px solid var(--fio); font-size: 1.1rem; font-weight: 500; text-decoration: none; }
+  .flo .menu-movel a[aria-current] { color: var(--roxo); font-weight: 600; }
+  .flo .menu-movel .botao { width: 100%; margin-top: 1.2rem; }
+  @media (max-width: 1239px) {
+    .flo .nav { display: none; }
+    .flo .topo-menu { display: inline-flex; }
+    .flo .topo-in { height: 68px; gap: 0.75rem; }
+  }
+  @media (max-width: 479px) { .flo .botao-topo { display: none; } }
+
+  /* ─────────────── início ─────────────── */
+  .flo .heroi {
+    position: relative; overflow: hidden; isolation: isolate;
+    min-height: max(700px, min(100svh, 940px));
+    display: flex; align-items: center;
+    background: #4A1266; color: var(--branco);
+  }
+  .flo .heroi-foto { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+  .flo .heroi-foto picture { position: absolute; inset: 0; }
+  .flo .heroi-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 72% 45%; }
+  .js .flo .heroi-foto img { transform: scale(1.12); animation: assenta-foto 7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  @keyframes assenta-foto { to { transform: scale(1); } }
+  /* véu: roxo profundo à esquerda para o texto, foto limpa à direita */
+  .flo .heroi-veu {
+    position: absolute; inset: 0; z-index: -1;
+    background:
+      linear-gradient(180deg, rgba(40, 8, 58, 0.55) 0%, rgba(40, 8, 58, 0) 20%),
+      linear-gradient(90deg, rgba(58, 12, 84, 0.96) 0%, rgba(110, 31, 149, 0.86) 30%, rgba(136, 41, 179, 0.42) 52%, rgba(136, 41, 179, 0) 70%),
+      linear-gradient(0deg, rgba(58, 12, 84, 0.55) 0%, rgba(58, 12, 84, 0) 30%);
+  }
+  .flo .heroi-in {
+    width: 100%; max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto;
+    padding: 120px var(--margem) 150px;
+  }
+  .flo .heroi-texto { position: relative; z-index: 3; max-width: 36rem; display: grid; gap: 1.6rem; }
+  .flo .heroi h1 { font-size: clamp(3rem, 6.4vw, 6rem); line-height: 0.98; font-weight: 500; letter-spacing: -0.03em; }
+  .flo .heroi-lide { font-size: 1.15rem; line-height: 1.65; color: #F6ECFB; max-width: 30rem; }
+  .flo .heroi-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.8rem; margin-top: 0.4rem; }
+  .flo .link-claro {
+    color: var(--branco); font-weight: 600; text-decoration: none;
+    background: linear-gradient(var(--lima), var(--lima)) 0 100% / 100% 2px no-repeat; padding-bottom: 4px;
+    transition: background-size .35s var(--e);
+  }
+  .flo .link-claro:hover { background-size: 40% 2px; }
+  .flo .heroi :focus-visible { outline-color: var(--lima); }
+  .flo .heroi-hora { display: flex; align-items: center; gap: 0.55rem; font-size: 0.93rem; color: rgba(255, 255, 255, 0.78); }
+  .flo .heroi-hora i { color: var(--lima); }
+
+  /* ── entrada lenta: palavras saem de um desfoque, uma de cada vez ── */
+  .flo .palavra { display: inline-block; }
+  .js .flo .palavra {
+    opacity: 0; filter: blur(12px); transform: translateY(0.35em);
+    animation: palavra 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: calc(0.35s + var(--w) * 0.16s);
+  }
+  @keyframes palavra { to { opacity: 1; filter: blur(0); transform: translateY(0); } }
+  .js .flo .surge { opacity: 0; filter: blur(6px); animation: surge 1.4s ease-out forwards; animation-delay: var(--d, 0s); }
+  @keyframes surge { to { opacity: 1; filter: blur(0); } }
+
+  /* pétalas: as perto da câmera são grandes e desfocadas */
+  .flo .petalas { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; contain: strict; }
+  /* só transform e opacidade: a animação roda inteira na placa de vídeo, sem redesenhar a página */
+  .flo .petala {
+    position: absolute; top: -60px; left: var(--x); width: var(--s); height: calc(var(--s) * 1.42);
+    opacity: 0.9; will-change: transform;
+    animation: cai var(--d) linear var(--dl) infinite;
+  }
+  @keyframes cai {
+    0%   { transform: translate3d(0, -5vh, 0) rotate(var(--r)); }
+    25%  { transform: translate3d(var(--sw), 25vh, 0) rotate(calc(var(--r) + 80deg)); }
+    50%  { transform: translate3d(0, 55vh, 0) rotate(calc(var(--r) + 160deg)); }
+    75%  { transform: translate3d(calc(var(--sw) * -1), 85vh, 0) rotate(calc(var(--r) + 240deg)); }
+    100% { transform: translate3d(0, 118vh, 0) rotate(calc(var(--r) + 320deg)); }
+  }
+  /* seção fora da tela: pétalas e selo param */
+  .flo .fora .petala, .flo .petalas.fora .petala, .flo .fora .selo-giro svg { animation-play-state: paused; }
+
+  /* selo do bônus */
+  .flo .selo-giro {
+    position: absolute; z-index: 3; right: max(var(--margem), calc((100% - var(--largura)) / 2)); bottom: 150px;
+    width: 132px; height: 132px; border-radius: 50%; display: block;
+    background: var(--lima); color: var(--tinta);
+    box-shadow: 0 20px 40px -18px rgba(40, 8, 58, 0.6);
+    transition: transform .4s var(--e);
+  }
+  .flo .selo-giro:hover { transform: scale(1.05); }
+  .flo .selo-giro svg { width: 100%; height: 100%; }
+  .flo .selo-giro text { font: 600 8.6px var(--f); letter-spacing: 0.02em; fill: var(--tinta); }
+  .flo .selo-giro use { fill: var(--roxo); }
+  .flo .selo-giro use .miolo { fill: var(--lima); }
+  .flo .selo-giro svg { animation: gira 30s linear infinite; will-change: transform; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+
+  /* destaques saindo da base da foto */
+  .flo .destaques {
+    position: relative; z-index: 5;
+    max-width: calc(var(--largura) + 2 * var(--margem)); margin: -84px auto 0; padding: 0 var(--margem);
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.6vw, 22px);
+  }
+  .flo .destaque {
+    display: flex; align-items: center; gap: 1rem; height: 100%;
+    padding: 12px 18px 12px 12px; border-radius: 22px; background: var(--branco); text-decoration: none;
+    box-shadow: 0 30px 60px -32px rgba(74, 18, 102, 0.55), 0 1px 0 var(--fio);
+    transition: transform .35s var(--e), box-shadow .35s var(--e);
+  }
+  .flo .destaque:hover { transform: translateY(-4px); box-shadow: 0 36px 70px -32px rgba(74, 18, 102, 0.6), 0 1px 0 var(--fio); }
+  .flo .destaque picture { flex: none; width: 92px; height: 92px; border-radius: 16px; overflow: hidden; }
+  .flo .destaque img { width: 100%; height: 100%; object-fit: cover; }
+  .flo .destaque-texto { display: grid; gap: 0.35rem; min-width: 0; flex: 1; }
+  .flo .destaque-texto strong { font: 500 1.3rem/1.15 var(--f-titulo); letter-spacing: -0.01em; }
+  .flo .destaque-meta { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.92rem; color: var(--tinta-2); }
+  .flo .destaque-preco { color: var(--roxo); font-weight: 700; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js .flo .palavra, .js .flo .surge, .js .flo .heroi-foto img { opacity: 1; filter: none; transform: none; animation: none; }
+    .flo .petalas { display: none; }
+    .flo .selo-giro svg { animation: none; }
+  }
+
+  @media (max-width: 999px) {
+    .flo .selo-giro { width: 108px; height: 108px; bottom: 130px; }
+  }
+  @media (max-width: 767px) {
+    .flo .heroi { min-height: max(640px, 100svh); align-items: flex-end; }
+    .flo .heroi-foto img { object-position: 62% 30%; }
+    .flo .heroi-veu {
+      background:
+        linear-gradient(180deg, rgba(40, 8, 58, 0.55) 0%, rgba(40, 8, 58, 0) 18%, rgba(88, 22, 120, 0.35) 42%, rgba(58, 12, 84, 0.95) 72%);
+    }
+    .flo .heroi-in { padding: 110px var(--margem) 120px; }
+    .flo .heroi h1 { font-size: clamp(2.7rem, 12vw, 3.6rem); }
+    .flo .selo-giro { top: 96px; bottom: auto; right: var(--margem); width: 96px; height: 96px; }
+    .flo .heroi-acoes .botao { flex: 1 1 100%; }
+    .flo .destaques { grid-template-columns: 1fr; margin-top: -64px; }
+    .flo .destaque picture { width: 76px; height: 76px; }
+  }
+
+  /* ─────────────── seções ─────────────── */
+  .flo .secao { max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(88px, 11vw, 140px) var(--margem) 0; }
+  .flo .cab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 28rem); align-items: end; gap: 1rem 4rem; margin-bottom: clamp(36px, 5vw, 56px); }
+  .flo .cab p { color: var(--tinta-2); }
+  .flo .cab-centro { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .flo .cab-centro p { max-width: 36rem; }
+  @media (max-width: 767px) { .flo .cab { grid-template-columns: 1fr; } }
+
+  /* ─────────────── tratamentos: painéis ─────────────── */
+  .flo .com-petalas { position: relative; }
+  .flo .com-petalas > :not(.petalas) { position: relative; z-index: 1; }
+  .flo .paineis {
+    /* container: as fotos e o texto medem a largura do painel aberto, não a do painel em animação */
+    container-type: inline-size;
+    --aberto: calc((100cqw - 84px) * 5 / 12);
+    display: grid; grid-template-columns: 5fr repeat(7, 1fr); gap: 12px; height: 580px;
+    /* abre devagar: acelera e freia suave (ease-in-out) */
+    transition: grid-template-columns .9s cubic-bezier(0.45, 0, 0.2, 1), grid-template-rows .8s cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  .flo .painel { position: relative; overflow: hidden; min-width: 0; min-height: 0; border-radius: 26px; background: #3A0E52; isolation: isolate; contain: layout paint; }
+  /* a foto tem sempre a largura do painel aberto e fica centrada: durante a animação só a moldura muda */
+  .flo .paineis .painel-foto img { inset: 0 auto 0 50%; width: var(--aberto); max-width: none; margin-left: calc(var(--aberto) / -2); will-change: transform; }
+  .flo .painel-foto, .flo .painel-foto img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .flo .painel-foto { z-index: -2; }
+  .flo .painel-foto img { object-fit: cover; transform: scale(1.1); transition: transform 1.4s cubic-bezier(0.45, 0, 0.25, 1); }
+  .flo .painel.ativo .painel-foto img { transform: scale(1); }
+  .flo .painel::after {
+    content: ''; position: absolute; inset: 0 auto 0 50%; width: var(--aberto); margin-left: calc(var(--aberto) / -2); z-index: -1; pointer-events: none;
+    background: linear-gradient(180deg, rgba(74, 18, 102, 0.35) 0%, rgba(58, 12, 84, 0.82) 100%);
+    transition: background-color .8s ease;
+  }
+  .flo .painel.ativo::after { background: linear-gradient(180deg, rgba(42, 10, 60, 0) 30%, rgba(42, 10, 60, 0.9) 100%); }
+  .flo .painel-gatilho {
+    position: absolute; inset: 0; z-index: 2; width: 100%; padding: 26px 0; border: 0; background: none; cursor: pointer;
+    color: var(--branco); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 16px;
+  }
+  .flo .painel-gatilho:focus-visible { outline: 3px solid var(--lima); outline-offset: -6px; border-radius: 26px; }
+  .flo .painel-rotulo { writing-mode: vertical-rl; transform: rotate(180deg); font: 500 1.35rem/1 var(--f-titulo); white-space: nowrap; transition: opacity .6s ease; }
+  .flo .painel-mais { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.18); font-size: 0.8rem; transition: opacity .6s ease; }
+  .flo .painel.ativo .painel-rotulo, .flo .painel.ativo .painel-mais { opacity: 0; }
+  .flo .painel.ativo .painel-gatilho { pointer-events: none; }
+  .flo .painel-info {
+    position: absolute; left: 0; bottom: 0; z-index: 3; width: var(--aberto);
+    padding: clamp(22px, 2.6vw, 34px); color: var(--branco); display: grid; gap: 0.8rem; justify-items: start;
+    opacity: 0; transform: translateY(18px); transition: opacity .4s ease, transform .6s ease;
+  }
+  .flo .painel.ativo .painel-info {
+    opacity: 1; transform: none;
+    /* o texto só entra quando o painel já abriu boa parte */
+    transition: opacity .6s ease .45s, transform .8s cubic-bezier(0.22, 1, 0.36, 1) .45s;
+  }
+  .flo .painel-info h3 { font-size: clamp(1.7rem, 2.6vw, 2.3rem); line-height: 1.05; }
+  .flo .painel-info > p { color: #F3E6FA; font-size: 0.98rem; line-height: 1.55; max-width: 34ch; }
+  .flo .painel-info :focus-visible { outline-color: var(--lima); }
+  .flo .duracao-clara { background: rgba(255, 255, 255, 0.16); color: var(--branco); }
+  .flo .painel-pe { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; width: 100%; margin-top: 0.3rem; flex-wrap: wrap; }
+  .flo .painel-preco { display: grid; gap: 0.15rem; }
+  .flo .painel-preco span { font-size: 0.85rem; color: #E6D2F2; }
+  .flo .painel-preco strong { font: 500 2rem/1 var(--f-titulo); color: var(--lima); }
+
+  .flo .duracao {
+    display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: 999px;
+    background: var(--lilas-claro); color: var(--roxo); font-size: 0.82rem; font-weight: 600; white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flo .paineis, .flo .painel-foto img, .flo .painel-info, .flo .painel.ativo .painel-info { transition: none; }
+  }
+  @media (max-width: 1099px) { .flo .painel-rotulo { font-size: 1.15rem; } }
+  @media (max-width: 899px) {
+    .flo .paineis { grid-template-columns: 1fr; grid-template-rows: 470px repeat(7, 88px); height: auto; gap: 10px; }
+    .flo .painel { border-radius: 22px; }
+    .flo .painel-gatilho { flex-direction: row; justify-content: space-between; align-items: center; padding: 0 22px; }
+    .flo .painel-rotulo { writing-mode: horizontal-tb; transform: none; font-size: 1.3rem; }
+    .flo .painel.ativo .painel-gatilho { pointer-events: none; }
+    .flo .painel-info { width: 100%; }
+    /* empilhado: a foto tem a altura do painel aberto e fica centrada na vertical */
+    .flo .paineis .painel-foto img { inset: 50% 0 auto 0; width: 100%; height: 470px; margin: -235px 0 0 0; }
+    .flo .painel::after { inset: 0; width: auto; margin: 0; }
+  }
+
+  /* ─────────────── bônus ─────────────── */
+  .flo .bonus { margin-top: clamp(88px, 11vw, 140px); background: var(--nevoa); }
+  .flo .bonus-in {
+    max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(72px, 9vw, 120px) var(--margem);
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: center;
+  }
+  .flo .bonus-texto { display: grid; gap: 1.3rem; }
+  .flo .bonus-texto > p { color: var(--tinta-2); max-width: 34rem; }
+
+  .flo .cartao-floral {
+    margin-top: 0.8rem; padding: 1.5rem; border-radius: 24px;
+    background: var(--roxo); color: var(--branco);
+    box-shadow: 0 24px 50px -28px rgba(136, 41, 179, 0.7);
+    max-width: 520px;
+  }
+  .flo .cartao-floral-topo { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.2rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.8); }
+  .flo .cartao-floral-nome { font: 400 1.3rem/1 var(--f-titulo); color: var(--branco); }
+  .flo .carimbos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; }
+  .flo .carimbo { display: grid; justify-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); }
+  .flo .carimbo svg {
+    width: 100%; max-width: 64px; aspect-ratio: 1; padding: 10px; border-radius: 50%;
+    border: 1.5px dashed rgba(255, 255, 255, 0.45); fill: var(--branco);
+  }
+  .flo .carimbo svg .miolo { fill: var(--roxo); }
+  .flo .carimbo-presente svg { background: var(--lima); border: 0; fill: var(--roxo); }
+  .flo .carimbo-presente svg .miolo { fill: var(--lima); }
+  .flo .carimbo-presente span { color: var(--lima); }
+  /* os carimbos "batem" um a um quando o cartão aparece */
+  .js .flo .cartao-floral .carimbo svg { transform: scale(0.4); opacity: 0; transition: transform .5s var(--e), opacity .3s ease; transition-delay: calc(var(--n) * 0.18s); }
+  .js .flo .cartao-floral.visto .carimbo svg { transform: scale(1); opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .js .flo .cartao-floral .carimbo svg { transform: none; opacity: 1; transition: none; } }
+
+  .flo .bonus-lado { display: grid; gap: 1.5rem; }
+  .flo .bonus-foto { aspect-ratio: 3 / 2; overflow: hidden; border-radius: 28px; }
+  .flo .bonus-foto img { width: 100%; height: 100%; object-fit: cover; }
+  .flo .mimos { display: grid; gap: 0.8rem; }
+  .flo .mimos li { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 1.1rem; border-radius: 18px; background: var(--branco); border: 1px solid var(--fio); }
+  .flo .mimo-icone { width: 42px; height: 42px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--lima); color: var(--tinta); }
+  .flo .mimos div { display: grid; }
+  .flo .mimos strong { font-weight: 600; }
+  .flo .mimos span { color: var(--tinta-2); font-size: 0.95rem; }
+  @media (max-width: 899px) { .flo .bonus-in { grid-template-columns: 1fr; } }
+
+  /* ─────────────── quem somos ─────────────── */
+  .flo .quem { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: center; }
+  .flo .quem-foto { aspect-ratio: 4 / 4.6; overflow: hidden; border-radius: 999px 999px 28px 28px; }
+  .flo .quem-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 40% 50%; }
+  .flo .quem-texto { display: grid; gap: 1.2rem; }
+  .flo .quem-texto p { color: var(--tinta-2); max-width: 36rem; }
+  .flo .quem-abre { font-size: 1.2rem; line-height: 1.55; color: var(--tinta) !important; }
+  .flo .quem-fatos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-top: 0.6rem; }
+  .flo .quem-fatos li { display: grid; gap: 0.2rem; padding: 1rem; border-radius: 18px; background: var(--nevoa); }
+  .flo .quem-fatos strong { font: 400 1.2rem/1.2 var(--f-titulo); color: var(--roxo); }
+  .flo .quem-fatos span { font-size: 0.9rem; color: var(--tinta-2); }
+  @media (max-width: 899px) {
+    .flo .quem { grid-template-columns: 1fr; }
+    .flo .quem-foto { aspect-ratio: 4 / 3.6; max-width: 520px; }
+  }
+  @media (max-width: 479px) { .flo .quem-fatos { grid-template-columns: 1fr; } }
+
+  /* ─────────────── especial ─────────────── */
+  .flo .especial { margin-top: clamp(88px, 11vw, 140px); background: var(--nevoa); }
+  .flo .especial-in {
+    max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(72px, 9vw, 120px) var(--margem);
+    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(40px, 6vw, 96px); align-items: center;
+  }
+  .flo .especial-fotos { position: relative; padding-bottom: 12%; }
+  .flo .especial-foto-grande { aspect-ratio: 3 / 2.3; overflow: hidden; border-radius: 28px; }
+  .flo .especial-foto-grande img { width: 100%; height: 100%; object-fit: cover; object-position: 40% 50%; }
+  .flo .especial-foto-pequena {
+    position: absolute; right: -4%; bottom: 0; width: 38%; aspect-ratio: 4 / 5; overflow: hidden;
+    border-radius: 999px 999px 22px 22px; border: 6px solid var(--nevoa);
+  }
+  .flo .especial-foto-pequena img { width: 100%; height: 100%; object-fit: cover; }
+  .flo .especial-texto { display: grid; gap: 1.2rem; }
+  .flo .especial-texto > p:not(.selo-especial) { color: var(--tinta-2); }
+  .flo .selo-especial {
+    justify-self: start; padding: 0.35rem 0.85rem; border-radius: 999px;
+    background: var(--lima); color: var(--tinta); font-size: 0.88rem; font-weight: 600;
+  }
+  .flo .ritual { display: grid; margin-top: 0.4rem; border-top: 1px solid var(--fio); }
+  .flo .ritual li { display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--fio); }
+  .flo .ritual-num {
+    width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--roxo); color: var(--branco); font-weight: 600; font-size: 0.88rem;
+  }
+  .flo .ritual-nome { font-weight: 500; }
+  .flo .ritual-min { color: var(--roxo); font-weight: 600; font-size: 0.92rem; }
+  .flo .especial-pe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.4rem; }
+  .flo .especial-pe p { color: var(--tinta-2); display: grid; }
+  .flo .especial-pe strong { font: 400 1.35rem/1.2 var(--f-titulo); color: var(--tinta); }
+  @media (max-width: 899px) { .flo .especial-in { grid-template-columns: 1fr; } .flo .especial-foto-pequena { right: 0; } }
+
+  /* ─────────────── ocasiões ─────────────── */
+  .flo .ocasioes { margin-top: clamp(88px, 11vw, 140px); }
+  .flo .ocasioes-in { max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: 0 var(--margem); }
+  .flo .abas { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.6rem; }
+  .flo .aba {
+    min-height: 46px; padding: 0 1.3rem; border-radius: 999px; border: 1.5px solid var(--fio); background: var(--branco);
+    font: 600 0.98rem/1 var(--f); color: var(--tinta-2); cursor: pointer; transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .flo .aba:hover { border-color: var(--lilas); color: var(--roxo); }
+  .flo .aba[aria-selected='true'] { background: var(--roxo); border-color: var(--roxo); color: var(--branco); }
+  .flo .pacote { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; }
+  .flo .pacote[hidden] { display: none; }
+  .flo .pacote:not([hidden]) { animation: pacote-entra .6s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes pacote-entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .flo .pacote-foto { grid-column: 1 / span 2; grid-row: 1; aspect-ratio: 21 / 9; overflow: hidden; border-radius: 32px; }
+  .flo .pacote-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 35% 40%; }
+  /* o cartão roxo senta por cima da foto, do lado direito */
+  .flo .pacote-cartao {
+    grid-column: 2; grid-row: 1; margin: 32px 32px 32px 0; justify-self: end; width: min(100%, 470px);
+    display: grid; gap: 0.9rem; justify-items: start;
+    padding: clamp(26px, 3vw, 40px); border-radius: 28px; background: var(--roxo); color: var(--branco);
+    box-shadow: 0 30px 60px -30px rgba(42, 10, 60, 0.7);
+  }
+  .flo .pacote-cartao .duracao { background: rgba(255, 255, 255, 0.16); color: var(--branco); }
+  .flo .pacote-cartao h3 { font-size: clamp(1.9rem, 3vw, 2.6rem); line-height: 1.05; }
+  .flo .pacote-cartao > p { color: #F3E6FA; font-size: 0.98rem; }
+  .flo .pacote-lista { display: grid; gap: 0.55rem; margin: 0.2rem 0; }
+  .flo .pacote-lista li { display: flex; gap: 0.6rem; align-items: baseline; font-size: 0.97rem; }
+  .flo .pacote-lista i { color: var(--lima); font-size: 0.85rem; }
+  .flo .pacote-pe { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; width: 100%; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.2); }
+  .flo .pacote-preco { display: grid; gap: 0.1rem; }
+  .flo .pacote-preco s { font-size: 0.92rem; color: #D9C2E6; }
+  .flo .pacote-preco strong { font: 500 2.2rem/1 var(--f-titulo); color: var(--lima); }
+  .flo .pacote-preco span { font-size: 0.85rem; color: #E6D2F2; }
+  .flo .pacote-cartao .botao-roxo { background: var(--branco); color: var(--roxo); }
+  .flo .pacote-cartao .botao-roxo:hover { background: var(--lima); color: var(--tinta); }
+  .flo .pacote-cartao :focus-visible { outline-color: var(--lima); }
+  @media (max-width: 899px) {
+    .flo .pacote { grid-template-columns: 1fr; }
+    .flo .pacote-foto { grid-column: 1; aspect-ratio: 4 / 3; border-radius: 24px; }
+    .flo .pacote-cartao { grid-column: 1; grid-row: 2; margin: -48px 14px 0; width: auto; justify-self: stretch; }
+  }
+
+  /* ─────────────── depoimentos ─────────────── */
+  .flo .depoimentos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 24px); }
+  .flo .depoimento {
+    display: flex; flex-direction: column; gap: 1rem; height: 100%;
+    padding: clamp(24px, 2.8vw, 34px); border-radius: 26px; background: var(--nevoa); border: 1px solid var(--fio);
+  }
+  .flo .estrelas { display: flex; gap: 0.2rem; color: var(--roxo); font-size: 0.85rem; }
+  .flo .depoimento blockquote { margin: 0; flex: 1; }
+  .flo .depoimento blockquote p { font: italic 400 1.25rem/1.45 var(--f-titulo); color: var(--tinta); }
+  .flo .depoimento-quem { display: grid; padding-top: 1rem; border-top: 1px solid var(--fio); }
+  .flo .depoimento-quem strong { font-weight: 600; }
+  .flo .depoimento-quem span { font-size: 0.9rem; color: var(--tinta-2); }
+  @media (max-width: 899px) { .flo .depoimentos { grid-template-columns: 1fr; } }
+
+  /* ─────────────── vale-presente ─────────────── */
+  .flo .presente { max-width: calc(var(--largura) + 2 * var(--margem)); margin: clamp(88px, 11vw, 140px) auto 0; padding: 0 var(--margem); }
+  .flo .presente-in {
+    position: relative; overflow: hidden; isolation: isolate; border-radius: 34px;
+    min-height: 520px; display: flex; align-items: center; color: var(--branco);
+  }
+  .flo .presente-foto, .flo .presente-foto img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .flo .presente-foto { z-index: -2; }
+  .flo .presente-foto img { object-fit: cover; object-position: 70% 50%; }
+  .flo .presente-in::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: linear-gradient(90deg, rgba(58, 12, 84, 0.95) 0%, rgba(110, 31, 149, 0.8) 38%, rgba(136, 41, 179, 0.15) 70%, rgba(136, 41, 179, 0) 100%);
+  }
+  .flo .presente-in .petalas { z-index: 0; }
+  .flo .presente-in .petala { top: var(--t); }
+  .flo .presente-texto { position: relative; z-index: 1; max-width: 34rem; padding: clamp(32px, 5vw, 72px); display: grid; gap: 1.2rem; justify-items: start; }
+  .flo .presente-texto h2 { font-size: clamp(2.2rem, 4vw, 3.4rem); line-height: 1.02; }
+  .flo .presente-texto > p { color: #F3E6FA; }
+  .flo .vales { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .flo .vale {
+    min-height: 44px; padding: 0 1.1rem; border-radius: 999px; cursor: pointer;
+    border: 1.5px solid rgba(255, 255, 255, 0.5); background: transparent; color: var(--branco); font: 600 0.98rem/1 var(--f);
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .flo .vale:hover { background: var(--branco); color: var(--roxo); border-color: var(--branco); }
+  .flo .presente :focus-visible { outline-color: var(--lima); }
+  @media (max-width: 767px) {
+    .flo .presente-in { min-height: 0; align-items: flex-end; padding-top: 220px; }
+    .flo .presente-foto img { object-position: 38% 20%; }
+    .flo .presente-in::before { background: linear-gradient(180deg, rgba(58, 12, 84, 0) 0%, rgba(58, 12, 84, 0.55) 35%, rgba(58, 12, 84, 0.96) 60%); }
+    .flo .presente-texto { padding: 28px 24px 32px; }
+  }
+
+  /* ─────────────── WhatsApp flutuante ─────────────── */
+  .flo .zap-flutua {
+    position: fixed; right: 22px; bottom: 22px; z-index: 45;
+    width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--lima); color: var(--tinta); font-size: 1.7rem; text-decoration: none;
+    box-shadow: 0 16px 36px -12px rgba(74, 18, 102, 0.55); transition: transform .3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .flo .zap-flutua:hover { transform: scale(1.08); }
+  .flo .zap-flutua:focus-visible { outline: 3px solid var(--roxo); outline-offset: 3px; }
+
+  /* ─────────────── preços ─────────────── */
+  /* sangra até as bordas da tela, mesmo com a seção limitada à largura do conteúdo */
+  .flo .petalas-fundo { z-index: 0; inset: 0 auto 0 50%; width: 100vw; margin-left: -50vw; }
+  .flo .petalas-fundo .petala { top: var(--t); opacity: 0.75; }
+  .flo .planos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 24px); align-items: stretch; }
+  .flo .plano {
+    position: relative; display: flex; flex-direction: column; gap: 1rem; height: 100%;
+    padding: clamp(26px, 3vw, 36px); border-radius: 28px; background: var(--branco); border: 1px solid var(--fio);
+  }
+  .flo .plano h3 { font-size: 1.6rem; }
+  .flo .plano-sub { color: var(--tinta-2); font-size: 0.95rem; margin-top: -0.6rem; }
+  .flo .plano-preco { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem; font: 400 3rem/1 var(--f-titulo); color: var(--roxo); padding: 0.6rem 0 1.1rem; border-bottom: 1px solid var(--fio); }
+  .flo .moeda { font: 600 1.1rem/1 var(--f); }
+  .flo .por { font: 500 0.9rem/1 var(--f); color: var(--tinta-2); margin-left: 0.3rem; }
+  .flo .plano-lista { display: grid; gap: 0.75rem; flex: 1; align-content: start; }
+  .flo .plano-lista li { display: flex; gap: 0.7rem; align-items: baseline; font-size: 0.98rem; }
+  .flo .plano-lista i { width: 1.1rem; flex: none; color: var(--roxo); font-size: 0.9rem; }
+  .flo .plano-bonus { padding: 0.45rem 0.7rem; border-radius: 12px; background: #F4FFD2; }
+  .flo .plano .botao { width: 100%; margin-top: 0.6rem; }
+
+  .flo .plano-destaque { background: var(--roxo); border-color: var(--roxo); color: var(--branco); box-shadow: 0 30px 60px -30px rgba(136, 41, 179, 0.75); }
+  .flo .plano-destaque .plano-sub, .flo .plano-destaque .por { color: rgba(255, 255, 255, 0.82); }
+  .flo .plano-destaque .plano-preco { color: var(--branco); border-color: rgba(255, 255, 255, 0.2); }
+  .flo .plano-destaque .plano-lista i { color: var(--lima); }
+  .flo .plano-destaque .plano-bonus { background: rgba(218, 255, 110, 0.14); }
+  .flo .plano-destaque :focus-visible { outline-color: var(--lima); }
+  .flo .plano-fita {
+    position: absolute; top: -14px; left: 50%; translate: -50% 0;
+    padding: 0.35rem 1rem; border-radius: 999px; background: var(--lima); color: var(--tinta);
+    font-size: 0.85rem; font-weight: 600; white-space: nowrap;
+  }
+  @media (max-width: 959px) { .flo .planos { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; gap: 28px; } }
+
+  /* ─────────────── contato ─────────────── */
+  .flo .contato { max-width: calc(var(--largura) + 2 * var(--margem)); margin: clamp(88px, 11vw, 140px) auto 0; padding: 0 var(--margem); }
+  .flo .contato-in {
+    display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(32px, 5vw, 72px); align-items: center;
+    padding: clamp(36px, 5vw, 64px); border-radius: 32px; background: var(--nevoa); border: 1px solid var(--fio);
+  }
+  .flo .contato-texto { display: grid; gap: 1.2rem; justify-items: start; }
+  .flo .contato-texto > p:not(.contato-horario) { color: var(--tinta-2); max-width: 30rem; }
+  .flo .contato-horario { display: flex; align-items: center; gap: 0.5rem; color: var(--tinta-2); font-size: 0.95rem; }
+  .flo .contato-horario i { color: var(--roxo); }
+  .flo .canais { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+  .flo .canais a {
+    display: flex; align-items: center; gap: 0.9rem; height: 100%;
+    padding: 1rem 1.1rem; border-radius: 18px; background: var(--branco); border: 1px solid var(--fio);
+    text-decoration: none; transition: border-color .2s ease, transform .2s ease;
+  }
+  .flo .canais a:hover { border-color: var(--lilas); transform: translateY(-2px); }
+  .flo .canal-icone { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--roxo); color: var(--branco); font-size: 1.05rem; }
+  .flo .canal-texto { display: grid; min-width: 0; }
+  .flo .canal-texto strong { font-weight: 600; }
+  .flo .canal-texto span { color: var(--tinta-2); font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 959px) { .flo .contato-in { grid-template-columns: 1fr; } }
+  @media (max-width: 479px) { .flo .canais { grid-template-columns: 1fr; } .flo .contato-texto .botao { width: 100%; } }
+
+  /* ─────────────── rodapé ─────────────── */
+  .flo .rodape { margin-top: clamp(88px, 11vw, 140px); background: var(--tinta); color: var(--branco); }
+  .flo .rodape :focus-visible { outline-color: var(--lima); }
+  .flo .rodape-in { max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(56px, 7vw, 88px) var(--margem) 28px; }
+  .flo .rodape-grade { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1.5fr); gap: 2.5rem; padding-bottom: 2.5rem; }
+  .flo .marca-clara { color: var(--branco); margin-bottom: 1rem; }
+  .flo .marca-clara .marca-flor { fill: var(--lilas); }
+  .flo .rodape-marca p { color: #C9B6D4; font-size: 0.95rem; max-width: 22rem; }
+  .flo .redes { display: flex; gap: 0.5rem; margin-top: 1.2rem; }
+  .flo .redes a { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.08); color: var(--branco); transition: background-color .2s ease, color .2s ease; }
+  .flo .redes a:hover { background: var(--lima); color: var(--tinta); }
+  .flo .rodape-col h2 { font: 400 1.1rem/1.2 var(--f-titulo); margin-bottom: 0.9rem; }
+  .flo .rodape-col ul { display: grid; gap: 0.45rem; }
+  .flo .rodape-col a, .flo .rodape-col address, .flo .rodape-col p { color: #C9B6D4; font-size: 0.95rem; font-style: normal; text-decoration: none; line-height: 1.65; }
+  .flo .rodape-col p { margin-top: 0.8rem; }
+  .flo .rodape-col a:hover { color: var(--branco); text-decoration: underline; }
+  .flo .rodape-mapa { display: grid; gap: 0.7rem; align-content: start; }
+  .flo .rodape-mapa iframe { width: 100%; aspect-ratio: 16 / 11; border: 0; border-radius: 20px; background: #3B1B4B; }
+  .flo .rodape-mapa a { color: var(--branco); font-size: 0.95rem; font-weight: 500; text-decoration: none; }
+  .flo .rodape-mapa a i { color: var(--lima); margin-right: 0.3rem; }
+  .flo .rodape-mapa a:hover { text-decoration: underline; }
+  .flo .rodape-fim { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.86rem; color: #C9B6D4; }
+  .flo .rodape-fim a { color: var(--branco); }
+  @media (max-width: 1099px) { .flo .rodape-grade { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 559px) { .flo .rodape-grade { grid-template-columns: 1fr; } }
+
+  /* ─────────────── modal ─────────────── */
+  .flo .modal {
+    margin: auto; padding: 0; border: 0; width: min(560px, calc(100% - 32px)); max-height: min(92dvh, 820px);
+    border-radius: 28px; background: var(--branco); color: var(--tinta); overflow: hidden;
+    box-shadow: 0 40px 100px -20px rgba(42, 14, 56, 0.55);
+  }
+  .flo .modal::backdrop { background: rgba(42, 14, 56, 0.55); backdrop-filter: blur(4px); }
+  .flo .modal[open] { animation: modal-entra .35s var(--e); }
+  @keyframes modal-entra { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .flo .modal[open] { animation: none; } }
+  .flo .modal-in { display: flex; flex-direction: column; max-height: inherit; }
+  .flo .modal-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 26px 28px 18px; border-bottom: 1px solid var(--fio); background: var(--nevoa); }
+  .flo .modal-cab h2 { font-size: 1.7rem; }
+  .flo .modal-cab p { color: var(--tinta-2); font-size: 0.95rem; margin-top: 0.3rem; }
+  .flo .modal-fechar { width: 40px; height: 40px; flex: none; border: 0; border-radius: 50%; background: var(--branco); color: var(--tinta); cursor: pointer; font-size: 1.05rem; }
+  .flo .modal-fechar:hover { background: var(--lilas-claro); }
+  .flo .modal-corpo { display: grid; gap: 1.1rem; padding: 22px 28px; overflow-y: auto; }
+  .flo .modal-pe { padding: 16px 28px 24px; border-top: 1px solid var(--fio); }
+  .flo .modal-pe .botao { width: 100%; }
+  .flo .campo { display: grid; gap: 0.4rem; }
+  .flo .campo label { font-weight: 600; font-size: 0.95rem; }
+  .flo .opcional { font-weight: 400; color: var(--tinta-2); }
+  .flo .campo input, .flo .campo select, .flo .campo textarea {
+    width: 100%; min-height: 50px; padding: 0.75rem 1rem; border: 1.5px solid #DCCBE8; border-radius: 14px;
+    background: var(--branco); color: var(--tinta); font: 400 1rem/1.4 var(--f); caret-color: var(--roxo);
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .flo .campo textarea { resize: vertical; min-height: 92px; }
+  .flo .campo input::placeholder, .flo .campo textarea::placeholder { color: #7C6887; }
+  .flo .campo input:hover, .flo .campo select:hover, .flo .campo textarea:hover { border-color: var(--lilas); }
+  .flo .campo input:focus-visible, .flo .campo select:focus-visible, .flo .campo textarea:focus-visible { outline: none; border-color: var(--roxo); box-shadow: 0 0 0 4px rgba(136, 41, 179, 0.15); }
+  .flo .campo [aria-invalid='true'] { border-color: #B3263E; box-shadow: 0 0 0 4px rgba(179, 38, 62, 0.1); }
+  .flo .seletor { position: relative; }
+  .flo .seletor select { appearance: none; padding-right: 2.6rem; cursor: pointer; }
+  .flo .seletor select:has(option[value='']:checked) { color: #7C6887; }
+  .flo .seletor i { position: absolute; right: 1rem; top: 50%; translate: 0 -50%; font-size: 0.8rem; color: var(--roxo); pointer-events: none; }
+  .flo .dica { font-size: 0.85rem; color: var(--tinta-2); }
+  .flo .erro:empty { display: none; }
+  .flo .erro { font-size: 0.87rem; font-weight: 500; color: #B3263E; }
+  .flo .previa { padding: 16px 18px; border-radius: 16px; background: var(--nevoa); }
+  .flo .previa-titulo { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.9rem; font-weight: 600; color: var(--roxo); }
+  .flo .previa-texto { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.95rem; line-height: 1.55; }
+  .flo .previa-texto .vazio { padding: 0 4px; border-radius: 4px; background: var(--lilas-claro); color: var(--tinta-2); }
+  .flo .previa-texto .cheio { font-weight: 600; }
+  @media (max-width: 599px) {
+    .flo .modal { width: 100%; max-width: 100%; max-height: 94dvh; margin: auto 0 0; border-radius: 24px 24px 0 0; }
+    .flo .modal-cab, .flo .modal-corpo, .flo .modal-pe { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
