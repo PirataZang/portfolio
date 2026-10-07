@@ -65,12 +65,89 @@ const TRATAMENTOS = [
   { t: 'Tratamento de canal', f: 't-canal', pos: '50% 22%', alt: 'Dr. Vitor analisando a radiografia dos dentes contra a luz', d: 'Com localizador eletrônico e anestesia computadorizada. Na maioria dos casos, resolvido em uma sessão.', min: '1 a 2 sessões', preco: 850 },
 ];
 
+
+/*
+  Lâminas da limpeza: cinco fotos em tela cheia que se empilham no scroll,
+  cada uma com um motivo para marcar a limpeza. Fotos do Unsplash em 2400 px
+  (licença livre, crédito no rodapé), sem rosto de outro dentista — quem
+  atende aqui é o Dr. Vitor. `lado` é onde fica o texto: do lado oposto ao
+  assunto da foto.
+*/
+const LIMPEZA = [
+  {
+    f: 'sorriso', lado: 'e', pos: '62% 50%',
+    alt: 'Sorriso de perto, dentes limpos e brilhantes',
+    t: 'Lembra da sensação de dente liso?',
+    d: 'Passar a língua e sentir cada dente limpo, sem aquela aspereza. É o que você leva para casa depois de 50 minutos aqui, e ela dura semanas.',
+  },
+  {
+    f: 'raspagem', lado: 'd', pos: '30% 50%',
+    alt: 'Raspagem com espelho clínico e cureta, em close',
+    t: 'O tártaro não sai na escova.',
+    d: 'Quando a placa endurece, nem a melhor escovação resolve. A raspagem tira o que se acumulou entre os dentes e na linha da gengiva, e o polimento devolve o brilho sem gastar o esmalte.',
+  },
+  {
+    f: 'espelho', lado: 'e', pos: '70% 50%',
+    alt: 'Espelho clínico em primeiro plano, com a cadeira desfocada ao fundo',
+    t: 'Sem pressa e sem susto.',
+    d: 'O Dr. Vitor explica cada passo antes de fazer e para quando você levantar a mão. Gengiva sensível? Vamos mais devagar. Você sai sabendo o que precisa, e o que não precisa.',
+  },
+  {
+    f: 'cadeira', lado: 'd', pos: '35% 60%',
+    alt: 'Cadeira odontológica azul num consultório claro, com um quadro colorido na parede',
+    t: 'Seis meses passam rápido.',
+    d: 'É o tempo para a placa voltar a virar tártaro. Quem limpa no tempo certo evita sangramento, cárie escondida e o tratamento caro que viria depois. No plano Prevenção, a limpeza é todo mês.',
+  },
+  {
+    f: 'consultorio', lado: 'e', pos: '55% 50%', fim: true,
+    alt: 'Consultório odontológico claro, com janela ampla e bancada branca',
+    t: 'Sua limpeza, ainda esta semana.',
+    d: 'Avaliação completa, raspagem, polimento e flúor, com o Dr. Vitor do começo ao fim.',
+  },
+];
+
 const IMPLANTE = [
   { t: 'Avaliação com tomografia', d: 'Medimos a altura e a espessura do osso para planejar o implante no lugar certo.' },
   { t: 'Instalação do implante', d: 'Cirurgia com anestesia local, em torno de 1 hora. Você volta para casa no mesmo dia.' },
   { t: 'Cicatrização', d: 'De 3 a 6 meses para o osso se unir ao implante. Você usa um dente provisório nesse período.' },
   { t: 'Coroa definitiva', d: 'Coroa de porcelana feita sob medida, com cor e formato iguais aos dos dentes vizinhos.' },
 ];
+
+/*
+  Prancha do implante: corte em traço fino, como desenho técnico de
+  consultório. Pontos do osso trabecular e filetes da rosca saem daqui, com
+  semente fixa, para o desenho ser o mesmo em todo build.
+*/
+const ILU_PONTOS = (() => {
+  let s = 7;
+  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const pts: { x: number; y: number; rx: number; ry: number }[] = [];
+  while (pts.length < 74) {
+    const x = 40 + r() * 520, y = 246 + r() * 222;
+    /* fora das raízes e do lugar do implante, para não sujar o traço */
+    if (Math.abs(x - 130) < 70 && y < 418) continue;
+    if (Math.abs(x - 470) < 70 && y < 418) continue;
+    if (Math.abs(x - 300) < 44 && y < 424) continue;
+    pts.push({ x, y, rx: 2 + r() * 4, ry: 1.5 + r() * 2.5 });
+  }
+  return pts;
+})();
+/* filetes da rosca: o corpo afina de 48 px no topo a 36 px na ponta */
+const ILU_ROSCA = Array.from({ length: 12 }, (_, i) => {
+  const y = 246 + i * 12.5;
+  const k = (y - 232) / 160;
+  const xl = 276 + 6 * k, xr = 324 - 6 * k;
+  return `M${(xl - 6).toFixed(1)},${(y + 4).toFixed(1)} L${(xr + 6).toFixed(1)},${(y - 4).toFixed(1)}`;
+}).join(' ');
+/* osso se unindo ao implante: pontos dourados colados nos dois lados */
+const ILU_OSSEO = Array.from({ length: 22 }, (_, i) => {
+  const lado = i % 2 ? 1 : -1;
+  const y = 244 + Math.floor(i / 2) * 15;
+  const k = (y - 232) / 160;
+  return { x: 300 + lado * (24 - 6 * k + 9), y };
+});
+const DENTE = 'M70,195 C62,160 60,110 72,88 C82,70 100,64 112,72 C122,62 138,62 148,72 C160,64 178,70 188,88 C200,110 198,160 190,195 C194,260 180,350 164,408 C160,418 150,416 148,404 L136,300 C134,290 126,290 124,300 L112,404 C110,416 100,418 96,408 C80,350 66,260 70,195 Z';
+const POLPA = 'M108,150 C110,128 150,128 152,150 L147,205 L141,292 M113,205 L119,292';
 
 const CIRURGIAS = [
   { t: 'Implante unitário', d: 'Repõe um dente perdido sem desgastar os vizinhos.', preco: 3200 },
@@ -204,7 +281,6 @@ const jsonLd = {
       <section id="inicio" class="heroi" aria-labelledby="titulo-inicio">
         <!-- painel marinho com o nome gigante em contorno e o Dr. Vitor recortado na frente -->
         <div class="painel" aria-hidden="true">
-          <span class="painel-nome">VITOR</span>
           <svg class="painel-arco" viewBox="0 0 600 300"><path d="M40 40c120 260 400 260 520 0" /></svg>
           <span class="forma forma-anel"></span>
           <span class="forma forma-ponto"></span>
@@ -245,6 +321,43 @@ const jsonLd = {
             <li class="faixa-item"><svg aria-hidden="true"><use href="#arco" /></svg>{t}</li>
           ))}
         </ul>
+      </section>
+
+      <!-- ─────────────── limpeza: lâminas em tela cheia que se empilham ─────────────── -->
+      <section id="limpeza" class="pilha" aria-label="Limpeza com o Dr. Vitor">
+        {LIMPEZA.map((l, k) => (
+          <article class={`lamina lado-${l.lado}`} data-lamina>
+            <div class="lamina-in">
+              {/* no celular, um recorte em retrato próprio: o assunto fica acima do texto */}
+              <picture>
+                <source media="(max-width: 760px)" srcset={`${IMG}/limpeza-${l.f}-m.webp`} width="1080" height="1620" />
+                <img
+                  class="lamina-foto"
+                  src={`${IMG}/limpeza-${l.f}-2400.webp`}
+                  srcset={`${IMG}/limpeza-${l.f}-1200.webp 1200w, ${IMG}/limpeza-${l.f}-2400.webp 2400w`}
+                  sizes="100vw" alt={l.alt} width="2400" height="1500"
+                  loading={k === 0 ? 'eager' : 'lazy'} decoding="async"
+                  style={`--pos: ${l.pos}`}
+                />
+              </picture>
+              <div class="lamina-veu" aria-hidden="true"></div>
+              <div class="lamina-txt">
+                <h2>{l.t}</h2>
+                <p>{l.d}</p>
+                {l.fim && (
+                  <>
+                    <p class="lamina-ficha"><span>50 minutos</span><span>R$ {brl(180)}</span><span>Sem carência no plano Prevenção</span></p>
+                    <div class="lamina-acoes">
+                      <button class="botao botao-dourado botao-grande" type="button" data-abrir-agenda data-trat="Limpeza e prevenção" data-obs="Quero agendar uma limpeza.">Agendar minha limpeza</button>
+                      <a class="lamina-link" href="#planos">Ver o plano Prevenção</a>
+                    </div>
+                  </>
+                )}
+              </div>
+              <span class="lamina-conta" aria-hidden="true">{String(k + 1).padStart(2, '0')} <i>/ {String(LIMPEZA.length).padStart(2, '0')}</i></span>
+            </div>
+          </article>
+        ))}
       </section>
 
       <!-- ─────────────── tratamentos: vitrine de fotos + tabela de valores ─────────────── -->
@@ -316,12 +429,58 @@ const jsonLd = {
             </p>
           </div>
 
-          <div class="implante">
+          {/*
+            Prancha do implante em corte. Sem JS ela aparece inteira; com JS
+            cada grupo (data-ilu) se desenha quando a etapa dele passa pela
+            tela, e a etapa correspondente acende na lista.
+          */}
+          <div class="implante" data-implante>
             <div class="implante-fotos" data-fade>
-              <picture class="implante-foto-grande">
-                <source srcset={`${IMG}/implante.webp`} type="image/webp" />
-                <img src={`${IMG}/implante.jpg`} alt="Cirurgia de implante dentário em andamento, com o motor de implante sobre a bancada" width="1400" height="993" loading="lazy" decoding="async" />
-              </picture>
+              <figure class="ilu" aria-label="Desenho em corte de um implante dentário entre dois dentes: osso, gengiva, pino de titânio, pilar e coroa">
+                <svg viewBox="0 0 600 500" role="img" aria-hidden="true">
+                  <g data-ilu="0" class="ilu-base">
+                    <path class="ilu-osso-fundo" d="M30,236 C120,230 200,234 300,232 C400,230 480,234 570,236 L570,470 Q570,480 560,480 L40,480 Q30,480 30,470 Z" />
+                    {ILU_PONTOS.map((q) => <ellipse class="ilu-poro" cx={q.x.toFixed(1)} cy={q.y.toFixed(1)} rx={q.rx.toFixed(1)} ry={q.ry.toFixed(1)} />)}
+                    <path class="traco" pathLength="1" d="M30,236 C120,230 200,234 300,232 C400,230 480,234 570,236" />
+                    <path class="ilu-gengiva" d="M30,206 C50,201 62,198 70,199 L70,236 L30,236 Z M190,199 C220,196 240,186 260,184 C280,182 320,182 340,184 C360,186 380,196 410,199 L410,234 L190,234 Z M530,199 C540,198 556,201 570,206 L570,236 L530,236 Z" />
+                    <path class="traco traco-gengiva" pathLength="1" d="M30,206 C50,201 62,198 70,199 M190,199 C220,196 240,186 260,184 C280,182 320,182 340,184 C360,186 380,196 410,199 M530,199 C540,198 556,201 570,206" />
+                    <path class="traco ilu-dente" pathLength="1" d={DENTE} />
+                    <path class="traco fino" pathLength="1" d={POLPA} />
+                    <g transform="translate(340 0)">
+                      <path class="traco ilu-dente" pathLength="1" d={DENTE} />
+                      <path class="traco fino" pathLength="1" d={POLPA} />
+                    </g>
+                    <text class="ilu-rotulo" x="40" y="468">osso</text>
+                    <text class="ilu-rotulo" x="198" y="226">gengiva</text>
+                  </g>
+
+                  <g data-ilu="1" class="ilu-plano">
+                    <rect class="ilu-scan" x="-1" y="60" width="2" height="420" />
+                    <path class="dourado tracejado" d="M276,232 L324,232 L318,392 C316,410 284,410 282,392 Z" />
+                    <path class="dourado traco" pathLength="1" d="M352,232 L352,410 M346,232 L358,232 M346,410 L358,410 M276,428 L324,428 M276,422 L276,434 M324,422 L324,434" />
+                    <text class="ilu-medida" x="362" y="325">11,5 mm</text>
+                    <text class="ilu-medida" x="300" y="452" text-anchor="middle">4,1 mm</text>
+                  </g>
+
+                  <g data-ilu="2" class="ilu-pino">
+                    <path class="ilu-titanio" d="M276,232 L324,232 L318,392 C316,410 284,410 282,392 Z" />
+                    <path class="traco" pathLength="1" d="M276,232 L324,232 L318,392 C316,410 284,410 282,392 Z" />
+                    <path class="traco fino" pathLength="1" d={ILU_ROSCA} />
+                    <path class="traco" pathLength="1" d="M284,232 L284,225 L316,225 L316,232" />
+                  </g>
+
+                  <g data-ilu="3" class="ilu-cura">
+                    {ILU_OSSEO.map((q) => <circle class="ilu-osseo" cx={q.x.toFixed(1)} cy={q.y} r="2.2" />)}
+                    <path class="traco" pathLength="1" d="M286,225 L286,194 Q286,188 292,188 L308,188 Q314,188 314,194 L314,225" />
+                  </g>
+
+                  <g data-ilu="4" class="ilu-coroa">
+                    <path class="traco" pathLength="1" d="M288,225 L291,176 L309,176 L312,225" />
+                    <path class="ilu-porcelana" d="M240,200 C232,160 230,110 242,88 C252,70 270,64 282,72 C292,62 308,62 318,72 C330,64 348,70 358,88 C370,110 368,160 360,200 C340,207 260,207 240,200 Z" />
+                    <path class="traco ilu-dente" pathLength="1" d="M240,200 C232,160 230,110 242,88 C252,70 270,64 282,72 C292,62 308,62 318,72 C330,64 348,70 358,88 C370,110 368,160 360,200 C340,207 260,207 240,200 Z" />
+                  </g>
+                </svg>
+              </figure>
               <div class="implante-selo">
                 <strong>1 hora</strong>
                 <span>é o tempo médio da cirurgia de um implante</span>
@@ -331,7 +490,7 @@ const jsonLd = {
               <h3 data-fade>Como é feito um implante</h3>
               <ol class="etapas">
                 {IMPLANTE.map((e, k) => (
-                  <li data-fade style={`--i: ${k}`}>
+                  <li data-fade data-etapa style={`--i: ${k}`}>
                     <span class="etapa-num">{k + 1}</span>
                     <div><strong>{e.t}</strong><p>{e.d}</p></div>
                   </li>
@@ -537,7 +696,7 @@ const jsonLd = {
         </div>
         <div class="rodape-fim">
           <span>© 2026 {DR.nome}, {DR.titulo}</span>
-          <span>Demonstração de portfólio: profissional, registro, preços e contatos são fictícios. Fotos: <a href="https://www.freepik.com" rel="noopener">Freepik</a>.</span>
+          <span>Demonstração de portfólio: profissional, registro, preços e contatos são fictícios. Fotos: <a href="https://www.freepik.com" rel="noopener">Freepik</a> e <a href="https://unsplash.com" rel="noopener">Unsplash</a> (Tony Litvyak, Caroline LM, Katarzyna Zygnerska, Ozkan Guner, Benyamin Bohlouli).</span>
           <a href={import.meta.env.BASE_URL}>Voltar ao portfólio</a>
         </div>
       </div>
@@ -626,6 +785,55 @@ const jsonLd = {
     fades.forEach((el) => obs.observe(el));
   }
 
+
+  /* ── prancha do implante: cada etapa se desenha enquanto o bloco atravessa a tela ── */
+  const implante = document.querySelector<HTMLElement>('[data-implante]');
+  if (implante && !reduzido) {
+    const grupos = [...implante.querySelectorAll<SVGGElement>('[data-ilu]')];
+    const etapas = [...implante.querySelectorAll<HTMLElement>('[data-etapa]')];
+    /* base, tomografia, pino, cicatrização e coroa: onde cada um começa e termina */
+    const JANELAS = [[0, 0.14], [0.1, 0.3], [0.3, 0.52], [0.52, 0.74], [0.74, 0.96]];
+    const faixa = (p: number, a: number, b: number) => Math.min(1, Math.max(0, (p - a) / (b - a)));
+    let atual = -1, quadro = 0;
+    const desenhar = () => {
+      quadro = 0;
+      const r = implante.getBoundingClientRect();
+      /* 0 com o topo do bloco a 85% da tela, 1 com ele a 10% */
+      const p = faixa(innerHeight * 0.85 - r.top, 0, innerHeight * 0.75);
+      if (Math.abs(p - atual) < 0.001) return;
+      atual = p;
+      grupos.forEach((g, i) => g.style.setProperty('--d', faixa(p, JANELAS[i][0], JANELAS[i][1]).toFixed(3)));
+      /* o tracejado do planejamento some quando o pino real entra */
+      grupos[1]?.style.setProperty('--d2', faixa(p, 0.3, 0.42).toFixed(3));
+      etapas.forEach((li, k) => li.classList.toggle('feito', p >= JANELAS[k + 1][0] + 0.04));
+    };
+    implante.classList.add('vivo');
+    desenhar();
+    addEventListener('scroll', () => { if (!quadro) quadro = requestAnimationFrame(desenhar); }, { passive: true });
+    addEventListener('resize', desenhar);
+  }
+
+  /* ── limpeza: cada lâmina encolhe e escurece enquanto a próxima a cobre ── */
+  const laminas = [...document.querySelectorAll<HTMLElement>('[data-lamina]')];
+  if (laminas.length && !reduzido) {
+    let quadro = 0;
+    const pintar = () => {
+      quadro = 0;
+      const h = innerHeight;
+      laminas.forEach((l, k) => {
+        const topo = l.getBoundingClientRect().top;
+        /* --vem: a lâmina chegando (0 embaixo da tela, 1 encostada no topo) */
+        l.style.setProperty('--vem', Math.min(1, Math.max(0, 1 - topo / (h * 0.75))).toFixed(3));
+        /* --cobre: quanto a lâmina seguinte já subiu por cima desta */
+        const prox = laminas[k + 1];
+        const t = prox ? prox.getBoundingClientRect().top : h;
+        l.style.setProperty('--cobre', Math.min(1, Math.max(0, 1 - t / h)).toFixed(3));
+      });
+    };
+    pintar();
+    addEventListener('scroll', () => { if (!quadro) quadro = requestAnimationFrame(pintar); }, { passive: true });
+    addEventListener('resize', pintar);
+  }
 
   /* ── tratamentos: a linha escolhida abre e troca a foto da vitrine ── */
   const itens = [...document.querySelectorAll<HTMLLIElement>('.tabela-lista .item')];
@@ -868,9 +1076,9 @@ const jsonLd = {
   .js .odo .entra { opacity: 0; animation: entra 1.6s var(--e) forwards; animation-delay: calc(0.2s + var(--i, 0) * 0.16s); }
   @keyframes entra { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
   .js .odo .retrato { opacity: 0; animation: sobe 1.8s var(--e) .3s forwards; }
-  .js .odo .painel-nome, .js .odo .assinatura { opacity: 0; animation: entra 1.8s var(--e) .7s forwards; }
+  .js .odo .assinatura { opacity: 0; animation: entra 1.8s var(--e) .7s forwards; }
   @keyframes sobe { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .js .odo [data-fade], .js .odo .entra, .js .odo .retrato, .js .odo .painel-nome, .js .odo .assinatura { opacity: 1; transform: none; transition: none; animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .js .odo [data-fade], .js .odo .entra, .js .odo .retrato, .js .odo .assinatura { opacity: 1; transform: none; transition: none; animation: none; } }
 
   /* ─────────────── botões ─────────────── */
   .odo .botao {
@@ -885,6 +1093,60 @@ const jsonLd = {
   .odo .botao-dourado { background: var(--dourado); color: var(--marinho); }
   .odo .botao-dourado:hover { background: #D6BD78; }
   .odo .botao-grande { min-height: 56px; padding: 0 1.8rem; font-size: 1.04rem; }
+
+  /* ── limpeza: lâminas em tela cheia que se empilham (stacking cards) ──
+     Cada lâmina gruda no topo; a próxima sobe por cima. A de baixo encolhe
+     e escurece pelo --cobre (0 → 1), que o script calcula da lâmina seguinte. */
+  .odo .pilha { position: relative; background: var(--marinho-fundo); }
+  .odo .lamina { position: sticky; top: 0; height: 100svh; min-height: 580px; overflow: hidden; background: var(--marinho-fundo); }
+  .odo .lamina-in {
+    position: absolute; inset: 0; display: grid; align-items: center;
+    transform: scale(calc(1 - 0.07 * var(--cobre, 0))); transform-origin: 50% 0;
+    border-radius: calc(28px * var(--cobre, 0)); overflow: hidden;
+  }
+  .odo .lamina-in::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: #0d1c26; opacity: calc(0.6 * var(--cobre, 0));
+  }
+  .odo .lamina-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--pos); transform: scale(calc(1.08 - 0.08 * var(--vem, 1))); }
+  .odo .lamina-veu { position: absolute; inset: 0; }
+  .odo .lado-e .lamina-veu { background: linear-gradient(90deg, rgba(23, 46, 61, 0.92) 0%, rgba(23, 46, 61, 0.72) 34%, rgba(23, 46, 61, 0.15) 62%, rgba(23, 46, 61, 0) 78%); }
+  .odo .lado-d .lamina-veu { background: linear-gradient(270deg, rgba(23, 46, 61, 0.92) 0%, rgba(23, 46, 61, 0.72) 34%, rgba(23, 46, 61, 0.15) 62%, rgba(23, 46, 61, 0) 78%); }
+  .odo .lamina-txt {
+    position: relative; z-index: 1; width: 100%;
+    max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto;
+    padding: 96px var(--margem) 64px; display: grid; gap: 1.3rem; color: var(--branco);
+    opacity: var(--vem, 1); transform: translateY(calc(28px * (1 - var(--vem, 1))));
+  }
+  .odo .lamina-txt > * { max-width: 34rem; }
+  .odo .lado-d .lamina-txt { justify-items: end; text-align: right; }
+  .odo .lamina-txt h2 { font: 600 clamp(2.4rem, 5.2vw, 4.6rem)/1.02 var(--f-titulo); letter-spacing: -0.03em; color: var(--branco); text-wrap: balance; }
+  .odo .lamina-txt p { font-size: clamp(1.05rem, 1.4vw, 1.22rem); line-height: 1.65; color: #E3EAEF; }
+  .odo .lamina-ficha { display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; font-weight: 600; color: var(--dourado) !important; }
+  .odo .lamina-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.8rem; margin-top: 0.4rem; }
+  .odo .lamina-link { color: var(--branco); font-weight: 600; text-decoration: underline; text-decoration-color: var(--dourado); text-underline-offset: 6px; text-decoration-thickness: 2px; }
+  .odo .lamina-link:hover { color: var(--dourado); }
+  .odo .lamina :focus-visible { outline-color: var(--dourado); }
+  .odo .lamina-conta {
+    position: absolute; z-index: 1; left: var(--margem); bottom: 28px;
+    font: 600 0.9rem/1 var(--f-titulo); letter-spacing: 0.08em; color: var(--dourado);
+  }
+  .odo .lamina-conta i { font-style: normal; color: rgba(255, 255, 255, 0.55); }
+  .odo .lado-d .lamina-conta { left: auto; right: var(--margem); }
+  @media (max-width: 760px) {
+    /* no celular o texto desce para a base, sobre um véu de baixo para cima */
+    .odo .lamina-in { align-items: end; }
+    .odo .lado-e .lamina-veu, .odo .lado-d .lamina-veu { background: linear-gradient(0deg, rgba(23, 46, 61, 0.95) 0%, rgba(23, 46, 61, 0.78) 38%, rgba(23, 46, 61, 0) 70%); }
+    .odo .lado-d .lamina-txt { justify-items: start; text-align: left; }
+    .odo .lamina-txt { padding-bottom: 104px; }
+    .odo .lamina-foto { object-position: 50% 30%; }
+    .odo .lado-d .lamina-conta { right: auto; left: var(--margem); }
+  }
+  /* sem movimento: as lâminas viram uma lista comum, uma depois da outra */
+  @media (prefers-reduced-motion: reduce) {
+    .odo .lamina { position: relative; }
+    .odo .lamina-in, .odo .lamina-txt, .odo .lamina-foto { transform: none; opacity: 1; }
+  }
   .odo .link-seta { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--marinho); text-decoration: none; border-bottom: 2px solid var(--dourado); padding-bottom: 2px; }
   .odo .link-seta::after { content: ''; width: 16px; height: 2px; background: currentColor; transform-origin: left; transition: transform .3s var(--e); }
   .odo .link-seta:hover::after { transform: scaleX(1.5); }
@@ -937,11 +1199,6 @@ const jsonLd = {
     position: absolute; z-index: 0; top: 0; bottom: 0; right: 0; width: 44%;
     background: var(--marinho); border-bottom-left-radius: 260px; overflow: hidden;
   }
-  .odo .painel-nome {
-    position: absolute; left: 50%; top: 13%; translate: -50% 0;
-    font: 700 clamp(7rem, 15vw, 15rem)/0.8 var(--f-titulo); letter-spacing: -0.04em;
-    color: transparent; -webkit-text-stroke: 1.5px rgba(200, 172, 98, 0.55); white-space: nowrap; user-select: none;
-  }
   .odo .painel-arco { position: absolute; left: 6%; right: 6%; bottom: 20%; width: 88%; fill: none; stroke: var(--dourado); stroke-width: 3; stroke-linecap: round; opacity: 0.9; }
   .odo .retrato {
     position: absolute; z-index: 1; bottom: 0; right: calc(22% - min(19vw, 270px));
@@ -978,7 +1235,6 @@ const jsonLd = {
   @media (max-width: 899px) {
     .odo .heroi { display: flex; flex-direction: column; }
     .odo .painel { position: relative; width: 100%; height: 440px; flex: none; border-bottom-left-radius: 0; border-radius: 0 0 0 120px; }
-    .odo .painel-nome { top: 22%; font-size: 34vw; }
     .odo .retrato { right: 50%; translate: 50% 0; bottom: auto; top: calc(68px + 440px - min(80vw, 330px) * 1.265); width: min(80vw, 330px); }
     .odo .assinatura { display: none; }
     .odo .heroi-in { min-height: 0; padding-top: 32px; }
@@ -1055,8 +1311,6 @@ const jsonLd = {
   .odo .cirurgias-in { position: relative; max-width: calc(var(--largura) + 2 * var(--margem)); margin: 0 auto; padding: clamp(80px, 10vw, 128px) var(--margem); }
   .odo .implante { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 88px); align-items: center; }
   .odo .implante-fotos { position: relative; }
-  .odo .implante-foto-grande { display: block; aspect-ratio: 4 / 3.3; overflow: hidden; border-radius: 26px; }
-  .odo .implante-foto-grande img { width: 100%; height: 100%; object-fit: cover; }
   .odo .implante-selo {
     position: absolute; right: -24px; bottom: -28px; display: grid; gap: 0.2rem; max-width: 210px;
     padding: 1.1rem 1.2rem; border-radius: 20px; background: var(--dourado); color: var(--marinho);
@@ -1072,6 +1326,46 @@ const jsonLd = {
   .odo .etapa-num { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--marinho); border: 1.5px solid var(--dourado); color: var(--dourado); font: 600 0.95rem/1 var(--f-titulo); position: relative; }
   .odo .etapas strong { display: block; font: 600 1.08rem/1.3 var(--f-titulo); color: var(--branco); margin: 0.45rem 0 0.25rem; }
   .odo .etapas p { font-size: 0.97rem; }
+
+  /* ── prancha do implante ── */
+  .odo .ilu {
+    margin: 0; aspect-ratio: 6 / 5; border-radius: 26px; overflow: hidden;
+    background:
+      linear-gradient(rgba(245, 235, 221, 0.04) 1px, transparent 1px) 0 0 / 100% 24px,
+      linear-gradient(90deg, rgba(245, 235, 221, 0.04) 1px, transparent 1px) 0 0 / 24px 100%,
+      var(--marinho-fundo);
+    box-shadow: inset 0 0 0 1px rgba(200, 172, 98, 0.18);
+  }
+  .odo .ilu svg { display: block; width: 100%; height: 100%; }
+  .odo .ilu [data-ilu] { --d: 1; }
+  .odo .ilu .traco {
+    fill: none; stroke: var(--creme); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--d));
+  }
+  .odo .ilu .traco.fino { stroke-width: 1; opacity: 0.55; }
+  .odo .ilu .traco-gengiva { stroke: #e4a9a3; }
+  .odo .ilu .dourado { fill: none; stroke: var(--dourado); stroke-width: 1.4; }
+  .odo .ilu .tracejado { stroke-dasharray: 5 5; opacity: calc(var(--d) * (1 - var(--d2, 0))); }
+  .odo .ilu-osso-fundo { fill: rgba(245, 235, 221, 0.05); }
+  .odo .ilu-poro { fill: none; stroke: rgba(245, 235, 221, 0.22); stroke-width: 1; opacity: var(--d); }
+  .odo .ilu-gengiva { fill: rgba(228, 169, 163, 0.16); opacity: var(--d); }
+  .odo .ilu-titanio { fill: rgba(169, 179, 188, 0.22); opacity: var(--d); }
+  .odo .ilu-porcelana { fill: rgba(245, 235, 221, 0.92); opacity: calc(var(--d) * var(--d) ); }
+  .odo .ilu-coroa .ilu-dente { stroke: var(--creme); }
+  .odo .ilu-osseo { fill: var(--dourado); opacity: var(--d); }
+  .odo .ilu-plano .dourado.traco { stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--d)); }
+  .odo .ilu-scan {
+    fill: var(--dourado); opacity: calc(sin(var(--d) * 3.1416) * 0.9);
+    transform: translateX(calc(190px + var(--d) * 220px));
+    filter: drop-shadow(0 0 6px var(--dourado));
+  }
+  .odo .ilu-rotulo, .odo .ilu-medida { font: 500 12px/1 var(--f-titulo); letter-spacing: 0.08em; }
+  .odo .ilu-rotulo { fill: rgba(245, 235, 221, 0.5); text-transform: uppercase; }
+  .odo .ilu-medida { fill: var(--dourado); opacity: var(--d); }
+  /* a etapa que está sendo desenhada acende na lista */
+  .odo .implante.vivo .etapas li { transition: opacity 0.4s ease; }
+  .odo .implante.vivo .etapas li:not(.feito) { opacity: 0.4; }
+  .odo .implante.vivo .etapas li.feito .etapa-num { background: var(--dourado); color: var(--marinho); }
 
   .odo .proteses { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(24px, 3vw, 40px); margin-top: clamp(72px, 9vw, 112px); align-items: stretch; }
   .odo .protese-foto { position: relative; overflow: hidden; border-radius: 26px; min-height: 380px; }

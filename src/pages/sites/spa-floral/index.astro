@@ -339,12 +339,6 @@ const PALAVRAS = TITULO.split(' ');
       <!-- ─────────────── tratamentos: painéis que abrem ─────────────── -->
       <section id="tratamentos" class="secao com-petalas" aria-labelledby="titulo-tratamentos">
         <div class="petalas petalas-fundo" aria-hidden="true">
-          <svg class="petala" style="--x:2%;--t:-2%;--d:16.1s;--dl:-3.0s;--s:17px;--sw:36px;--r:57deg;--b:3px;color:var(--lilas)"><use href="#petala-suave" /></svg>
-          <svg class="petala" style="--x:4.5%;--t:30%;--d:18.5s;--dl:-20.5s;--s:14px;--sw:37px;--r:69deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:6%;--t:-4%;--d:21.9s;--dl:-12.1s;--s:17px;--sw:45px;--r:10deg;--b:1.5px;color:#E4B8F7"><use href="#petala-suave" /></svg>
-          <svg class="petala" style="--x:95%;--t:5%;--d:19.8s;--dl:-5.6s;--s:17px;--sw:33px;--r:111deg;--b:1.5px;color:var(--roxo)"><use href="#petala-suave" /></svg>
-          <svg class="petala" style="--x:97%;--t:11%;--d:22.4s;--dl:-14.8s;--s:23px;--sw:40px;--r:104deg;--b:0px;color:#F6D9FF"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:99%;--t:42%;--d:25.2s;--dl:-26.7s;--s:12px;--sw:37px;--r:333deg;--b:0px;color:var(--lilas)"><use href="#petala" /></svg>
         </div>
         <div class="cab">
           <h2 id="titulo-tratamentos" data-fade>Tratamentos</h2>
@@ -469,7 +463,13 @@ const PALAVRAS = TITULO.split(' ');
                   width="1800" height="1200" loading="lazy" decoding="async" />
               </picture>
             </div>
-            <div class="especial-foto-pequena">
+            {/*
+              O arco das velas vira uma janela com pedras quentes em 3D
+              (src/scripts/spa-pedras-3d.ts): uma pedra pousa por etapa do
+              ritual. Sem JS ou com movimento reduzido, ficam as velas.
+            */}
+            <div class="especial-foto-pequena" data-pedras>
+              <canvas class="pedras-canvas" aria-hidden="true"></canvas>
               <picture>
                 <source srcset={`${IMG}/especial-velas.webp`} type="image/webp" />
                 <img src={`${IMG}/especial-velas.jpg`} alt="Velas aromáticas acesas entre pétalas secas de rosa numa tigela de madeira"
@@ -488,7 +488,7 @@ const PALAVRAS = TITULO.split(' ');
             </p>
             <ol class="ritual" data-fade style="--i: 3">
               {RITUAL.map((r, i) => (
-                <li>
+                <li data-passo>
                   <span class="ritual-num">{i + 1}</span>
                   <span class="ritual-nome">{r.t}</span>
                   <span class="ritual-min">{r.min}</span>
@@ -549,13 +549,6 @@ const PALAVRAS = TITULO.split(' ');
       <section id="precos" class="secao com-petalas" aria-labelledby="titulo-precos">
         <!-- pétalas de fundo, atrás dos cartões; só transform, então não pesa -->
         <div class="petalas petalas-fundo" aria-hidden="true">
-          <svg class="petala" style="--x:6.5%;--t:12%;--d:22.8s;--dl:-11.0s;--s:17px;--sw:33px;--r:29deg;--b:0px;color:var(--lilas)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:6.7%;--t:3%;--d:17.3s;--dl:-0.9s;--s:16px;--sw:19px;--r:185deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:6.4%;--t:48%;--d:21.2s;--dl:-22.4s;--s:22px;--sw:22px;--r:293deg;--b:0px;color:#E4B8F7"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:1.5%;--t:17%;--d:15.9s;--dl:-12.3s;--s:19px;--sw:30px;--r:328deg;--b:0px;color:var(--roxo)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:4.6%;--t:21%;--d:16.8s;--dl:-20.8s;--s:17px;--sw:32px;--r:298deg;--b:0px;color:var(--lilas)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:95.5%;--t:24%;--d:16.3s;--dl:-2.6s;--s:12px;--sw:22px;--r:302deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:96.2%;--t:37%;--d:18.6s;--dl:-9.6s;--s:15px;--sw:23px;--r:281deg;--b:0px;color:#E4B8F7"><use href="#petala" /></svg>
         </div>
         <div class="cab cab-centro">
           <h2 id="titulo-precos" data-fade>Preços</h2>
@@ -605,11 +598,6 @@ const PALAVRAS = TITULO.split(' ');
             <img src={`${IMG}/presente.jpg`} alt="Mulher relaxando de olhos fechados numa piscina aquecida ao entardecer" width="2000" height="1121" loading="lazy" decoding="async" />
           </picture>
           <div class="petalas" aria-hidden="true">
-          <svg class="petala" style="--x:35.8%;--t:14%;--d:20.7s;--dl:-12.2s;--s:16px;--sw:30px;--r:20deg;--b:1.5px;color:var(--lilas)"><use href="#petala-suave" /></svg>
-          <svg class="petala" style="--x:65.2%;--t:33%;--d:26.5s;--dl:-0.0s;--s:23px;--sw:39px;--r:4deg;--b:0px;color:var(--lima)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:56.5%;--t:-8%;--d:18.5s;--dl:-14.1s;--s:16px;--sw:44px;--r:191deg;--b:0px;color:#E4B8F7"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:59.7%;--t:45%;--d:22.1s;--dl:-20.6s;--s:15px;--sw:40px;--r:18deg;--b:0px;color:var(--roxo)"><use href="#petala" /></svg>
-          <svg class="petala" style="--x:34.1%;--t:29%;--d:20.0s;--dl:-10.4s;--s:18px;--sw:23px;--r:116deg;--b:0px;color:#F6D9FF"><use href="#petala" /></svg>
           </div>
           <div class="presente-texto">
             <h2 id="titulo-presente">Dê um dia no Spa Floral de presente</h2>
@@ -765,6 +753,48 @@ const PALAVRAS = TITULO.split(' ');
       }
     }, { rootMargin: '0px 0px -10% 0px', threshold: 0.2 });
     alvosFade.forEach((el) => obs.observe(el));
+  }
+
+  /* ── ritual: uma pedra quente pousa por etapa enquanto a seção passa ── */
+  const arco = document.querySelector<HTMLElement>('[data-pedras]');
+  const canvasPedras = arco?.querySelector<HTMLCanvasElement>('.pedras-canvas');
+  const secaoRitual = document.getElementById('especial');
+  if (arco && canvasPedras && secaoRitual && !reduzido) {
+    const passos = [...document.querySelectorAll<HTMLElement>('[data-passo]')];
+    const lista = passos[0]?.parentElement;
+    let cena: import('../../../scripts/spa-pedras-3d').Cena | null = null;
+    let visivel = false, rodando = false, atual = 0, tempo = 0, antes = 0;
+    /* 0 quando a seção encosta embaixo da tela, 1 quando o meio dela passa do topo */
+    const medir = () => {
+      const r = secaoRitual.getBoundingClientRect();
+      return Math.min(1, Math.max(0, (innerHeight - r.top) / (innerHeight * 0.55 + r.height * 0.6)));
+    };
+    const laco = (agora: number) => {
+      if (!visivel || !cena) { rodando = false; return; }
+      tempo += Math.min(0.05, (agora - (antes || agora)) / 1000);
+      antes = agora;
+      atual += (medir() - atual) * 0.08;
+      cena.atualizar(atual, tempo);
+      cena.render();
+      /* a etapa k acende quando a pedra k+1 termina de pousar (ver spa-pedras-3d) */
+      passos.forEach((li, k) => li.classList.toggle('feito', atual >= 0.2 + k * 0.22));
+      requestAnimationFrame(laco);
+    };
+    const ligar = () => { if (!rodando && visivel && cena) { rodando = true; antes = 0; requestAnimationFrame(laco); } };
+    import('../../../scripts/spa-pedras-3d').then(({ criarPedras }) => {
+      const fazer = () => {
+        arco.classList.add('tem-3d');
+        cena = criarPedras(canvasPedras);
+        if (!cena) { arco.classList.remove('tem-3d'); return; }
+        lista?.classList.add('vivo');
+        atual = medir();
+        new ResizeObserver(() => cena!.redimensionar()).observe(canvasPedras);
+        ligar();
+      };
+      if ('requestIdleCallback' in window) requestIdleCallback(fazer, { timeout: 800 });
+      else setTimeout(fazer, 0);
+    });
+    new IntersectionObserver(([e]) => { visivel = e.isIntersecting; ligar(); }, { rootMargin: '150px 0px' }).observe(secaoRitual);
   }
 
   const heroi = document.getElementById('inicio')!;
@@ -1122,7 +1152,8 @@ const PALAVRAS = TITULO.split(' ');
     position: absolute; inset: 0; z-index: -1;
     background:
       linear-gradient(180deg, rgba(40, 8, 58, 0.55) 0%, rgba(40, 8, 58, 0) 20%),
-      linear-gradient(90deg, rgba(58, 12, 84, 0.96) 0%, rgba(110, 31, 149, 0.86) 30%, rgba(136, 41, 179, 0.42) 52%, rgba(136, 41, 179, 0) 70%),
+      /* ameixa profundo, não magenta: o roxo da casa, só que com calma */
+      linear-gradient(90deg, rgba(38, 10, 54, 0.95) 0%, rgba(62, 18, 86, 0.84) 32%, rgba(74, 22, 102, 0.38) 54%, rgba(74, 22, 102, 0) 72%),
       linear-gradient(0deg, rgba(58, 12, 84, 0.55) 0%, rgba(58, 12, 84, 0) 30%);
   }
   .flo .heroi-in {
@@ -1387,6 +1418,21 @@ const PALAVRAS = TITULO.split(' ');
     border-radius: 999px 999px 22px 22px; border: 6px solid var(--nevoa);
   }
   .flo .especial-foto-pequena img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ── pedras quentes em 3D dentro do arco ── */
+  .flo .pedras-canvas { display: none; }
+  .flo .especial-foto-pequena.tem-3d {
+    width: 42%;
+    background: radial-gradient(90% 70% at 50% 78%, #7a2aa3 0%, #3d1052 55%, #22082f 100%);
+    box-shadow: 0 30px 60px -30px rgba(42, 14, 56, 0.55);
+  }
+  .flo .especial-foto-pequena.tem-3d picture { display: none; }
+  .flo .especial-foto-pequena.tem-3d .pedras-canvas { display: block; width: 100%; height: 100%; }
+  /* a etapa que a pedra acabou de marcar acende; as que faltam ficam em espera */
+  .flo .ritual.vivo li { transition: opacity 0.5s ease; opacity: 0.45; }
+  .flo .ritual.vivo li.feito { opacity: 1; }
+  .flo .ritual.vivo li .ritual-num { transition: background 0.4s ease, color 0.4s ease; background: var(--lilas-claro, #f1dcff); color: var(--roxo); }
+  .flo .ritual.vivo li.feito .ritual-num { background: var(--roxo); color: var(--branco); }
   .flo .especial-texto { display: grid; gap: 1.2rem; }
   .flo .especial-texto > p:not(.selo-especial) { color: var(--tinta-2); }
   .flo .selo-especial {
