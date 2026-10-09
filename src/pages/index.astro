@@ -1,6 +1,7 @@
 ---
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import Base from '../layouts/Base.astro';
+import Campo from '../components/Campo.astro';
 
 /*
   PORTFOLIO — Igor Fronza.
@@ -20,10 +21,8 @@ import Base from '../layouts/Base.astro';
   com linguagem, estrela, data e link do demo. Se a rede cair no build, os
   cards ainda saem — só sem os números.
 
-  Profundidade: a luz dos halos e o parallax das formas no herói, e um cubo
-  mágico em Three.js (src/scripts/cubo-3d.ts) que se resolve ao lado do
-  título e reaparece, discreto, no contato. O resto da página é liso de
-  propósito: premium é espaço, não efeito.
+  Profundidade: a luz dos halos e o parallax das formas no herói. O resto da
+  página é liso de propósito: premium é espaço, não efeito.
 */
 
 /* ────────────── troque estes quatro valores ────────────── */
@@ -139,7 +138,7 @@ const DESTAQUES: {
     repo: 'portfolio',
     lang: 'Astro',
     tipo: 'Este site',
-    resumo: 'O código desta página: Astro, o cubo do fundo em Three.js e os projetos puxados do GitHub no build.',
+    resumo: 'O código desta página: Astro, as demos com parallax e Three.js e os projetos puxados do GitHub no build.',
   },
   {
     repo: 'POKEAPI',
@@ -420,15 +419,12 @@ const POEIRA = Array.from({ length: 26 }, (_, i) => {
 
 /* as demos que moram neste repositório */
 const DEMOS = [
-  { slug: 'imobiliaria', nome: 'Meridiano', tag: 'Imobiliária', nota: 'Carteira com filtro, ficha em modal e visita no WhatsApp', pronto: true },
+  { slug: 'alpine-refresh', nome: 'Alpine Refresh', tag: 'Marca de bebida', nota: 'Narrativa por rolagem com parallax em camadas, da montanha ao produto', pronto: true },
   { slug: 'barbearia', nome: "Daniel's", tag: 'Barbearia', nota: 'Capa em fotografia e reserva em um toque', pronto: true },
   { slug: 'arquitetura', nome: 'PRUMO', tag: 'Arquitetura e engenharia', nota: 'Planta interativa e cena dirigida por scroll', pronto: true },
   { slug: 'marmoraria', nome: 'Marmoraria', tag: 'Mármores e granitos', nota: 'Comparador de acabamento e orçamento', pronto: true },
   { slug: 'nova', nome: 'Vereda', tag: 'Psicologia clínica', nota: 'Fotografia grande, seis terapias em cor e planos comparáveis', pronto: true },
   { slug: 'pulse', nome: 'PULSE', tag: 'Festival de eletrônica', nota: 'Carrinho, compra simulada e ingresso com QR', pronto: true },
-  { slug: 'estetica-automotiva', nome: 'Lâmina', tag: 'Estética automotiva', nota: 'Passo a passo da lavagem na rolagem e agendamento em modal pelo WhatsApp', pronto: true },
-  { slug: 'spa-floral', nome: 'Spa Floral', tag: 'Spa e relaxamento', nota: 'Cartão-fidelidade que carimba na tela, planos com bônus e visita marcada pelo WhatsApp', pronto: true },
-  { slug: 'dr-vitor', nome: 'Dr. Vitor', tag: 'Cirurgião-dentista', nota: 'Calculadora de orçamento para lentes e implantes, planos mensais e agenda pelo WhatsApp', pronto: true },
 ];
 
 
@@ -581,30 +577,16 @@ const FERRAMENTAL = [
   },
 ];
 
-/*
-  O campo de formas. Coordenadas em cima de um viewBox 1200×700 recortado
-  (`slice`), então cada seção ganha um recorte diferente do mesmo plano.
-  Escolhidas à mão: aleatório de verdade sempre empilha duas no mesmo canto.
-*/
-type Forma = { f: string; x: number; y: number; s: number; r?: number; o?: number };
-
-/*
-  Como cada forma se mexe. Quem tem eixo claro gira; quem é aberto ou
-  direcional flutua, porque um arco girando sem parar vira ventilador.
-  Duração e atraso saem do índice e não de random: precisa ser estável entre
-  um build e outro, e nenhuma dupla pode entrar em sincronia.
-*/
 /* o muro de logos saiu da página; no rodapé fica uma linha com o essencial */
 const FERRAMENTAS = FERRAMENTAL.flatMap((g) => g.itens.slice(0, 3).map((i) => i.n));
 
-const GIRA = new Set(['x', 'ast', 'mira', 'hex', 'los', 'qua', 'malha']);
-const modo = (f: string) => (GIRA.has(f) ? 'gira' : 'flutua');
-const ritmo = (i: number) => ({
-  dur: 22 + ((i * 7) % 9) * 3.5,    // 22 s a 50 s
-  atraso: -((i * 3.7) % 19),         // negativo: cada uma já começa no meio
-  sentido: i % 3 === 0 ? 'reverse' : 'normal',
-});
-
+/*
+  Os campos de formas (src/components/Campo.astro). Coordenadas sobre um
+  viewBox 1200×700 recortado, escolhidas à mão: aleatório de verdade sempre
+  empilha duas no mesmo canto. No fim da página as formas ficam nas bordas,
+  longe do texto e do formulário.
+*/
+type Forma = { f: string; x: number; y: number; s: number; r?: number; o?: number };
 const CAMPO_HEROI: Forma[] = [
   { f: 'x', x: 78, y: 96, s: 28, r: 12 },
   { f: 'cir', x: 990, y: 96, s: 104 },
@@ -621,6 +603,35 @@ const CAMPO_HEROI: Forma[] = [
   { f: 'x', x: 772, y: 638, s: 20, r: 40 },
   { f: 'cir', x: 138, y: 424, s: 24 },
   { f: 'chev', x: 512, y: 148, s: 26, r: -10 },
+];
+
+const CAMPO_DUVIDAS: Forma[] = [
+  { f: 'malha', x: 46, y: 96, s: 54 },
+  { f: 'hex', x: 1110, y: 96, s: 60, r: 10 },
+  { f: 'chev', x: 1150, y: 340, s: 26 },
+  { f: 'arc', x: 1060, y: 560, s: 92, r: 150 },
+  { f: 'x', x: 64, y: 610, s: 24, r: 20 },
+  { f: 'tri', x: 600, y: 650, s: 30, r: 12 },
+];
+
+const CAMPO_CONTATO: Forma[] = [
+  { f: 'mira', x: 70, y: 120, s: 72 },
+  { f: 'qua', x: 560, y: 64, s: 30, r: 18 },
+  { f: 'x', x: 960, y: 44, s: 18, r: 30 },
+  { f: 'ast', x: 1140, y: 130, s: 28 },
+  { f: 'zig', x: 40, y: 560, s: 80 },
+  { f: 'cota', x: 310, y: 650, s: 60 },
+  { f: 'los', x: 660, y: 640, s: 36 },
+  { f: 'cir', x: 1110, y: 600, s: 120 },
+];
+
+/* o rodapé é baixo: o recorte do viewBox mostra só a faixa do meio (y ≈ 200–500) */
+const CAMPO_RODAPE: Forma[] = [
+  { f: 'canto', x: 40, y: 230, s: 40 },
+  { f: 'tri', x: 640, y: 220, s: 28, r: -14 },
+  { f: 'cir', x: 1100, y: 262, s: 70 },
+  { f: 'lin', x: 870, y: 470, s: 140 },
+  { f: 'malha', x: 1130, y: 450, s: 50 },
 ];
 
 
@@ -754,8 +765,6 @@ const jsonLd = {
   </Fragment>
 
   <div class="pf">
-    {/* cubo mágico do herói (src/scripts/cubo-3d.ts); sem JS, no celular ou com movimento reduzido, fica vazio */}
-    <canvas class="cubo-fundo" data-cubo aria-hidden="true"></canvas>
     {/* ---------- biblioteca de formas: definida uma vez, usada em todo lugar ---------- */}
     <svg class="formas-defs" aria-hidden="true" focusable="false">
       <defs>
@@ -855,20 +864,55 @@ const jsonLd = {
       <section class="heroi blueprint">
         <div class="halo halo-anil" aria-hidden="true"></div>
         <div class="halo halo-roxo" aria-hidden="true"></div>
-        <svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo="0.16" aria-hidden="true" focusable="false">
-          {
-            CAMPO_HEROI.map((f, i) => (
-              <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
-                <use
-                  href={`#s-${f.f}`}
-                  opacity={f.o ?? 1}
-                  class={`fm fm-${modo(f.f)}`}
-                  style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
-                />
+        <Campo formas={CAMPO_HEROI} velocidade={0.16} />
+        {/*
+          Vista explodida de um site: página, grade de layout e código, em
+          isometria. SVG e CSS puros — entrou no lugar do cubo em WebGL, que
+          quebrava ao trocar de seção. Só em tela larga, onde há coluna livre.
+        */}
+        <div class="arte" aria-hidden="true">
+          <div class="arte-luz"></div>
+          <svg viewBox="0 0 480 600" focusable="false">
+            <path class="arte-guia" d="M14.5 130V430M464.8 170V470M274.3 280V580" vector-effect="non-scaling-stroke" />
+            <g class="arte-camada c3">
+              <g transform="matrix(0.866 0.5 -0.866 0.5 205 320)">
+                <rect class="arte-plano risca" pathLength="1" width="300" height="220" rx="10" vector-effect="non-scaling-stroke" />
+                <path class="risca roxo" pathLength="1" d="M22 28h34M64 28h70" vector-effect="non-scaling-stroke" />
+                <path class="risca fraco" pathLength="1" d="M40 50h56M104 50h90M40 72h40" vector-effect="non-scaling-stroke" />
+                <path class="risca ciano" pathLength="1" d="M88 72h64M58 94h50" vector-effect="non-scaling-stroke" />
+                <path class="risca fraco" pathLength="1" d="M116 94h80M58 116h120M40 138h30" vector-effect="non-scaling-stroke" />
+                <path class="risca roxo" pathLength="1" d="M78 138h46M22 160h40" vector-effect="non-scaling-stroke" />
+                <path class="risca fraco" pathLength="1" d="M22 190h250" vector-effect="non-scaling-stroke" />
               </g>
-            ))
-          }
-        </svg>
+            </g>
+            <g class="arte-camada c2">
+              <g transform="matrix(0.866 0.5 -0.866 0.5 205 170)">
+                <rect class="arte-plano risca" pathLength="1" width="300" height="220" rx="10" vector-effect="non-scaling-stroke" />
+                <path class="arte-guia" d="M50 0v220M100 0v220M150 0v220M200 0v220M250 0v220" vector-effect="non-scaling-stroke" />
+                <rect class="arte-cheio anil" x="20" y="20" width="260" height="38" rx="4" />
+                <rect class="arte-cheio anil" x="20" y="72" width="118" height="128" rx="4" />
+                <rect class="risca" pathLength="1" x="152" y="72" width="128" height="56" rx="4" vector-effect="non-scaling-stroke" />
+                <rect class="risca" pathLength="1" x="152" y="142" width="128" height="58" rx="4" vector-effect="non-scaling-stroke" />
+              </g>
+            </g>
+            <g class="arte-camada c1">
+              <g transform="matrix(0.866 0.5 -0.866 0.5 205 20)">
+                <rect class="arte-plano risca" pathLength="1" width="300" height="220" rx="10" vector-effect="non-scaling-stroke" />
+                <path class="risca" pathLength="1" d="M0 30H300" vector-effect="non-scaling-stroke" />
+                <circle class="arte-ponto" cx="16" cy="15" r="3.5" /><circle class="arte-ponto" cx="28" cy="15" r="3.5" /><circle class="arte-ponto" cx="40" cy="15" r="3.5" />
+                <path class="risca fraco" pathLength="1" d="M196 15h20M224 15h20M252 15h30" vector-effect="non-scaling-stroke" />
+                <rect class="arte-cheio roxo" x="24" y="54" width="150" height="11" rx="3" />
+                <rect class="arte-cheio" x="24" y="72" width="112" height="7" rx="3" />
+                <rect class="risca roxo" pathLength="1" x="24" y="94" width="58" height="18" rx="9" vector-effect="non-scaling-stroke" />
+                <rect class="risca" pathLength="1" x="192" y="48" width="84" height="70" rx="6" vector-effect="non-scaling-stroke" />
+                <path class="risca fraco" pathLength="1" d="M192 118 222 86l18 18 14-12 22 26" vector-effect="non-scaling-stroke" />
+                <rect class="risca fraco" pathLength="1" x="24" y="140" width="76" height="58" rx="6" vector-effect="non-scaling-stroke" />
+                <rect class="risca fraco" pathLength="1" x="112" y="140" width="76" height="58" rx="6" vector-effect="non-scaling-stroke" />
+                <rect class="risca fraco" pathLength="1" x="200" y="140" width="76" height="58" rx="6" vector-effect="non-scaling-stroke" />
+              </g>
+            </g>
+          </svg>
+        </div>
 
         <div class="heroi-txt">
           <h1>
@@ -1262,6 +1306,7 @@ const jsonLd = {
 
       {/* ================= DÚVIDAS FREQUENTES ================= */}
       <section class="secao duvidas" id="duvidas">
+        <Campo formas={CAMPO_DUVIDAS} velocidade={0.1} />
         <div class="caixa duvidas-grade">
           <header class="cab" data-anima>
             <h2>O que perguntam antes de fechar</h2>
@@ -1294,6 +1339,8 @@ const jsonLd = {
 
       {/* ================= CONTATO ================= */}
       <section class="secao contato" id="contato">
+        <div class="halo halo-roxo halo-contato" aria-hidden="true"></div>
+        <Campo formas={CAMPO_CONTATO} velocidade={0.14} />
 
         <div class="caixa">
           <div class="contato-grade">
@@ -1393,6 +1440,7 @@ const jsonLd = {
     </main>
 
     <footer class="rodape">
+      <Campo formas={CAMPO_RODAPE} velocidade={0.06} />
       <div class="caixa rodape-grade">
         <div>
           <p class="rodape-marca">{EU.nome}<small>{EU.papel} · {EU.local}</small></p>
@@ -1517,17 +1565,6 @@ const jsonLd = {
 
   .formas-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-  /* ---------- cubo do herói ---------- */
-  /*
-    Fixo, acima do fundo das seções e abaixo do conteúdo (.caixa é z-index 2):
-    as seções não criam contexto de empilhamento, então o z-index 1 daqui
-    passa por cima das cores delas. Fora do herói e do contato fica em 0.
-  */
-  .cubo-fundo {
-    position: fixed; inset: 0; width: 100%; height: 100vh; height: 100lvh;
-    z-index: 1; pointer-events: none; opacity: 0;
-  }
-
   .pular {
     position: absolute; left: -9999px; top: 0; z-index: 100;
     background: var(--roxo); color: #fff; padding: 0.7rem 1.1rem;
@@ -1605,60 +1642,54 @@ const jsonLd = {
   .btn-fant { background: rgba(234, 238, 252, 0.04); color: var(--gelo); border-color: var(--borda-viva); }
   .btn-fant:hover { border-color: var(--roxo-luz); background: rgba(162, 89, 247, 0.1); }
 
-  /* ---------- formas de fundo ---------- */
-  .campo {
-    position: absolute; inset: -6% -2%; width: 104%; height: 112%;
-    /* fill/stroke são herdados e atravessam o <use>; vector-effect não é,
-       e por isso mora como atributo nos <g> do <defs> */
-    fill: none; stroke: var(--tracado); stroke-width: 1;
-    pointer-events: none; z-index: 0;
-  }
-  /* a malha de pontos é sólida, senão nove aros minúsculos viram sujeira */
-  .campo use[href='#s-malha'] { fill: var(--tracado); stroke: none; }
-
-  /*
-    O movimento de cada forma. A posição vive no <g> de fora e a animação no
-    <use> de dentro, e essa separação é obrigatória: `transform` em CSS
-    SUBSTITUI o atributo transform do SVG — no mesmo elemento, a forma perderia
-    o lugar e voaria para o canto da tela.
-
-    `transform-box: fill-box` faz o eixo ser o centro da própria forma e não a
-    origem do SVG. Sem isso, girar 20° manda a peça para o outro lado.
-  */
-  /*
-    A rotação base mora em `rotate:`, não dentro do `transform`. Parece
-    detalhe, mas é o que tira `var()` de dentro dos keyframes: com custom
-    property lá o Chrome precisa resolver estilo dos 40 <use> a cada quadro
-    e a animação nunca sobe para o compositor. `rotate` é propriedade
-    independente e compõe antes do `transform`, então o desenho é o mesmo.
-  */
-  .fm {
-    transform-box: fill-box;
-    transform-origin: 50% 50%;
-    rotate: var(--r, 0deg);
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .fm-gira {
-      animation: fm-gira var(--d, 30s) linear var(--a, 0s) infinite;
-      animation-direction: var(--sentido, normal);
-    }
-    .fm-flutua {
-      animation: fm-flutua var(--d, 30s) ease-in-out var(--a, 0s) infinite;
-      animation-direction: var(--sentido, normal);
-    }
-  }
-  @keyframes fm-gira {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  /* deriva curta com uma inclinada de ida e volta. O valor é pré-escala,
-     então forma grande deriva mais — profundidade de graça. */
-  @keyframes fm-flutua {
-    0%, 100% { transform: rotate(0deg) translate(0, 0); }
-    33% { transform: rotate(5deg) translate(1.5px, -3.5px); }
-    66% { transform: rotate(-4deg) translate(-1.5px, 2.5px); }
-  }
   .secao > .caixa, .heroi-txt { position: relative; z-index: 2; }
+
+  /* ---------- vista explodida do herói ---------- */
+  .arte { display: none; }
+  @media (min-width: 1100px) {
+    .arte {
+      display: block; position: absolute; z-index: 1; pointer-events: none;
+      top: 50%; translate: 0 -46%;
+      right: max(1.5rem, calc((100vw - 1200px) / 2 - 1rem));
+      width: clamp(320px, 31vw, 470px);
+    }
+  }
+  .arte svg { position: relative; display: block; width: 100%; height: auto; overflow: visible; }
+  .arte-luz {
+    position: absolute; inset: 12% 6%; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(91, 46, 196, 0.35), rgba(68, 114, 247, 0.12) 55%, transparent);
+    filter: blur(40px);
+  }
+  .arte-plano { fill: #0c0f22; stroke: rgba(120, 146, 255, 0.5); stroke-width: 1; }
+  .arte .risca { fill: none; stroke: rgba(150, 170, 255, 0.55); stroke-width: 1; }
+  .arte .risca.fraco { stroke: rgba(150, 170, 255, 0.28); }
+  .arte .risca.roxo { stroke: var(--roxo-luz); }
+  .arte .risca.ciano { stroke: var(--ciano); stroke-opacity: 0.8; }
+  .arte-guia { fill: none; stroke: rgba(120, 146, 255, 0.22); stroke-width: 1; stroke-dasharray: 3 5; }
+  .arte-ponto { fill: rgba(150, 170, 255, 0.4); }
+  .arte-cheio { fill: rgba(150, 170, 255, 0.16); }
+  .arte-cheio.roxo { fill: var(--roxo-luz); fill-opacity: 0.75; }
+  .arte-cheio.anil { fill: rgba(68, 114, 247, 0.16); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* as linhas se desenham uma vez (pathLength=1), depois as camadas respiram */
+    .arte .risca { stroke-dasharray: 1; stroke-dashoffset: 1; animation: arte-risca 1.4s var(--e) forwards; }
+    .arte .c3 .risca { animation-delay: 0.2s; }
+    .arte .c2 .risca { animation-delay: 0.45s; }
+    .arte .c1 .risca { animation-delay: 0.7s; }
+    .arte-cheio, .arte-ponto { opacity: 0; animation: arte-surge 0.9s 1.1s var(--e) forwards; }
+    .arte-camada { animation: arte-flutua 9s ease-in-out infinite; }
+    .arte .c2 { animation-delay: -3s; animation-duration: 10s; }
+    .arte .c3 { animation-delay: -6s; animation-duration: 11s; }
+  }
+  @keyframes arte-risca { to { stroke-dashoffset: 0; } }
+  @keyframes arte-surge { to { opacity: 1; } }
+  @keyframes arte-flutua { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+
+  /* o fim da página ganha o mesmo fundo de formas do herói */
+  .halo.halo-contato { top: auto; bottom: -12rem; left: auto; right: -10rem; opacity: 0.28; }
+  .rodape { position: relative; overflow: hidden; }
+  .rodape > .caixa { position: relative; z-index: 2; }
 
   /* halo: a luz que faz o preto não ser preto */
   .halo {
@@ -3388,78 +3419,4 @@ const jsonLd = {
       videos.forEach((v) => obs.observe(v));
     }
   }
-
-  /* ---------------- cubo do herói ---------------- */
-
-  /*
-    Um momento só: o cubo chega embaralhado no herói, se resolve e fica
-    girando devagar à direita do título. Ao rolar ele some; reaparece,
-    discreto, ao lado do contato, e é ali que a página termina. Só em tela
-    larga — no celular não há coluna livre e ele cobriria o texto.
-
-    O canvas é fixo e a opacidade vem do quanto o herói ou o contato ocupam
-    a janela, então ele aparece e some com o scroll, sem salto.
-  */
-  async function ligarCubo() {
-    const canvas = document.querySelector<HTMLCanvasElement>('[data-cubo]');
-    if (!canvas || innerWidth < 900) return;
-    const LUGARES: [string, number, number, number, number][] = [
-      /* seletor, x e y (fração da janela), opacidade, escala */
-      ['.heroi', 0.765, 0.52, 1, 1.45],
-      ['#contato', 0.24, 0.7, 0.5, 0.7],
-      ['.rodape', 0.24, 0.42, 0.5, 0.7],
-    ];
-    const lugares = LUGARES.flatMap(([sel, x, y, op, tam]) => {
-      const el = document.querySelector<HTMLElement>(sel);
-      return el ? [{ el, x, y, op, tam }] : [];
-    });
-    const onde = () => {
-      let x = 0, y = 0, tam = 0, op = 0, peso = 0;
-      for (const l of lugares) {
-        const r = l.el.getBoundingClientRect();
-        const w = Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)) / innerHeight;
-        peso += w; x += w * l.x; y += w * l.y; tam += w * l.tam; op += w * l.op;
-      }
-      if (peso < 0.001 || innerWidth < 900) return null;
-      /* a opacidade cai com o quanto da janela é outra seção */
-      return { x: (x / peso) * innerWidth, y: (y / peso) * innerHeight, tam: tam / peso, op: (op / peso) * Math.min(1, peso) ** 2 };
-    };
-    const heroi = document.querySelector<HTMLElement>('.heroi');
-    /* mouse de -1 a 1 em relação ao centro da janela */
-    let mx = 0, my = 0;
-    addEventListener('pointermove', (e) => {
-      mx = (e.clientX / innerWidth) * 2 - 1;
-      my = (e.clientY / innerHeight) * 2 - 1;
-    }, { passive: true });
-    const { criarCubo } = await import('../scripts/cubo-3d');
-
-    const fazer = () => {
-      const cena = criarCubo(canvas);
-      if (!cena) return;
-      let antes = performance.now();
-      let tempo = 0;
-      const laco = (agora: number) => {
-        const dt = Math.min(0.05, (agora - antes) / 1000);
-        antes = agora;
-        const o = document.hidden ? null : onde();
-        canvas.style.opacity = o ? o.op.toFixed(3) : '0';
-        /* fora do herói e do contato não desenha nada: zero custo de GPU */
-        if (o) {
-          tempo += dt;
-          /* o loop de embaralhar só roda com o herói ocupando a tela */
-          const vivo = !!heroi && heroi.getBoundingClientRect().bottom > innerHeight * 0.6;
-          cena.passo(dt, vivo);
-          cena.atualizar({ ...o, mx, my }, tempo);
-          cena.render();
-        }
-        requestAnimationFrame(laco);
-      };
-      new ResizeObserver(() => cena.redimensionar()).observe(canvas);
-      requestAnimationFrame(laco);
-    };
-    // criar contexto WebGL trava o quadro: nunca no meio de uma rolagem
-    if ('requestIdleCallback' in window) requestIdleCallback(fazer, { timeout: 600 });
-    else setTimeout(fazer, 0);
-  }
-  if (!reduz) ligarCubo().catch(() => {});
 </script>

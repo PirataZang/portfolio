@@ -1,0 +1,903 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  ALPINE REFRESH — marca conceitual de refresco, nascida nas montanhas.
+
+  Uma página só, contada pela rolagem: a montanha de manhã, o lago, a garrafa
+  na pedra, quatro destinos e a mesma montanha ao entardecer. O começo e o fim
+  usam o mesmo maciço (o PNG recortado) de propósito: a história fecha onde
+  abriu, com a luz de outra hora do dia.
+
+  Paleta: azul-glacial, verde-pinho, branco natural, pedra e um fio de ciano.
+  Tipografia: Instrument Serif nos títulos, Instrument Sans no texto.
+
+  Continuidade: não há emenda entre seções. Cada cena tem um palco fixo
+  (sticky) e a seguinte começa `100svh + --fade` antes do fim dela (margem
+  negativa), então durante `--fade` de rolagem as duas estão paradas e a nova
+  entra em fade por cima da antiga. Nenhuma imagem desliza para fora da tela;
+  só o rodapé sobe, no fim, por cima do horizonte parado.
+
+  Profundidade: só onde existe camada de verdade. No início, a foto do pico
+  (fundo, lenta) e o maciço recortado (frente, rápido) saindo da neblina; no
+  fim, céu em gradiente, sol que se põe e o maciço com a alpenglow aplicada
+  pela própria silhueta (mask com o mesmo PNG). Fotos achatadas recebem só
+  escala.
+
+  Movimento: um único laço em requestAnimationFrame lê o scroll uma vez por
+  quadro, com as posições das cenas medidas no resize. Só transform e opacity.
+  Sem `.anda` no <html> (sem JS ou com movimento reduzido) as cenas viram
+  telas comuns, uma embaixo da outra, no estado final.
+*/
+
+const IMG = `${import.meta.env.BASE_URL}img/alpine-refresh`;
+
+const MARCA = { nome: 'Alpine Refresh' };
+
+const NAV = [
+  { id: 'origem', t: 'Origem' },
+  { id: 'refresco', t: 'O refresco' },
+  { id: 'momentos', t: 'Momentos' },
+  { id: 'horizonte', t: 'Horizonte' },
+];
+
+const ATRIBUTOS = [
+  {
+    t: 'Frescor que inspira',
+    icone: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5M3.6 10.6l3.4.9-.9 3.4M20.4 13.4l-3.4-.9.9-3.4M6.1 9.1 7 12.5l-3.4.9M17.9 14.9 17 11.5l3.4-.9"/>',
+  },
+  {
+    t: 'Sabor que surpreende',
+    icone: '<path d="M12 3.2c3.4 4.3 5.8 7.6 5.8 10.6a5.8 5.8 0 0 1-11.6 0c0-3 2.4-6.3 5.8-10.6Z"/><path d="M9.2 14.4a2.9 2.9 0 0 0 2.4 2.7"/>',
+  },
+  {
+    t: 'Leveza para seguir em frente',
+    icone: '<path d="M2.5 19.5 9 9.5l3.6 5.2 2.6-3.6 6.3 8.4"/><path d="M9 9.5 7.6 4.5" stroke-dasharray="1.2 2"/>',
+  },
+];
+
+/*
+  Os destinos de Momentos, na ordem de um dia: manhã, meio do dia, fim de
+  tarde, entardecer — o último já puxa a luz quente do horizonte que vem
+  depois. `fundo` é a foto inteira, em baixa resolução, que cobre a seção com
+  zoom; `quadro` é o recorte 4:5 nítido que aparece emoldurado.
+*/
+const DESTINOS = [
+  {
+    nome: 'Acima das nuvens', hora: 'Manhã', fundo: 'topo-1200', quadro: 'd-pico',
+    texto: 'O dia começa devagar lá em cima. A neblina ainda cobre o vale e o único som é o do vento.',
+    alt: 'Pico nevado sob céu azul, com a base escondida por um mar de nuvens',
+  },
+  {
+    nome: 'O lago espelho', hora: 'Meio do dia', fundo: 'f-espelho', quadro: 'd-espelho',
+    texto: 'A água parada repete o céu inteiro. Uma pedra na margem, os pés na água fria e nenhuma pressa de voltar.',
+    alt: 'Lago de águas paradas entre encostas de pinheiros, refletindo as nuvens do céu',
+  },
+  {
+    nome: 'A última luz', hora: 'Fim de tarde', fundo: 'lago-1200', quadro: 'd-cumes',
+    texto: 'O sol se despede pelos cumes, um de cada vez. É a hora de sentar na margem e só olhar.',
+    alt: 'Cumes rochosos rosados pelo último sol, acima de um lago e de um morro escuro com casas',
+  },
+  {
+    nome: 'A vila no fim da trilha', hora: 'Entardecer', fundo: 'f-vila', quadro: 'd-vila',
+    texto: 'Telhados aquecidos pelo sol e cheiro de lenha no ar. O caminho termina onde a conversa começa.',
+    alt: 'Telhados de cerâmica de uma vila entre colinas arborizadas, sob a luz alaranjada do entardecer',
+  },
+];
+const nn = (i: number) => String(i + 1).padStart(2, '0');
+
+const titulo = 'Alpine Refresh · Respire fundo. O mundo é seu.';
+const descricao =
+  'Alpine Refresh: um refresco nascido entre montanhas, água cristalina e o silêncio da natureza. Descubra o frescor de desacelerar.';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Brand',
+  name: MARCA.nome,
+  slogan: 'Respire fundo. O mundo é seu.',
+  description: descricao,
+  logo: `${IMG}/macico-1200.webp`,
+};
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:image" content={`${IMG}/topo-1200.webp`} />
+    <meta name="theme-color" content="#92b5d1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap"
+    />
+    <link rel="preload" as="image" href={`${IMG}/topo-2400.webp`} imagesrcset={`${IMG}/topo-1200.webp 1200w, ${IMG}/topo-2400.webp 2400w`} imagesizes="100vw" fetchpriority="high" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        document.documentElement.classList.add('anda');
+    </script>
+  </Fragment>
+
+  <div class="ar">
+    <a class="pular" href="#origem">Pular para o conteúdo</a>
+
+    <header class="topo" data-topo data-tom="claro">
+      <a class="marca" href="#inicio" aria-label="Alpine Refresh, voltar ao início">
+        <span class="marca-a">Alpine</span><span class="marca-r">Refresh</span>
+      </a>
+      <nav class="nav" aria-label="Seções">
+        <ul id="menu" data-menu>
+          {NAV.map((n) => <li><a href={`#${n.id}`}>{n.t}</a></li>)}
+        </ul>
+      </nav>
+      <button class="menu-bt" type="button" aria-expanded="false" aria-controls="menu" data-menu-bt>
+        <span class="menu-bt-txt">Menu</span>
+        <span class="menu-bt-traco" aria-hidden="true"></span>
+      </button>
+    </header>
+
+    <main>
+      {/* ═════════ 01 · A montanha de manhã ═════════ */}
+      <section class="cena heroi" id="inicio" data-cena="heroi" data-tom="claro">
+        <div class="palco">
+          <img
+            class="h-ceu"
+            src={`${IMG}/topo-2400.webp`}
+            srcset={`${IMG}/topo-1200.webp 1200w, ${IMG}/topo-2400.webp 2400w`}
+            sizes="100vw" width="2400" height="1600"
+            alt="Pico nevado sob céu azul, com a base escondida por um mar de nuvens"
+            fetchpriority="high" decoding="async"
+          />
+          <div class="h-texto">
+            <h1>Respire fundo.<br /><em>O mundo é seu.</em></h1>
+            <p>Descubra o frescor de desacelerar, apreciar o caminho e encontrar novos horizontes.</p>
+          </div>
+          <img
+            class="h-macico"
+            src={`${IMG}/macico-2400.webp`}
+            srcset={`${IMG}/macico-1200.webp 1200w, ${IMG}/macico-2400.webp 2400w`}
+            sizes="(max-width: 760px) 200vw, 112vw" width="2400" height="1470"
+            alt="" decoding="async"
+          />
+          <div class="h-nevoa" aria-hidden="true"></div>
+          <div class="h-veu" aria-hidden="true"></div>
+          <a class="descer" href="#origem">
+            <span>Explore</span>
+            <span class="descer-fio" aria-hidden="true"></span>
+          </a>
+        </div>
+      </section>
+
+      {/* ═════════ 02 · Origem: o lago ═════════ */}
+      <section class="cena origem" id="origem" data-cena="origem" data-tom="claro">
+        <div class="palco">
+          <p class="o-rotulo" aria-hidden="true">Origem</p>
+          <div class="o-janela">
+          <img
+            class="o-foto"
+            src={`${IMG}/lago-2400.webp`}
+            srcset={`${IMG}/lago-1200.webp 1200w, ${IMG}/lago-2400.webp 2400w`}
+            sizes="100vw" width="2400" height="1600"
+            alt="Lago de águas calmas diante de uma cordilheira com os picos iluminados pelo sol do fim de tarde"
+            loading="lazy" decoding="async"
+          />
+          </div>
+          <div class="o-sombra" aria-hidden="true"></div>
+          <div class="o-sombra2" aria-hidden="true"></div>
+          <div class="o-texto">
+            <p class="rotulo">Origem</p>
+            <h2>Tudo começa onde o mundo <em>desacelera.</em></h2>
+            <p class="o-lead">Entre montanhas, água cristalina e o silêncio da natureza, redescubra o prazer das coisas simples.</p>
+          </div>
+          <div class="o-texto2">
+            <p class="o-frase">Aqui o tempo tem <em>outra medida.</em></p>
+            <p class="o-sub">O vento desenha a superfície do lago, a luz desce devagar pelas encostas e cada respiração parece um pouco mais funda.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ 03 · O refresco ═════════ */}
+      <section class="cena refresco" id="refresco" data-cena="refresco" data-tom="escuro">
+        <div class="palco">
+          <div class="r-foto">
+            <img
+              src={`${IMG}/garrafa-1672.webp`}
+              srcset={`${IMG}/garrafa-900.webp 900w, ${IMG}/garrafa-1672.webp 1672w`}
+              sizes="100vw" width="1672" height="941"
+              alt="Garrafa transparente coberta de gotas, apoiada numa rocha à beira de um lago azul entre montanhas e pinheiros"
+              loading="lazy" decoding="async"
+            />
+          </div>
+          <div class="r-conteudo">
+            <div class="r-cab">
+              <p class="rotulo">O refresco</p>
+              <h2>O sabor que <em>te acompanha.</em></h2>
+              <p class="r-lead">Seja no topo da montanha ou no fim de uma trilha, um bom refresco transforma pequenos momentos em grandes lembranças.</p>
+            </div>
+            <div class="r-itens">
+              <span class="r-linha" aria-hidden="true"></span>
+              <ul class="atributos">
+                {
+                  ATRIBUTOS.map((a) => (
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" set:html={a.icone} />
+                      <span>{a.t}</span>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ 04 · Momentos: quatro destinos ═════════ */}
+      <section class="cena momentos" id="momentos" data-cena="momentos" data-tom="escuro">
+        <div class="palco m-palco">
+          <div class="m-fundos" aria-hidden="true">
+            {DESTINOS.map((d) => <img class="m-fundo" src={`${IMG}/${d.fundo}.webp`} width="1200" height="800" alt="" loading="lazy" decoding="async" />)}
+          </div>
+          <div class="m-veu" aria-hidden="true"></div>
+
+          <div class="m-cab">
+            <p class="rotulo">Momentos</p>
+            <h2>Alguns momentos merecem ser vividos <em>sem pressa.</em></h2>
+            <p class="m-lead">Desconecte-se da rotina, encontre seu próprio caminho e aproveite cada instante.</p>
+          </div>
+
+          <div class="m-destinos">
+            {
+              DESTINOS.map((d, i) => (
+                <article class="m-dest" aria-label={`Destino ${nn(i)}: ${d.nome}`}>
+                  <div class="m-dest-txt">
+                    <p class="m-dest-rot"><span>Destino {nn(i)}</span><span class="m-hora">{d.hora}</span></p>
+                    <h3>{d.nome}</h3>
+                    <p class="m-dest-p">{d.texto}</p>
+                  </div>
+                  <figure class="m-foto">
+                    <div class="m-foto-img">
+                      <img src={`${IMG}/${d.quadro}.webp`} width="1000" height="1250" alt={d.alt} loading="lazy" decoding="async" />
+                    </div>
+                    <figcaption>
+                      <span class="m-n">{nn(i)}</span>
+                      <span class="m-nome">{d.nome}</span>
+                      <span class="m-marcas" aria-hidden="true">
+                        {DESTINOS.map((_, j) => <i class:list={[{ on: j === i }]} />)}
+                      </span>
+                    </figcaption>
+                  </figure>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════ 05 · Horizonte (o rodapé sobe por cima, a cena fica parada) ═════════ */}
+      <section class="cena horizonte" id="horizonte" data-cena="horizonte" data-tom="escuro">
+        <div class="palco">
+          <div class="z-ceu" aria-hidden="true"></div>
+          <div class="z-sol" aria-hidden="true"></div>
+          <div class="z-noite" aria-hidden="true"></div>
+          <div class="z-macico" style={`--mascara: url(${IMG}/macico-1200.webp)`}>
+            <img src={`${IMG}/macico-2400.webp`}
+              srcset={`${IMG}/macico-1200.webp 1200w, ${IMG}/macico-2400.webp 2400w`}
+              sizes="(max-width: 760px) 230vw, 100vw" width="2400" height="1470"
+              alt="Maciço nevado com os cumes rosados pela luz do entardecer" loading="lazy" decoding="async" />
+            <div class="z-brilho" aria-hidden="true"></div>
+          </div>
+          <div class="z-chao" aria-hidden="true"></div>
+          <div class="z-texto">
+            <h2>Encontre seu próximo <em>horizonte.</em></h2>
+            <p>A natureza está lá fora. O próximo capítulo começa quando você decide ir.</p>
+            <a class="z-voltar" href="#inicio">
+              <span>Recomeçar a subida</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+            </a>
+          </div>
+        </div>
+        <div class="z-espaco" aria-hidden="true"></div>
+
+        <footer class="rodape" role="contentinfo">
+          <div class="f-linha">
+            <a class="marca" href="#inicio" aria-label="Alpine Refresh, voltar ao início">
+              <span class="marca-a">Alpine</span><span class="marca-r">Refresh</span>
+            </a>
+            <nav aria-label="Navegação do rodapé">
+              <ul>
+                {NAV.map((n) => <li><a href={`#${n.id}`}>{n.t}</a></li>)}
+              </ul>
+            </nav>
+          </div>
+          <div class="f-creditos">
+            <p>Alpine Refresh é uma marca fictícia, criada como estudo de portfólio.</p>
+            <p>Fotos: Freepik, Ben Kupke (Unsplash) e Ana Maria Antonenco (Pexels) · Projeto e código: <a href={import.meta.env.BASE_URL}>Igor Fronza</a></p>
+          </div>
+        </footer>
+      </section>
+    </main>
+  </div>
+</Base>
+
+<style is:global>
+  .ar {
+    --gelo: #f3f5f2;
+    --ceu: #92b5d1;
+    --noite: #0f2230;
+    --fundo: #0d1a24;
+    --pinho-fundo: #10221d;
+    --ciano: #6fd3e3;
+    --claro: #f6f8f7;
+    --serif: 'Instrument Serif', 'Times New Roman', serif;
+    --sans: 'Instrument Sans', system-ui, sans-serif;
+    --margem: clamp(1rem, 5vw, 5.5rem);
+    --suave: cubic-bezier(0.22, 0.61, 0.21, 1);
+    /* quanto de rolagem dura cada fade cruzado entre cenas */
+    --fade: 80svh;
+
+    font-family: var(--sans);
+    color: var(--noite);
+    background: var(--fundo);
+    overflow-x: clip;
+  }
+  body:has(.ar) { background: var(--fundo); }
+  html:has(.ar) { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html:has(.ar) { scroll-behavior: auto; } }
+
+  .ar ::selection { background: var(--ciano); color: var(--noite); }
+  .ar :focus-visible { outline: 2px solid var(--ciano); outline-offset: 4px; border-radius: 2px; }
+  .ar img { display: block; max-width: none; }
+  .ar h1, .ar h2, .ar h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+  .ar h1 em, .ar h2 em, .ar p em { font-style: italic; }
+  .ar p { text-wrap: pretty; }
+  .ar .rotulo {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    color: var(--ciano);
+    margin: 0 0 1.6rem;
+  }
+  .ar .rotulo::before { content: ''; width: 2.25rem; height: 1px; background: currentColor; opacity: 0.6; }
+
+  .pular {
+    position: fixed; left: 1rem; top: -4rem; z-index: 60;
+    background: var(--noite); color: #fff; padding: 0.75rem 1rem; font-size: 0.875rem;
+  }
+  .pular:focus { top: 1rem; }
+
+  /* ── topo ── */
+  .topo {
+    position: fixed; inset: 0 0 auto; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.4rem var(--margem);
+    color: var(--noite);
+    transition: color 0.5s var(--suave), transform 0.6s var(--suave);
+  }
+  .topo[data-tom='escuro'] { color: var(--claro); }
+  .topo.some { transform: translateY(-110%); }
+  .marca { display: inline-flex; align-items: baseline; gap: 0.45rem; color: inherit; text-decoration: none; }
+  .marca-a { font-weight: 600; font-size: 0.82rem; letter-spacing: 0.34em; text-transform: uppercase; }
+  .marca-r { font-family: var(--serif); font-style: italic; font-size: 1.3rem; line-height: 1; }
+  .nav ul { display: flex; gap: clamp(1.25rem, 2.6vw, 2.6rem); list-style: none; margin: 0; padding: 0; }
+  .nav a, .rodape nav a {
+    color: inherit; text-decoration: none; font-size: 0.875rem; letter-spacing: 0.02em;
+    position: relative; padding: 0.6rem 0;
+  }
+  .nav a::after, .rodape nav a::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0.3rem; height: 1px;
+    background: currentColor; transform: scaleX(0); transform-origin: right;
+    transition: transform 0.45s var(--suave);
+  }
+  .nav a:hover::after, .rodape nav a:hover::after { transform: scaleX(1); transform-origin: left; }
+  .menu-bt { display: none; }
+
+  /* ── cenas: palco fixo e fade cruzado com a anterior ── */
+  .cena { position: relative; }
+  .palco { position: sticky; top: 0; height: 100svh; overflow: hidden; background: var(--fundo); }
+  .anda .cena + .cena { margin-top: calc(-100svh - var(--fade)); scroll-margin-top: calc(-1 * var(--fade)); }
+  .anda .cena + .cena > .palco { opacity: 0; visibility: hidden; }
+  /* altura = a tela + o fade de entrada + o trecho de conteúdo + o fade de saída */
+  .anda .heroi { height: calc(200svh + var(--fade)); }
+  .anda .origem { height: calc(300svh + 2 * var(--fade)); }
+  .anda .refresco { height: calc(240svh + 2 * var(--fade)); }
+  .anda .momentos { height: calc(370svh + 2 * var(--fade)); }
+  .anda .z-espaco { height: calc(90svh + var(--fade)); }
+
+  /* ── 01 · heroi ── */
+  .heroi .palco { background: var(--ceu); }
+  .h-ceu {
+    position: absolute; left: 0; width: 100%;
+    top: 16%; height: 84%;
+    object-fit: cover; object-position: 50% 30%;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%);
+    mask-image: linear-gradient(to bottom, transparent, #000 22%);
+    transform-origin: 50% 70%;
+  }
+  .h-texto {
+    position: absolute; left: 0; right: 0; top: 13svh;
+    padding: 0 var(--margem);
+    text-align: center;
+  }
+  .h-texto h1 { font-size: clamp(3rem, 7.6vw, 7.4rem); margin: 0; }
+  .h-texto p {
+    max-width: 33rem; margin: 1.4rem auto 0;
+    font-size: clamp(1rem, 1.25vw, 1.125rem); line-height: 1.55;
+    color: rgb(15 34 48 / 0.82);
+  }
+  .h-macico {
+    --de: 74%; --ate: 8%;
+    position: absolute; bottom: 0; left: 50%;
+    width: 112vw; height: auto; margin-left: -56vw;
+    transform: translate3d(0, var(--ate), 0);
+    filter: saturate(0.82) brightness(0.97);
+  }
+  .h-nevoa {
+    position: absolute; inset: auto 0 0; height: 34%;
+    background: linear-gradient(to bottom, rgb(243 245 242 / 0), rgb(243 245 242 / 0.7) 55%, var(--gelo));
+  }
+  .h-veu { position: absolute; inset: 0; background: var(--gelo); opacity: 0; pointer-events: none; }
+  .descer {
+    position: absolute; left: var(--margem); bottom: 2rem;
+    display: flex; align-items: center; gap: 1rem;
+    color: var(--noite); text-decoration: none;
+    font-size: 0.75rem; letter-spacing: 0.24em; text-transform: uppercase;
+    padding: 0.5rem 0;
+  }
+  .descer-fio { position: relative; width: 4.5rem; height: 1px; background: rgb(15 34 48 / 0.25); overflow: hidden; }
+  .descer-fio::after {
+    content: ''; position: absolute; inset: 0; background: var(--noite);
+    transform: translateX(-100%);
+    animation: fio 2.6s var(--suave) infinite;
+  }
+  @keyframes fio { 0% { transform: translateX(-100%); } 55% { transform: translateX(0); } 100% { transform: translateX(101%); } }
+
+  /* entrada da tipografia: curta, para não segurar a leitura */
+  .anda .h-texto h1, .anda .h-texto p { animation: entra 1.1s var(--suave) both; }
+  .anda .h-texto p { animation-delay: 0.25s; }
+  .anda .descer { animation: entra 1s 0.6s var(--suave) both; }
+  @keyframes entra { from { opacity: 0; transform: translateY(18px); } }
+
+  /* ── 02 · origem: abre como uma foto sobre o branco que o herói deixou ── */
+  .origem .palco { background: var(--gelo); }
+  .o-rotulo {
+    position: absolute; left: 0; right: 0; top: 9svh; margin: 0;
+    text-align: center; font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase; color: #6d7471;
+  }
+  .o-janela { --jan-y: 18%; --jan-x: 26%; position: absolute; inset: 0; overflow: hidden; }
+  .anda .o-janela { clip-path: inset(var(--jan-y) var(--jan-x) round 4px); }
+  .o-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 55%; }
+  .o-sombra {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgb(10 28 40 / 0.55) 0%, rgb(10 28 40 / 0.15) 40%, transparent 56%);
+  }
+  .o-sombra2 {
+    position: absolute; inset: 0;
+    background: linear-gradient(20deg, rgb(8 22 32 / 0.72) 0%, rgb(8 22 32 / 0.3) 32%, transparent 55%);
+  }
+  .o-texto { position: absolute; left: var(--margem); top: 15svh; max-width: 38rem; color: var(--claro); }
+  .o-texto h2 { font-size: clamp(2.6rem, 5.6vw, 5.4rem); margin: 0; }
+  .o-lead { max-width: 27rem; margin: 1.4rem 0 0; font-size: clamp(1rem, 1.2vw, 1.125rem); line-height: 1.6; color: rgb(246 248 247 / 0.88); }
+  .o-texto2 { position: absolute; left: var(--margem); bottom: 11svh; max-width: 34rem; color: var(--claro); }
+  .o-texto2::before { content: ''; display: block; width: 3rem; height: 1px; background: var(--ciano); margin-bottom: 1.6rem; }
+  .o-frase { font-family: var(--serif); font-size: clamp(2rem, 3.4vw, 3.2rem); line-height: 1.05; margin: 0; }
+  .o-sub { max-width: 28rem; margin: 1.1rem 0 0; font-size: 1rem; line-height: 1.65; color: rgb(246 248 247 / 0.82); }
+  .anda .o-texto, .anda .o-texto2, .anda .o-sombra, .anda .o-sombra2 { opacity: 0; }
+
+  /* ── 03 · refresco ── */
+  .refresco .palco { background: var(--pinho-fundo); color: var(--claro); display: flex; align-items: center; }
+  .r-foto { position: absolute; inset: 0; }
+  .r-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; }
+  .r-foto::after {
+    content: ''; position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgb(10 26 30 / 0.86) 0%, rgb(10 26 30 / 0.62) 30%, rgb(10 26 30 / 0.1) 56%, transparent 66%),
+      linear-gradient(180deg, rgb(10 26 30 / 0.45) 0%, transparent 22%, transparent 78%, rgb(16 34 29 / 0.6) 100%);
+  }
+  .r-conteudo { position: relative; padding: 0 var(--margem); max-width: 40rem; box-sizing: content-box; }
+  .r-cab h2 { font-size: clamp(2.8rem, 5.4vw, 5.2rem); margin: 0; }
+  .r-lead { max-width: 26rem; margin: 1.5rem 0 0; font-size: clamp(1rem, 1.2vw, 1.125rem); line-height: 1.6; color: rgb(246 248 247 / 0.86); }
+  .r-itens { margin-top: 3.5rem; }
+  .r-linha { display: block; height: 1px; background: rgb(246 248 247 / 0.24); transform-origin: left; }
+  .atributos {
+    list-style: none; margin: 1.6rem 0 0; padding: 0;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem;
+  }
+  .atributos li { display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.9375rem; line-height: 1.35; }
+  .atributos svg { width: 1.6rem; height: 1.6rem; fill: none; stroke: var(--ciano); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .anda .r-cab > *, .anda .atributos li { opacity: 0; }
+  .anda .r-linha { transform: scaleX(0); }
+
+  /* ── 04 · momentos ── */
+  .m-palco {
+    color: var(--claro);
+    display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr);
+    column-gap: clamp(2rem, 6vw, 7rem);
+    padding: 14svh var(--margem) 8svh;
+    box-sizing: border-box;
+  }
+  .m-fundos { position: absolute; inset: 0; }
+  .m-fundo {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    filter: blur(2px) saturate(0.9);
+    will-change: transform, opacity;
+  }
+  .m-veu {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgb(6 14 20 / 0.84) 0%, rgb(6 14 20 / 0.6) 42%, rgb(6 14 20 / 0.35) 100%),
+      linear-gradient(180deg, rgb(6 14 20 / 0.4) 0%, transparent 30%, transparent 70%, rgb(6 14 20 / 0.55) 100%);
+  }
+  .m-cab { grid-area: 1 / 1; position: relative; z-index: 2; max-width: 30rem; }
+  .m-cab h2 { font-size: clamp(2.4rem, 4vw, 4rem); margin: 0; }
+  .m-lead { max-width: 24rem; margin: 1.3rem 0 0; font-size: 1rem; line-height: 1.6; color: rgb(246 248 247 / 0.8); }
+  .m-destinos { grid-area: 1 / 1 / 3 / 3; position: relative; z-index: 1; }
+  .m-dest {
+    position: absolute; inset: 0;
+    display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); grid-template-rows: minmax(0, 1fr);
+    column-gap: clamp(2rem, 6vw, 7rem);
+  }
+  .m-dest-txt { grid-column: 1; align-self: end; max-width: 26rem; }
+  .m-dest-rot {
+    display: flex; align-items: center; gap: 0.8rem; margin: 0 0 1rem;
+    font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(246 248 247 / 0.72);
+  }
+  .m-hora { color: var(--ciano); }
+  .m-hora::before { content: ''; display: inline-block; width: 1.4rem; height: 1px; background: rgb(246 248 247 / 0.4); vertical-align: middle; margin-right: 0.8rem; }
+  .m-dest-txt h3 { font-size: clamp(2rem, 3vw, 2.9rem); font-style: italic; margin: 0; }
+  .m-dest-p { margin: 0.9rem 0 0; font-size: 1rem; line-height: 1.6; color: rgb(246 248 247 / 0.82); }
+
+  /* o quadro: passe-partout escuro, fio claro, duas cantoneiras em ciano */
+  .m-foto {
+    grid-column: 2; justify-self: end; position: relative; margin: 0;
+    height: 100%; min-height: 0; aspect-ratio: 4 / 5.2; max-width: 100%;
+    display: flex; flex-direction: column; gap: 0.7rem;
+    padding: 5px 5px 0.7rem; box-sizing: border-box;
+    background: #0b161d; border: 1px solid rgb(246 248 247 / 0.16);
+    box-shadow: 0 40px 80px -40px rgb(0 0 0 / 0.7);
+  }
+  .m-foto::before, .m-foto::after { content: ''; position: absolute; width: 18px; height: 18px; border: 0 solid var(--ciano); }
+  .m-foto::before { top: -6px; left: -6px; border-top-width: 1px; border-left-width: 1px; }
+  .m-foto::after { bottom: -6px; right: -6px; border-bottom-width: 1px; border-right-width: 1px; }
+  .m-foto-img { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+  .m-foto-img img { width: 100%; height: 100%; object-fit: cover; }
+  .m-foto figcaption { display: flex; align-items: center; gap: 0.9rem; padding: 0 0.55rem; font-size: 0.8125rem; letter-spacing: 0.04em; }
+  .m-n { color: var(--ciano); font-variant-numeric: tabular-nums; letter-spacing: 0.12em; }
+  .m-nome { font-family: var(--serif); font-style: italic; font-size: 1.05rem; color: var(--claro); }
+  .m-marcas { margin-left: auto; display: flex; gap: 5px; }
+  .m-marcas i { width: 14px; height: 2px; background: rgb(246 248 247 / 0.22); }
+  .m-marcas i.on { background: var(--ciano); }
+  .anda .m-fundo:not(:first-child), .anda .m-dest:not(:first-child) .m-foto, .anda .m-dest:not(:first-child) .m-dest-txt { opacity: 0; }
+
+  /* ── 05 · horizonte ── */
+  .z-ceu {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, #14263a 0%, #2a4867 30%, #6f84a3 54%, #c9a19b 72%, #efc7a7 86%, #f4d6b9 100%);
+  }
+  .z-sol {
+    position: absolute; left: 50%; top: 58%; width: 90vmax; height: 90vmax; margin: -45vmax 0 0 -45vmax;
+    background: radial-gradient(closest-side, rgb(255 222 184 / 0.75), rgb(255 205 170 / 0.25) 45%, transparent 72%);
+  }
+  .z-noite { position: absolute; inset: 0; background: #0b1622; opacity: 0; }
+  .z-macico {
+    --de: 62%; --ate: 36%;
+    position: absolute; bottom: 0; left: 50%; width: 100vw; margin-left: -50vw;
+    transform: translate3d(0, var(--ate), 0);
+    isolation: isolate;
+  }
+  .z-macico img { width: 100%; height: auto; }
+  .z-brilho {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgb(255 150 128 / 0.75) 0%, rgb(236 160 150 / 0.55) 22%, rgb(120 120 160 / 0.5) 42%, rgb(30 48 78 / 0.85) 62%, var(--fundo) 78%);
+    mix-blend-mode: multiply;
+    -webkit-mask: var(--mascara) center / 100% 100% no-repeat;
+    mask: var(--mascara) center / 100% 100% no-repeat;
+  }
+  .z-chao { position: absolute; inset: auto 0 0; height: 30%; background: linear-gradient(to bottom, rgb(13 26 36 / 0), var(--fundo) 80%); }
+  .z-texto {
+    position: absolute; left: 0; right: 0; top: 11svh;
+    padding: 0 var(--margem); text-align: center; color: var(--claro);
+  }
+  .z-texto h2 { font-size: clamp(2.8rem, 6vw, 5.8rem); margin: 0; }
+  .z-texto p { max-width: 30rem; margin: 1.2rem auto 0; font-size: clamp(1rem, 1.2vw, 1.125rem); line-height: 1.6; color: rgb(246 248 247 / 0.86); }
+  .z-voltar {
+    display: inline-flex; align-items: center; gap: 0.8rem; margin-top: 1.8rem;
+    color: var(--claro); text-decoration: none; font-size: 0.8125rem; letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 0.9rem 0; border-bottom: 1px solid rgb(246 248 247 / 0.35);
+    transition: border-color 0.4s var(--suave), gap 0.4s var(--suave);
+  }
+  .z-voltar svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.5; transition: transform 0.4s var(--suave); }
+  .z-voltar:hover { border-color: var(--ciano); gap: 1.1rem; }
+  .z-voltar:hover svg { transform: translateY(-3px); }
+  .anda .z-texto { opacity: 0; }
+
+  /* ── rodapé: sobe por cima do horizonte parado, emendando no chão escuro ── */
+  .rodape { position: relative; z-index: 2; background: var(--fundo); color: #c9d2d4; padding: 2.5rem var(--margem) 2rem; }
+  .rodape::before {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 6rem;
+    background: linear-gradient(to bottom, rgb(13 26 36 / 0), var(--fundo));
+    pointer-events: none;
+  }
+  .f-linha {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.2rem;
+    padding-bottom: 1.6rem; border-bottom: 1px solid rgb(201 210 212 / 0.14);
+  }
+  .rodape .marca { color: var(--claro); }
+  .rodape nav ul { display: flex; flex-wrap: wrap; gap: 0.25rem 2rem; list-style: none; margin: 0; padding: 0; }
+  .f-creditos { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 2rem; padding-top: 1.4rem; font-size: 0.8125rem; color: #8c999d; }
+  .f-creditos p { margin: 0; }
+  .f-creditos a { color: #c9d2d4; text-underline-offset: 3px; }
+  .f-creditos a:hover { color: var(--ciano); }
+
+  /* ── sem animação (movimento reduzido ou sem JS): cenas viram telas comuns ── */
+  html:not(.anda) .palco { position: relative; }
+  html:not(.anda) .descer-fio::after { animation: none; transform: none; }
+  html:not(.anda) .o-rotulo { display: none; }
+  html:not(.anda) .m-palco { height: auto; min-height: 100svh; display: flex; flex-direction: column; gap: 4rem; }
+  html:not(.anda) .m-fundo:not(:first-child) { display: none; }
+  html:not(.anda) .m-destinos { display: flex; flex-direction: column; gap: 5rem; }
+  html:not(.anda) .m-dest { position: relative; inset: auto; }
+  html:not(.anda) .m-foto { height: 70svh; }
+
+  /* ── refresco empilhado: celular e tablet em retrato, onde o texto encostaria na garrafa ── */
+  @media (max-width: 760px), (max-width: 1024px) and (orientation: portrait) {
+    .refresco .palco { align-items: flex-start; }
+    .r-foto { top: 24%; }
+    .r-foto img { object-position: 74% 50%; }
+    .r-foto { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%); mask-image: linear-gradient(to bottom, transparent, #000 18%); }
+    .r-foto::after { background: linear-gradient(180deg, transparent 0%, transparent 62%, rgb(10 26 30 / 0.85) 100%); }
+    .r-conteudo { position: static; padding: 11svh var(--margem) 0; max-width: 40rem; }
+    .r-itens { position: absolute; left: var(--margem); right: var(--margem); bottom: 4svh; margin: 0; }
+
+    .m-palco { display: flex; flex-direction: column; gap: 1.4rem; padding: 10svh var(--margem) 3svh; }
+    .m-cab h2 { font-size: clamp(2rem, 7vw, 3.2rem); }
+    .m-lead { margin-top: 0.8rem; font-size: 0.95rem; }
+    .m-destinos { flex: 1; min-height: 0; }
+    .m-dest { display: flex; flex-direction: column; gap: 1.1rem; }
+    .m-dest-txt { max-width: none; }
+    .m-dest-rot { margin-bottom: 0.6rem; }
+    .m-dest-txt h3 { font-size: 1.9rem; }
+    .m-dest-p { font-size: 0.95rem; margin-top: 0.5rem; }
+    .m-foto { flex: 1; min-height: 0; height: auto; width: 100%; aspect-ratio: auto; justify-self: auto; }
+  }
+
+  /* ── celular ── */
+  @media (max-width: 760px) {
+    .ar { --fade: 60svh; }
+    .topo { padding: 1rem var(--margem); }
+    .menu-bt {
+      display: inline-flex; align-items: center; gap: 0.7rem;
+      background: none; border: 0; color: inherit; font: inherit;
+      font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase;
+      min-height: 44px; padding: 0 0 0 1rem; cursor: pointer;
+    }
+    .menu-bt-traco { position: relative; width: 1.4rem; height: 1px; background: currentColor; transition: transform 0.4s var(--suave); }
+    .menu-bt-traco::after { content: ''; position: absolute; left: 0.4rem; right: 0; top: 6px; height: 1px; background: currentColor; transition: transform 0.4s var(--suave), left 0.4s var(--suave); }
+    .menu-bt[aria-expanded='true'] .menu-bt-traco { transform: translateY(3px) rotate(45deg); }
+    .menu-bt[aria-expanded='true'] .menu-bt-traco::after { left: 0; top: 0; transform: rotate(-90deg); }
+    .nav ul {
+      position: fixed; inset: 0; z-index: -1;
+      flex-direction: column; justify-content: center; gap: 0.5rem;
+      padding: 0 var(--margem);
+      background: var(--noite); color: var(--claro);
+      opacity: 0; visibility: hidden; transition: opacity 0.45s var(--suave), visibility 0s 0.45s;
+    }
+    .nav a { font-family: var(--serif); font-size: 2.6rem; letter-spacing: 0; display: block; padding: 0.35rem 0; }
+    .nav a::after { display: none; }
+    .topo.aberto { color: var(--claro); transform: none; }
+    .topo.aberto .nav ul { opacity: 1; visibility: visible; transition: opacity 0.45s var(--suave); }
+
+    .anda .heroi { height: calc(175svh + var(--fade)); }
+    .h-ceu { top: 30%; height: 70%; object-position: 58% 30%; }
+    .h-texto { top: 15svh; }
+    .h-texto h1 { font-size: clamp(2.75rem, 12.5vw, 3.6rem); }
+    .h-texto p { font-size: 1rem; max-width: 21rem; }
+    .h-macico { --de: 58%; --ate: 14%; width: 200vw; margin-left: -100vw; }
+    .descer { bottom: 1.5rem; }
+
+    .o-foto { object-position: 46% 55%; }
+    .o-janela { --jan-y: 24%; --jan-x: 8%; }
+    .o-texto { top: 12svh; right: var(--margem); }
+    .o-texto h2 { font-size: clamp(2.4rem, 11vw, 3.2rem); }
+    .o-sombra { background: linear-gradient(180deg, rgb(10 28 40 / 0.6) 0%, rgb(10 28 40 / 0.25) 45%, transparent 62%); }
+    .o-sombra2 { background: linear-gradient(0deg, rgb(8 22 32 / 0.8) 0%, rgb(8 22 32 / 0.35) 35%, transparent 55%); }
+    .o-texto2 { right: var(--margem); bottom: 7svh; }
+    .o-frase { font-size: 2rem; }
+    .o-sub { font-size: 0.95rem; }
+
+    .r-cab h2 { font-size: clamp(2.4rem, 10.5vw, 3.2rem); }
+    .r-lead { font-size: 0.98rem; margin-top: 1rem; }
+    .atributos { gap: 0.8rem; margin-top: 1rem; }
+    .atributos li { font-size: 0.8125rem; gap: 0.6rem; }
+
+    .z-macico { --de: 40%; --ate: 12%; width: 230vw; margin-left: -115vw; }
+    .z-texto { top: 12svh; }
+    .z-texto h2 { font-size: clamp(2.5rem, 11vw, 3.4rem); }
+    .rodape { padding: 1.8rem var(--margem) 1.5rem; }
+    .f-linha { gap: 0.8rem; padding-bottom: 1rem; }
+    .rodape nav ul { gap: 0 1.2rem; }
+    .f-creditos { flex-direction: column; padding-top: 1rem; font-size: 0.75rem; }
+  }
+</style>
+
+<script>
+  /*
+    Um laço só: o scroll marca "tem quadro pendente", o requestAnimationFrame
+    lê scrollY uma vez e entrega a cada cena a sua entrada `e` (o fade por cima
+    da cena anterior) e o progresso `p` do trecho de conteúdo. As posições são
+    medidas no load e no resize, nunca dentro do quadro.
+
+    Cada cena, de cima para baixo:
+      [ entrada: --fade ][ conteúdo: p de 0 a 1 ][ saída: a próxima entra ]
+  */
+  const raiz = document.documentElement;
+  const topo = document.querySelector<HTMLElement>('[data-topo]')!;
+  const menuBt = document.querySelector<HTMLButtonElement>('[data-menu-bt]')!;
+  const lim = (n: number, a = 0, b = 1) => Math.min(b, Math.max(a, n));
+  const suave = (t: number) => 1 - Math.pow(1 - t, 3);
+  const faixa = (p: number, de: number, ate: number) => lim((p - de) / (ate - de));
+
+  /* menu do celular */
+  const fecharMenu = () => { topo.classList.remove('aberto'); menuBt.setAttribute('aria-expanded', 'false'); };
+  menuBt.addEventListener('click', () => {
+    const abre = !topo.classList.contains('aberto');
+    topo.classList.toggle('aberto', abre);
+    menuBt.setAttribute('aria-expanded', String(abre));
+  });
+  document.querySelectorAll('[data-menu] a').forEach((a) => a.addEventListener('click', fecharMenu));
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharMenu(); });
+
+  const anda = raiz.classList.contains('anda');
+  let k = 1; // intensidade dos deslocamentos: menor no celular
+  const mqCel = matchMedia('(max-width: 760px)');
+
+  const q = <T extends HTMLElement = HTMLElement>(sel: string, el: ParentNode = document) => el.querySelector<T>(sel)!;
+  const qq = (sel: string, el: ParentNode = document) => [...el.querySelectorAll<HTMLElement>(sel)];
+  const pct = (el: HTMLElement, nome: string) => parseFloat(getComputedStyle(el).getPropertyValue(nome));
+  const vis = (el: HTMLElement, o: number, y = 0) => { el.style.opacity = String(o); el.style.transform = `translate3d(0, ${y}px, 0)`; };
+
+  const hCeu = q('.h-ceu'), hTexto = q('.h-texto'), hMacico = q('.h-macico'), hDescer = q('.descer'), hVeu = q('.h-veu');
+  const oRot = q('.o-rotulo'), oJan = q('.o-janela'), oFoto = q('.o-foto'), oSombra = q('.o-sombra'), oSombra2 = q('.o-sombra2'), oTexto = q('.o-texto'), oTexto2 = q('.o-texto2');
+  const rConteudo = q('.r-conteudo'), rCab = qq('.r-cab > *'), rLinha = q('.r-linha'), rItens = qq('.atributos li');
+  const mFundos = qq('.m-fundo'), mFotos = qq('.m-foto'), mTxts = qq('.m-dest-txt'), mCab = q('.m-cab');
+  const zSol = q('.z-sol'), zNoite = q('.z-noite'), zMacico = q('.z-macico'), zBrilho = q('.z-brilho'), zTexto = q('.z-texto');
+  let hDe = 0, hAte = 0, zDe = 0, zAte = 0, janY = 0, janX = 0;
+  /* o texto de uma cena sai na primeira metade do fade da seguinte: só as fotos se cruzam */
+  const saida = (x: number) => 1 - lim(x * 2.2);
+
+  /* p: conteúdo, e: entrada (fade por cima da anterior), x: entrada da próxima. Pode devolver o tom do topo. */
+  const FN: Record<string, (p: number, e: number, x: number) => string | void> = {
+    heroi(p) {
+      hCeu.style.transform = `translate3d(0, ${-p * 5 * k}%, 0) scale(${1.03 + p * 0.09})`;
+      hMacico.style.transform = `translate3d(0, ${hDe + (hAte - hDe) * suave(lim(p / 0.85))}%, 0)`;
+      const t = faixa(p, 0, 0.42);
+      hTexto.style.opacity = String(1 - t);
+      hTexto.style.transform = `translate3d(0, ${-t * 14 * k}vh, 0)`;
+      hDescer.style.opacity = String(1 - faixa(p, 0, 0.12));
+      hVeu.style.opacity = String(faixa(p, 0.72, 1));
+    },
+    origem(p, _e, x) {
+      // a janela abre sobre o branco como uma foto revelada; depois o lago fica parado
+      const i = 1 - suave(faixa(p, 0.02, 0.32));
+      oRot.style.opacity = String(1 - faixa(p, 0, 0.14));
+      oJan.style.clipPath = i > 0.001 ? `inset(${i * janY}% ${i * janX}% round ${i * 4}px)` : 'none';
+      oFoto.style.transform = i > 0.001 ? `scale(${1 + i * 0.22})` : 'none';
+      const fora = saida(x);
+      const t1 = suave(faixa(p, 0.34, 0.5));
+      oSombra.style.opacity = String(t1);
+      vis(oTexto, t1 * fora, (1 - t1) * 36);
+      const t2 = suave(faixa(p, 0.6, 0.8));
+      oSombra2.style.opacity = String(t2);
+      vis(oTexto2, t2 * fora, (1 - t2) * 30);
+      return p > 0.24 ? 'escuro' : 'claro';
+    },
+    refresco(p, _e, x) {
+      // primeiro o texto de cima, depois a linha e os três atributos, um por vez
+      rCab.forEach((el, i) => { const t = suave(faixa(p, i * 0.04, 0.16 + i * 0.04)); vis(el, t, (1 - t) * 24); });
+      rLinha.style.transform = `scaleX(${suave(faixa(p, 0.26, 0.44))})`;
+      rItens.forEach((el, i) => { const t = suave(faixa(p, 0.36 + i * 0.14, 0.5 + i * 0.14)); vis(el, t, (1 - t) * 20); });
+      rConteudo.style.opacity = String(saida(x));
+    },
+    momentos(p, _e, x) {
+      // s anda de um destino ao outro; os 12% finais seguram o último
+      const n = mFundos.length;
+      const s = lim(p / 0.88) * (n - 1);
+      for (let i = 0; i < n; i++) {
+        const o = i === 0 ? 1 : suave(faixa(s, i - 0.55, i - 0.05));
+        mFundos[i].style.opacity = String(o);
+        mFundos[i].style.transform = `scale(${1.08 + 0.16 * lim((s - i + 0.55) / 1.6)})`;
+        mFotos[i].style.opacity = String(o);
+        // o texto sai antes do próximo entrar: nunca dois parágrafos sobrepostos
+        const entra = i === 0 ? 1 : suave(faixa(s, i - 0.3, i - 0.05));
+        const sai = i === n - 1 ? 0 : faixa(s, i + 0.45, i + 0.65);
+        const t = entra * (1 - sai);
+        vis(mTxts[i], t * saida(x), (1 - entra) * 18 - sai * 12);
+      }
+      mCab.style.opacity = String(saida(x));
+    },
+    horizonte(p) {
+      zMacico.style.transform = `translate3d(0, ${zDe + (zAte - zDe) * suave(lim(p / 0.75))}%, 0)`;
+      zSol.style.transform = `translate3d(0, ${p * 20}vh, 0)`;
+      zNoite.style.opacity = String(p * 0.4);
+      zBrilho.style.opacity = String(1 - p * 0.3);
+      const t = suave(faixa(p, 0.1, 0.45));
+      vis(zTexto, t, (1 - t) * 30);
+    },
+  };
+
+  type Cena = { el: HTMLElement; palco: HTMLElement; tom: string; top: number; alt: number; din: number; dout: number; e: number; fn: (typeof FN)[string] };
+  const cenas: Cena[] = qq('[data-cena]').map((el) => ({
+    el, palco: q('.palco', el), tom: el.dataset.tom ?? 'escuro',
+    top: 0, alt: 0, din: 0, dout: 0, e: 1, fn: FN[el.dataset.cena!],
+  }));
+  let vh = innerHeight;
+
+  function medir() {
+    k = mqCel.matches ? 0.55 : 1;
+    vh = cenas[0].palco.offsetHeight; // 100svh: a mesma unidade das alturas no CSS
+    cenas.forEach((c, i) => {
+      c.top = c.el.getBoundingClientRect().top + scrollY;
+      c.alt = c.el.offsetHeight;
+      c.din = i ? -parseFloat(getComputedStyle(c.el).marginTop) - vh : 0;
+    });
+    cenas.forEach((c, i) => {
+      // a última cena "sai" pelo rodapé, que sobe por cima dela
+      c.dout = cenas[i + 1]?.din ?? (q('.rodape', c.el)?.offsetHeight || 0);
+    });
+    hDe = pct(hMacico, '--de'); hAte = pct(hMacico, '--ate');
+    zDe = pct(zMacico, '--de'); zAte = pct(zMacico, '--ate');
+    janY = pct(oJan, '--jan-y'); janX = pct(oJan, '--jan-x');
+  }
+
+  let pendente = false;
+  let ultimoY = scrollY;
+  function quadro() {
+    pendente = false;
+    const y = scrollY;
+    let tom = cenas[0].tom;
+    if (anda) {
+      for (const c of cenas) c.e = c.din ? lim((y - c.top) / c.din) : 1;
+      cenas.forEach((c, i) => {
+        // escondida antes de entrar ou quando a próxima já a cobre inteira: não pinta
+        const coberta = (cenas[i + 1]?.e ?? 0) >= 1;
+        const ativa = c.e > 0 && !coberta && y < c.top + c.alt;
+        c.palco.style.visibility = ativa ? 'visible' : 'hidden';
+        if (!ativa) return;
+        if (c.din) c.palco.style.opacity = String(c.e);
+        const ini = c.top + c.din, fim = c.top + c.alt - vh - c.dout;
+        const t = c.fn(lim((y - ini) / Math.max(1, fim - ini)), c.e, cenas[i + 1]?.e ?? 0);
+        if (c.e > 0.5) tom = t || c.tom;
+      });
+    } else {
+      const sob = cenas.findLast((c) => c.el.getBoundingClientRect().top <= 36);
+      if (sob) tom = sob.tom;
+    }
+    topo.dataset.tom = tom;
+    // some descendo, volta subindo; o fim do smooth scroll anda de 1 em 1 px e não conta
+    const d = y - ultimoY;
+    if (Math.abs(d) > 6) {
+      if (!topo.classList.contains('aberto')) topo.classList.toggle('some', d > 0 && y > vh * 0.6);
+      ultimoY = y;
+    }
+  }
+  const pedir = () => { if (!pendente) { pendente = true; requestAnimationFrame(quadro); } };
+
+  medir();
+  quadro();
+  addEventListener('scroll', pedir, { passive: true });
+  addEventListener('resize', () => { medir(); pedir(); });
+  addEventListener('load', () => { medir(); pedir(); });
+  topo.addEventListener('focusin', () => topo.classList.remove('some'));
+</script>

@@ -1,0 +1,98 @@
+---
+/*
+  CAMPO — formas geométricas de traço fino ao fundo de uma seção.
+
+  As formas são <use> da biblioteca de símbolos (#s-x, #s-cir…) definida uma
+  vez no topo da página; aqui só se escolhe onde cada uma fica. O pai precisa
+  ter position e overflow: hidden. `velocidade` vira data-campo, que o script
+  da página usa para o parallax: camadas diferentes, velocidades diferentes.
+
+  Como cada forma se mexe: quem tem eixo claro gira; quem é aberto ou
+  direcional flutua, porque um arco girando sem parar vira ventilador.
+  Duração e atraso saem do índice e não de random: precisa ser estável entre
+  um build e outro, e nenhuma dupla pode entrar em sincronia.
+*/
+interface Props {
+  formas: { f: string; x: number; y: number; s: number; r?: number; o?: number }[];
+  velocidade?: number;
+}
+const { formas, velocidade = 0.12 } = Astro.props;
+
+const GIRA = new Set(['x', 'ast', 'mira', 'hex', 'los', 'qua', 'malha']);
+const modo = (f: string) => (GIRA.has(f) ? 'gira' : 'flutua');
+const ritmo = (i: number) => ({
+  dur: 22 + ((i * 7) % 9) * 3.5,    // 22 s a 50 s
+  atraso: -((i * 3.7) % 19),         // negativo: cada uma já começa no meio
+  sentido: i % 3 === 0 ? 'reverse' : 'normal',
+});
+---
+
+<svg class="campo" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" data-campo={velocidade} aria-hidden="true" focusable="false">
+  {
+    formas.map((f, i) => (
+      <g transform={`translate(${f.x} ${f.y}) scale(${f.s / 24})`}>
+        <use
+          href={`#s-${f.f}`}
+          opacity={f.o ?? 1}
+          class={`fm fm-${modo(f.f)}`}
+          style={`--r:${f.r ?? 0}deg; --d:${ritmo(i).dur}s; --a:${ritmo(i).atraso}s; --sentido:${ritmo(i).sentido}`}
+        />
+      </g>
+    ))
+  }
+</svg>
+
+<style>
+  .campo {
+    position: absolute; inset: -6% -2%; width: 104%; height: 112%;
+    /* fill/stroke são herdados e atravessam o <use>; vector-effect não é,
+       e por isso mora como atributo nos <g> do <defs> */
+    fill: none; stroke: var(--tracado); stroke-width: 1;
+    pointer-events: none; z-index: 0;
+  }
+  /* a malha de pontos é sólida, senão nove aros minúsculos viram sujeira */
+  .campo use[href='#s-malha'] { fill: var(--tracado); stroke: none; }
+
+  /*
+    O movimento de cada forma. A posição vive no <g> de fora e a animação no
+    <use> de dentro, e essa separação é obrigatória: `transform` em CSS
+    SUBSTITUI o atributo transform do SVG — no mesmo elemento, a forma perderia
+    o lugar e voaria para o canto da tela.
+
+    `transform-box: fill-box` faz o eixo ser o centro da própria forma e não a
+    origem do SVG. Sem isso, girar 20° manda a peça para o outro lado.
+  */
+  /*
+    A rotação base mora em `rotate:`, não dentro do `transform`. Parece
+    detalhe, mas é o que tira `var()` de dentro dos keyframes: com custom
+    property lá o Chrome precisa resolver estilo dos 40 <use> a cada quadro
+    e a animação nunca sobe para o compositor. `rotate` é propriedade
+    independente e compõe antes do `transform`, então o desenho é o mesmo.
+  */
+  .fm {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    rotate: var(--r, 0deg);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .fm-gira {
+      animation: fm-gira var(--d, 30s) linear var(--a, 0s) infinite;
+      animation-direction: var(--sentido, normal);
+    }
+    .fm-flutua {
+      animation: fm-flutua var(--d, 30s) ease-in-out var(--a, 0s) infinite;
+      animation-direction: var(--sentido, normal);
+    }
+  }
+  @keyframes fm-gira {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  /* deriva curta com uma inclinada de ida e volta. O valor é pré-escala,
+     então forma grande deriva mais — profundidade de graça. */
+  @keyframes fm-flutua {
+    0%, 100% { transform: rotate(0deg) translate(0, 0); }
+    33% { transform: rotate(5deg) translate(1.5px, -3.5px); }
+    66% { transform: rotate(-4deg) translate(-1.5px, 2.5px); }
+  }
+</style>
