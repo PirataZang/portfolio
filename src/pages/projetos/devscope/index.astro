@@ -1,0 +1,1046 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  DEVSCOPE — site do projeto (TUI open source em Go).
+
+  Dark técnico, verde-terminal sobre azul-grafite. O produto é um terminal, então
+  a prova vem do próprio terminal: um simulador clicável logo abaixo do herói
+  (dados fictícios, nada roda de verdade) e as gravações reais do app nas seções
+  de Git e Docker. Nada de captura estática onde um vídeo cabe.
+
+  Movimento: revelação por IntersectionObserver e formas em CSS puro. Sem
+  `html.anim` (sem JS ou movimento reduzido) tudo aparece parado, e os vídeos
+  trocam o autoplay por controles.
+*/
+
+const BASE = import.meta.env.BASE_URL;
+const MIDIA = `${BASE}projetos/devscope`;
+const GH = 'https://github.com/PirataZang/devscope';
+const RAW = 'https://raw.githubusercontent.com/PirataZang/devscope/main/scripts';
+
+const titulo = 'DevScope — o htop dos seus projetos, no terminal';
+const descricao =
+  'TUI open source em Go que junta containers, Git, CI, túneis, banco e saúde de todos os seus projetos numa tela só. Binário único, zero configuração.';
+
+const NAV = [
+  ['por-que', 'Por que'],
+  ['experimente', 'Experimente'],
+  ['git', 'Git'],
+  ['docker', 'Docker'],
+  ['modulos', 'Módulos'],
+  ['arquitetura', 'Arquitetura'],
+];
+
+const FAIXA = [
+  'Git Graph', 'Preview HTTP', 'Segredos mascarados', 'Worktrees', 'GH Actions', 'Swarm',
+  'Kubernetes', 'Ngrok', 'CF Tunnel', 'Cliente SQL', 'JWT', 'Validade de SSL', 'Workers PM2', '12 temas',
+];
+
+const NUMEROS = [
+  ['1', 'binário, sem dependências'],
+  ['15', 'módulos num contexto só'],
+  ['12', 'temas com preview na hora'],
+  ['x64/ARM', 'nos 3 sistemas'],
+  ['0', 'configuração para começar'],
+];
+
+const ANTES = [
+  ['docker ps -a              ', 'o que está de pé'],
+  ['docker stats --no-stream  ', 'consumindo o quê'],
+  ['pm2 list                  ', 'e os workers Node'],
+  ['git -C /var/www/api status', 'o que ficou solto'],
+  ['gh run list               ', 'a pipeline passou?'],
+  ['ss -ltn | grep LISTEN     ', 'quem pegou a 8080'],
+  ['nginx -T | grep server_name', 'que domínio é esse'],
+  ['certbot certificates      ', 'e o SSL, vence quando'],
+];
+
+const PILARES = [
+  ['a.', 'Binário único', 'Sem Node, sem Python, sem daemon, sem browser. Baixa e roda.'],
+  ['b.', 'Zero configuração', 'Ele acha seus projetos sozinho no disco e detecta a stack de cada um.'],
+  ['c.', 'Opera, não só observa', 'Commitar, subir, parar, deploy, túnel e SQL — dali mesmo.'],
+  ['d.', 'Nunca trava', 'Coleta concorrente, com a UI desenhada sobre snapshot imutável.'],
+];
+
+const GIT = [
+  ['Branches e commits lado a lado, sem checkout', ['↑↓']],
+  ['Diff por arquivo, com busca', ['Enter']],
+  ['Git Graph desenhado no terminal', ['Ctrl G']],
+  ['Stage de tudo e commit num modal', ['⇧ A', 'c']],
+  ['Cherry-pick: marcar e colar', ['x', '⇧ V']],
+  ['Pull, push e abrir Pull Request', ['p', '⇧ P', 'o']],
+  ['Gaveta de stashes', ['s']],
+];
+
+const DOCKER = [
+  ['Logs e métricas ao vivo', 'CPU, memória, rede, I/O e PIDs por container.'],
+  ['Preview HTTP', 'GET na porta publicada: status, headers e corpo.'],
+  ['Detalhe em 7 abas', 'Logs, env, config, processos, compose, arquivos.'],
+  ['Compose num toque', 'up, down, --build e shell dentro do container.'],
+];
+
+const MODULOS = [
+  ['PROJETO', '#e8ecf1', ['Visão Geral'], 'Stack, saúde, containers, git e atividade num painel.'],
+  ['CÓDIGO', '#e3b341', ['Git', 'Worktrees', 'Releases', 'GH Actions', 'Jenkins'], 'Branches, commits, PR, graph, releases, runs e trigger.'],
+  ['EXECUÇÃO', '#5aa9ff', ['Tarefas', 'Containers', 'Swarm', 'Kubernetes'], 'make/npm/just, start/stop, shell, logs, services e pods.'],
+  ['REDE', '#46d17e', ['Nginx', 'Ngrok', 'CF Tunnel'], 'Vhosts, expor o local, requests ao vivo e URL pública.'],
+  ['DADOS', '#f47ab8', ['API', 'Database'], 'Cliente HTTP e SQL, sem sair da tela.'],
+  ['MESA', '#f39a4c', ['JSON', 'JWT'], 'Formatar JSON, inspecionar e validar tokens.'],
+];
+
+const ATALHOS = [
+  ['/', 'Filtrar ao vivo'], ['Ctrl P', 'Busca fuzzy'], ['Enter', 'Abrir no Git'],
+  ['c', 'Abrir nos Containers'], ['Tab', 'Próximo módulo'], ['⇧ E', 'Terminal no projeto'],
+  ['⇧ T', 'Trocar tema'], ['⇧ C', 'Preferências'], ['Esc', 'Voltar um nível'], ['q', 'Sair'],
+];
+
+/* Dados do simulador. Fictícios, como as gravações: "contra projetos de demonstração". */
+const SIM = [
+  {
+    n: 'api-pedidos', s: 'laravel · main', on: true, w: '⣀⣤⣶⣿',
+    git: { b: 'main', sujo: 2, c: [
+      ['a41f9c2', 'fix: arredonda frete antes do desconto', ['- $total = $frete * $desc;', '+ $total = round($frete, 2) * $desc;']],
+      ['7be03d1', 'feat: webhook de pagamento aprovado', ['+ Route::post(\'/webhook/pago\', PagoController::class);']],
+      ['c90a2e8', 'chore: sobe laravel 13', ['- "laravel/framework": "^12.0"', '+ "laravel/framework": "^13.0"']],
+    ] },
+    ct: [['api-pedidos-app-1', '8000', true, '3%'], ['api-pedidos-pg-1', '5432', true, '1%'], ['api-pedidos-redis-1', '6379', true, '0%']],
+  },
+  {
+    n: 'landing', s: 'vite · :5173', on: true, w: '⣠⣴⣾⣿',
+    git: { b: 'feat/hero', sujo: 0, c: [
+      ['e2d7710', 'style: hero com vídeo em loop', ['+ <video autoplay muted loop playsinline>']],
+      ['91cc4ab', 'perf: imagens em webp', ['- hero.png (1.8 MB)', '+ hero.webp (96 KB)']],
+    ] },
+    ct: [['landing-dev-1', '5173', true, '2%']],
+  },
+  {
+    n: 'worker-fila', s: 'parado', on: false, w: '⣀⣀⡀⠀',
+    git: { b: 'main', sujo: 1, c: [
+      ['3fa88b0', 'fix: retry com backoff exponencial', ['- sleep(5);', '+ sleep(2 ** $tentativa);']],
+    ] },
+    ct: [['worker-fila-1', '—', false, '—'], ['worker-redis-1', '6379', true, '0%']],
+  },
+  {
+    n: 'painel-admin', s: 'vue · main', on: true, w: '⣤⣶⣿⣿',
+    git: { b: 'develop', sujo: 4, c: [
+      ['b6e1f43', 'feat: filtro por período no dashboard', ['+ <DateRange v-model="periodo" />']],
+      ['5d0c92e', 'fix: permissão do papel financeiro', ['- can(\'ver\', \'caixa\')', '+ can(\'ver\', \'financeiro.caixa\')']],
+    ] },
+    ct: [['painel-nginx-1', '8080', true, '1%'], ['painel-pg-1', '5432', true, '2%']],
+  },
+];
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta name="theme-color" content="#0b0e13" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    />
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'DevScope',
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Linux, macOS, Windows',
+        description: descricao,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+        codeRepository: GH,
+        author: { '@type': 'Person', name: 'Igor Fronza' },
+      })}
+    />
+  </Fragment>
+
+  <div class="ds">
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <header class="topo">
+      <nav class="nav" aria-label="Principal">
+        <a class="marca" href="#topo"><span>◆</span>devscope</a>
+        <div class="nav-links">
+          {NAV.map(([id, t]) => <a href={`#${id}`}>{t}</a>)}
+        </div>
+        <div class="nav-acoes">
+          <a class="btn btn-ghost btn-sm nav-gh" href={GH} rel="noopener">GitHub</a>
+          <a class="btn btn-primary btn-sm" href="#instalar">Instalar</a>
+        </div>
+      </nav>
+      <div class="progresso" id="progresso" aria-hidden="true"></div>
+    </header>
+
+    <main id="conteudo">
+      <!-- HERO -->
+      <section id="topo" class="sec hero">
+        <div class="deco" aria-hidden="true">
+          <div class="dots" style="inset:-40px 0 0 0"></div>
+          <div class="glow" style="width:760px;height:760px;right:-160px;top:-40px"></div>
+          <div style="width:440px;height:440px;right:4%;top:30px"><div class="dia dia-g spin"></div></div>
+          <div style="width:220px;height:220px;right:31%;top:330px"><div class="dia spin-r" style="opacity:.55"></div></div>
+          <div style="width:380px;height:380px;left:-150px;bottom:-120px"><div class="ring spin-ring"></div></div>
+          <div style="left:46%;top:96px"><div class="cross float">+</div></div>
+          <div style="left:7%;top:64px"><div class="cross float-2">+</div></div>
+          <div style="width:14px;height:14px;left:41%;bottom:120px"><div class="dia dia-fill float"></div></div>
+        </div>
+        <div class="caixa hero-in">
+          <div class="hero-txt" data-stagger>
+            <p class="selo mono"><span class="dot-live" aria-hidden="true"></span>TUI open source em Go · Linux · macOS · Windows</p>
+            <h1>O <span class="mono verde">htop</span><br />dos seus projetos.</h1>
+            <p class="lead">Containers, Git, CI, túneis, banco e saúde de todos os seus projetos — numa tela só, dentro do terminal.</p>
+
+            <div class="instala" data-instala>
+              <div class="instala-abas" role="tablist" aria-label="Sistema operacional">
+                <button role="tab" aria-selected="true" data-os="unix">Linux · macOS</button>
+                <button role="tab" aria-selected="false" data-os="win">Windows</button>
+              </div>
+              <div class="instala-cmd">
+                <code><span class="verde" data-prompt>$</span> <span data-cmd></span></code>
+                <button class="copiar" data-copiar aria-label="Copiar comando de instalação">Copiar</button>
+              </div>
+            </div>
+
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#experimente">Experimentar agora <span class="cue" aria-hidden="true">↓</span></a>
+              <a class="btn btn-ghost" href={GH} rel="noopener">Ver no GitHub</a>
+            </div>
+          </div>
+
+          <figure class="hero-fig" data-rv="zoom">
+            <div class="janela">
+              <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>~/projetos — devscope</span></div>
+              <video src={`${MIDIA}/overview.mp4`} poster={`${MIDIA}/overview.webp`} muted loop playsinline preload="metadata" data-video aria-label="Gravação do DevScope: lista de projetos com onda de estado, filtro, busca fuzzy, módulos, ajuda e temas" width="1200" height="686"></video>
+            </div>
+            <figcaption>Gravação real, contra projetos de demonstração.</figcaption>
+            <div class="hero-cards" aria-hidden="true">
+              <div><span class="wave verde"><b style="--i:0">⣀</b><b style="--i:1">⣤</b><b style="--i:2">⣶</b><b style="--i:3">⣿</b></span><span>api-pedidos</span><em>laravel · main</em></div>
+              <div><span class="wave verde"><b style="--i:2">⣠</b><b style="--i:3">⣴</b><b style="--i:4">⣾</b><b style="--i:5">⣿</b></span><span>landing</span><em>vite · :5173</em></div>
+              <div><span class="perigo">⣀⣀⡀⠀</span><span>worker-fila</span><em class="perigo">parado</em></div>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <!-- FAIXA -->
+      <section class="faixa" aria-label="Recursos">
+        <div class="marquee mono">
+          {[0, 1].map((k) => (
+            <div aria-hidden={k ? 'true' : undefined}>
+              {FAIXA.map((f) => <><span>{f}</span><span class="verde">◆</span></>)}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- NÚMEROS -->
+      <section class="numeros" aria-label="Em números">
+        <div class="caixa numeros-grade" data-stagger="pop">
+          {NUMEROS.map(([n, t], i) => (
+            <div><b class:list={['mono', { verde: i === 4 }]}>{n}</b><span>{t}</span></div>
+          ))}
+        </div>
+      </section>
+
+      <!-- 01 POR QUE -->
+      <section id="por-que" class="sec">
+        <div class="deco" aria-hidden="true">
+          <div style="width:300px;height:300px;left:-170px;top:420px"><div class="ring spin-ring"></div></div>
+          <div style="left:34%;top:70px"><div class="cross float-2">+</div></div>
+        </div>
+        <div class="caixa duas">
+          <div class="col-fixa">
+            <div class="fixa" data-rv="left">
+              <p class="idx"><b>01</b> / por que existe</p>
+              <h2>Você trabalha em projetos. Suas ferramentas, não.</h2>
+              <p class="lead">Cada ferramenta enxerga uma unidade diferente: processo, container, serviço, repositório. Saber como está tudo numa segunda de manhã custa isso.</p>
+            </div>
+          </div>
+          <div class="col-larga">
+            <div class="cartao" data-rv>
+              <div class="cartao-cab"><span class="perigo mono">antes</span><span class="mono mudo">8 comandos · 8 formatos de saída</span></div>
+              <pre class="antes mono" data-stagger="left">{ANTES.map(([c, n]) => <span>{c} <i># {n}</i></span>)}</pre>
+              <p class="cartao-pe">E nenhum deles sabe que tudo aquilo é <strong>o mesmo projeto</strong>.</p>
+            </div>
+            <div class="cartao depois" data-rv="zoom">
+              <div class="cartao-cab"><span class="verde mono">depois</span><span class="mono mudo">1 comando · 1 tela</span></div>
+              <p class="cmd-grande mono"><span class="verde">$</span> devscope<span class="caret" aria-hidden="true"></span></p>
+              <p class="cinza">Ele varre o disco, detecta a stack e liga cada container, worker, porta, domínio e certificado <strong>ao projeto certo</strong>. E você opera tudo dali.</p>
+              <div class="tags mono" data-stagger="pop">
+                {['containers', 'pm2', 'git', 'ci', 'portas', 'nginx', 'ssl'].map((t) => <span>{t}</span>)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PILARES -->
+      <section class="caixa pilares-sec" aria-label="Em 30 segundos">
+        <div class="pilares" data-stagger>
+          {PILARES.map(([i, t, d]) => (
+            <div><p class="idx">{i}</p><h3>{t}</h3><p>{d}</p></div>
+          ))}
+        </div>
+      </section>
+
+      <!-- EXPERIMENTE — simulador -->
+      <section id="experimente" class="sec sim-sec">
+        <div class="deco" aria-hidden="true">
+          <div class="gridlines" style="inset:0"></div>
+          <div class="glow" style="width:820px;height:820px;left:50%;top:50%;translate:-50% -50%"></div>
+        </div>
+        <div class="caixa">
+          <div class="cab" data-rv>
+            <p class="idx"><b>02</b> / experimente</p>
+            <h2>Abra o DevScope aqui mesmo.</h2>
+            <p class="lead">Um simulador com dados de mentira, mas as mesmas teclas. Use as setas e <span class="kbd">Enter</span>, ou toque nos botões embaixo da tela.</p>
+          </div>
+
+          <div class="sim" id="sim" data-rv="zoom" tabindex="0" role="application" aria-label="Simulador do DevScope. Setas movem, Enter abre o Git, c abre os containers, Esc volta, interrogação abre a ajuda.">
+            <div class="janela">
+              <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span id="sim-titulo">~/projetos — devscope</span></div>
+              <div class="sim-tela mono" id="sim-tela" aria-live="polite"></div>
+              <div class="sim-teclas" role="group" aria-label="Teclas do simulador">
+                <button class="kbd" data-k="ArrowUp" aria-label="Seta para cima">↑</button>
+                <button class="kbd" data-k="ArrowDown" aria-label="Seta para baixo">↓</button>
+                <button class="kbd" data-k="Enter">Enter · Git</button>
+                <button class="kbd" data-k="c">c · Containers</button>
+                <button class="kbd" data-k="x" id="sim-x" hidden>x · parar/iniciar</button>
+                <button class="kbd" data-k="?">? · Ajuda</button>
+                <button class="kbd" data-k="Escape">Esc · Voltar</button>
+              </div>
+            </div>
+          </div>
+          <p class="sim-nota">Dica: clique na tela do simulador para o teclado funcionar nela.</p>
+        </div>
+      </section>
+
+      <!-- 03 GIT -->
+      <section id="git" class="sec fundo2">
+        <div class="deco" aria-hidden="true">
+          <div style="width:520px;height:520px;right:-200px;top:-180px"><div class="ring spin-ring" style="border-color:rgba(242,184,75,.16)"></div></div>
+          <div style="width:12px;height:12px;right:18%;top:150px"><div class="dia float" style="background:var(--accent);border-color:var(--accent);opacity:.7"></div></div>
+          <div class="dots" style="left:-60px;bottom:-40px;width:520px;height:420px"></div>
+        </div>
+        <div class="caixa">
+          <div class="cab cab-linha" data-rv>
+            <div><p class="idx"><b>03</b> / módulo git</p><h2>Git, sem sair do terminal.</h2></div>
+            <p class="lead">Aperte <span class="kbd">Enter</span> num projeto e o Git dele está ali — sem <code class="mono">cd</code>, sem decorar flag.</p>
+          </div>
+          <div class="lado">
+            <figure class="lado-m" data-rv="zoom">
+              <div class="janela"><video src={`${MIDIA}/git.mp4`} poster={`${MIDIA}/git.webp`} muted loop playsinline preload="none" data-video aria-label="Módulo Git do DevScope: branches, commits, diff, Git Graph, stage, commit, log de comandos e stashes" width="1200" height="686"></video></div>
+            </figure>
+            <div class="lado-t">
+              <ul class="atalhos-lista" data-stagger="right">
+                {GIT.map(([t, ks]) => (
+                  <li><span>{t}</span><span class="ks">{ks.map((k) => <span class="kbd">{k}</span>)}</span></li>
+                ))}
+              </ul>
+              <div class="aviso" data-rv>
+                <span class="kbd">Ctrl L</span>
+                <p><strong>Nada acontece escondido.</strong> <span>O log mostra o <code class="mono">git</code> exato que rodou, com a saída.</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 DOCKER -->
+      <section id="docker" class="sec">
+        <div class="deco" aria-hidden="true">
+          <div class="gridlines" style="left:-120px;top:80px;width:680px;height:560px"></div>
+          <div style="width:180px;height:180px;left:38%;bottom:60px"><div class="dia spin" style="border-color:rgba(90,169,255,.22)"></div></div>
+        </div>
+        <div class="caixa">
+          <div class="cab cab-linha" data-rv>
+            <div><p class="idx"><b>04</b> / módulo containers</p><h2>Docker, por projeto.</h2></div>
+            <p class="lead"><span class="kbd">c</span> abre os containers só daquele projeto. O postgres do projeto A não se mistura com o do B.</p>
+          </div>
+          <div class="lado lado-inv">
+            <div class="lado-t">
+              <div class="grade-cards" data-stagger>
+                {DOCKER.map(([t, d]) => <div class="card lift"><b>{t}</b><span>{d}</span></div>)}
+              </div>
+              <div class="aviso azul" data-rv>
+                <p><strong>Segredos mascarados.</strong> <span>Pode abrir em call e tirar print.</span></p>
+                <code class="mono">POSTGRES_PASSWORD=<i>s3••••••••</i></code>
+              </div>
+              <p class="cinza" data-rv>E quando o projeto pede: módulos de <strong>Swarm</strong> e <strong>Kubernetes</strong>.</p>
+            </div>
+            <figure class="lado-m" data-rv="zoom">
+              <div class="janela"><video src={`${MIDIA}/docker.mp4`} poster={`${MIDIA}/docker.webp`} muted loop playsinline preload="none" data-video aria-label="Módulo Containers do DevScope: lista, portas com preview HTTP, logs, métricas, env com segredos mascarados, parar e iniciar" width="1200" height="686"></video></div>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 MÓDULOS -->
+      <section id="modulos" class="sec fundo2">
+        <div class="deco" aria-hidden="true">
+          <div style="width:480px;height:480px;left:-240px;bottom:-120px"><div class="dia spin-r" style="opacity:.7"></div></div>
+          <div style="left:22%;top:90px"><div class="cross float">+</div></div>
+        </div>
+        <div class="caixa duas">
+          <div class="col-fixa">
+            <div class="fixa" data-rv="left">
+              <p class="idx"><b>05</b> / módulos</p>
+              <h2>15 módulos, um contexto.</h2>
+              <p class="lead">Cada módulo só aparece quando faz sentido para o projeto aberto. Projeto Go sem Docker não mostra containers — <span class="kbd">t</span> mostra todos.</p>
+            </div>
+          </div>
+          <div class="modulos col-larga">
+            <div class="modulos-cab mono"><span>CATEGORIA</span><span>MÓDULOS</span></div>
+            <div data-stagger="left" data-step="110">
+              {MODULOS.map(([cat, cor, mods, d]) => (
+                <div class="modulo row-hover" style={`--cor:${cor}`}>
+                  <b class="mono">{cat}</b>
+                  <div><div>{mods.map((m) => <span class="mono">{m}</span>)}</div><p>{d}</p></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 ENTREGA -->
+      <section id="deploy" class="sec">
+        <div class="deco" aria-hidden="true">
+          <div class="dots" style="right:-80px;top:-40px;width:620px;height:440px"></div>
+          <div style="width:260px;height:260px;right:8%;top:40px"><div class="ring spin-ring"></div></div>
+        </div>
+        <div class="caixa">
+          <div class="cab" data-rv>
+            <p class="idx"><b>06</b> / do commit ao ar</p>
+            <h2>Lançar e publicar sem esquecer passo.</h2>
+            <p class="lead">Ele confere o que bloqueia antes de agir, mostra o que vai fazer e desfaz quando algo dá errado.</p>
+          </div>
+          <div class="duplo" data-stagger data-step="160">
+            <div class="painel lift">
+              <div class="painel-cab"><h3>Releases</h3><span class="mono mudo">em qualquer repositório git</span></div>
+              <ol class="passos">
+                <li><span class="mono">1</span><span>Mostra a última versão e sugere a próxima: patch, minor ou major.</span></li>
+                <li><span class="mono">2</span><span>Bloqueia alteração sem commit, commit não enviado e branch sem upstream.</span></li>
+                <li><span class="mono">3</span><span><span class="kbd">Enter</span> cria a tag anotada, envia e acompanha o workflow até publicar.</span></li>
+              </ol>
+              <p class="painel-pe">Falta <code class="mono">release.yml</code> ou <code class="mono">CHANGELOG.md</code>? Ele avisa antes de tentar.</p>
+            </div>
+            <div class="painel lift">
+              <div class="painel-cab"><h3>Publicar no nginx</h3></div>
+              <p class="cinza">Nenhum caminho nem porta digitados. Slug, porta, build e perfil são detectados, e a <code class="mono">.inc</code> aparece pronta antes.</p>
+              <div class="term mono">
+                <p><span class="verde">$</span> devscope nginx publish meu-app</p>
+                <div data-stagger="left" data-step="260" data-base="200">
+                  <p><span class="verde">✓</span> escreve sites/meu-app.inc <i>(anterior → .bak)</i></p>
+                  <p><span class="verde">✓</span> nginx -t <i>(recusou? desfaz tudo)</i></p>
+                  <p><span class="verde">✓</span> nginx -s reload</p>
+                  <p><span class="verde">✓</span> smoke test <i>301 · 200 · sem 502</i></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 07 ATALHOS -->
+      <section id="atalhos" class="sec fundo2">
+        <div class="deco" aria-hidden="true">
+          <div style="width:200px;height:200px;right:-60px;top:60px"><div class="dia spin" style="border-color:rgba(242,184,75,.2)"></div></div>
+        </div>
+        <div class="caixa duas">
+          <div class="col-fixa">
+            <div class="fixa" data-rv="left">
+              <p class="idx"><b>07</b> / atalhos</p>
+              <h2>Feito para quem vive no teclado.</h2>
+              <p class="lead">Três camadas de atalho: global, contextual e local, e a local vence. <span class="kbd">?</span> mostra tudo. Seus comandos ficam em <span class="kbd">1</span>…<span class="kbd">0</span>, e seu agente de IA abre na pasta do projeto.</p>
+            </div>
+          </div>
+          <div class="grade-atalhos col-larga" data-stagger="pop" data-step="55">
+            {ATALHOS.map(([k, t]) => <div class="lift"><span class="kbd">{k}</span><span>{t}</span></div>)}
+          </div>
+        </div>
+      </section>
+
+      <!-- 08 ARQUITETURA -->
+      <section id="arquitetura" class="sec">
+        <div class="deco" aria-hidden="true"><div class="gridlines" style="inset:0"></div></div>
+        <div class="caixa">
+          <div class="cab cab-linha" data-rv>
+            <div><p class="idx"><b>08</b> / como funciona</p><h2>Coleta concorrente. Tela que nunca congela.</h2></div>
+            <p class="lead">A UI desenha o último snapshot e segue — não espera um <code class="mono">docker inspect</code> lento.</p>
+          </div>
+          <div class="arch" data-stagger data-step="150">
+            <div class="arch-col">
+              <p class="mono mudo">COLETORES · em paralelo</p>
+              <p class="chip mono">disco → detectores de framework</p>
+              <div class="arch-grade">
+                <p class="chip mono" style="--c:var(--c-run)">docker</p>
+                <p class="chip mono" style="--c:var(--c-run)">pm2</p>
+                <p class="chip mono" style="--c:var(--c-code)">git</p>
+                <p class="chip mono" style="--c:var(--c-net)">health · ssl</p>
+                <p class="chip mono" style="--c:var(--c-net);grid-column:span 2">nginx · portas</p>
+              </div>
+            </div>
+            <svg class="seta" aria-hidden="true" width="56" height="24" viewBox="0 0 56 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h50M44 4l8 8-8 8"></path></svg>
+            <div class="arch-no verde-no"><p class="mono verde">STATESTORE</p><b>Snapshot imutável</b><span>a UI nunca lê dado mutável</span></div>
+            <svg class="seta" aria-hidden="true" width="56" height="24" viewBox="0 0 56 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h50M44 4l8 8-8 8"></path></svg>
+            <div class="arch-no"><p class="mono mudo">TERMINAL</p><b>Bubble Tea UI</b><span>modelo Elm</span></div>
+          </div>
+          <div class="arch-pe" data-rv>
+            <p class="mono cinza">Go 1.24+ · Bubble Tea · Lip Gloss · Cobra + Viper</p>
+            <a href={`${GH}/blob/main/docs/ARCHITECTURE.md`} rel="noopener">Ler ARCHITECTURE.md →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 09 CLI / CONFIG -->
+      <section id="config" class="fundo2 borda">
+        <div class="caixa duplo-cod" data-stagger data-step="140">
+          <div>
+            <p class="idx"><b>09</b> / fora da TUI</p>
+            <h3>Também para scripts e automação.</h3>
+            <pre class="cod mono"><span class="verde">$</span> devscope scan --json   <i># snapshot em JSON</i>
+<span class="verde">$</span> devscope watch         <i># painel com auto-refresh</i>
+<span class="verde">$</span> devscope version       <i># versão, commit e build</i></pre>
+          </div>
+          <div>
+            <p class="idx"><b>10</b> / preferências</p>
+            <h3>Do seu jeito, aplicado na hora.</h3>
+            <pre class="cod mono"><i># ~/.config/devscope/user_config.txt</i>
+<b>Theme:</b> dracula-vivid
+<b>Commands:</b> {'{ "1": {"name": "Lazygit", "command": "lazygit"} }'}
+<b>AI:</b> claude</pre>
+            <p class="cinza peq"><span class="kbd">⇧ C</span> edita dentro do app, sem reiniciar. Toda chave aceita env com prefixo <code class="mono">DEVSCOPE_</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section id="instalar" class="sec cta borda">
+        <div class="deco" aria-hidden="true">
+          <div class="dots" style="inset:0"></div>
+          <div class="glow" style="width:900px;height:900px;right:-250px;top:-200px"></div>
+          <div style="width:620px;height:620px;right:-120px;top:-60px"><div class="dia dia-g spin"></div></div>
+          <div style="width:440px;height:440px;right:-30px;top:30px"><div class="dia spin-r" style="opacity:.55"></div></div>
+        </div>
+        <div class="caixa cta-in">
+          <div class="cta-txt" data-stagger>
+            <div class="wave mono verde" aria-hidden="true"><b style="--i:0">⣀</b><b style="--i:1">⣠</b><b style="--i:2">⣤</b><b style="--i:3">⣴</b><b style="--i:4">⣶</b><b style="--i:5">⣿</b></div>
+            <h2>Uma tela.<br />Todos os projetos.</h2>
+            <p class="lead">Instale em um comando e rode <code class="mono">devscope</code>. Para desinstalar, basta apagar um arquivo.</p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href={GH} rel="noopener">Dar uma estrela no GitHub</a>
+              <a class="btn btn-ghost" href={`${GH}/releases`} rel="noopener">Baixar binário</a>
+            </div>
+          </div>
+          <div class="cta-cmd" data-rv="right">
+            <div class="instala grande" data-instala>
+              <div class="instala-abas" role="tablist" aria-label="Sistema operacional">
+                <button role="tab" aria-selected="true" data-os="unix">Linux · macOS</button>
+                <button role="tab" aria-selected="false" data-os="win">Windows</button>
+              </div>
+              <div class="instala-corpo mono"><span class="verde" data-prompt>$</span> <span data-cmd></span></div>
+              <div class="instala-pe">
+                <span>Detecta sistema e arquitetura, confere o checksum.</span>
+                <button class="copiar" data-copiar aria-label="Copiar comando de instalação">Copiar</button>
+              </div>
+            </div>
+            <p class="mudo peq">Binários com checksum para Linux, macOS e Windows, x64 e ARM64. Ou build from source com Go 1.24+.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <div class="caixa rodape-in">
+        <p><span class="verde">◆</span> <b class="mono">devscope</b> <span class="mudo">Feito para quem vive entre vários projetos ao mesmo tempo.</span></p>
+        <nav aria-label="Rodapé">
+          <a href={GH} rel="noopener">GitHub</a>
+          <a href={`${GH}/issues/new?template=bug_report.md`} rel="noopener">Reportar bug</a>
+          <a href={`${GH}/issues/new?template=feature_request.md`} rel="noopener">Sugerir feature</a>
+          <a href={`${BASE}#projetos`}>← Portfólio de Igor Fronza</a>
+        </nav>
+      </div>
+    </footer>
+  </div>
+
+  <script is:inline define:vars={{ SIM, RAW }}>
+    (function () {
+      var doc = document;
+      var reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* ---- instalar: abas + copiar (as duas caixas andam juntas) ---- */
+      var os = 'unix';
+      var CMD = {
+        unix: ['$', 'curl -fsSL ' + RAW + '/install.sh | bash'],
+        win: ['PS>', 'irm ' + RAW + '/install.ps1 | iex'],
+      };
+      function pintaInstala() {
+        doc.querySelectorAll('[data-prompt]').forEach(function (el) { el.textContent = CMD[os][0]; });
+        doc.querySelectorAll('[data-cmd]').forEach(function (el) { el.textContent = CMD[os][1]; });
+        doc.querySelectorAll('[data-os]').forEach(function (b) {
+          b.setAttribute('aria-selected', String(b.dataset.os === os));
+        });
+      }
+      doc.querySelectorAll('[data-os]').forEach(function (b) {
+        b.addEventListener('click', function () { os = b.dataset.os; pintaInstala(); });
+      });
+      doc.querySelectorAll('[data-copiar]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          try { navigator.clipboard.writeText(CMD[os][1]); } catch (e) {}
+          b.textContent = '✓ Copiado';
+          b.classList.add('ok');
+          setTimeout(function () { b.textContent = 'Copiar'; b.classList.remove('ok'); }, 1800);
+        });
+      });
+      pintaInstala();
+
+      /* ---- barra de progresso de leitura ---- */
+      var barra = doc.getElementById('progresso');
+      function progresso() {
+        var h = doc.documentElement;
+        var max = h.scrollHeight - h.clientHeight;
+        barra.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, h.scrollTop / max) : 0) + ')';
+      }
+      addEventListener('scroll', progresso, { passive: true });
+      progresso();
+
+      /* ---- vídeos: tocam só à vista; com movimento reduzido ficam com controles ---- */
+      var videos = doc.querySelectorAll('[data-video]');
+      if (reduz || !('IntersectionObserver' in window)) {
+        videos.forEach(function (v) { v.controls = true; v.preload = 'metadata'; });
+      } else {
+        var vo = new IntersectionObserver(function (es) {
+          es.forEach(function (e) {
+            if (e.isIntersecting) { e.target.play().catch(function () {}); } else { e.target.pause(); }
+          });
+        }, { threshold: 0.25 });
+        videos.forEach(function (v) { vo.observe(v); });
+      }
+
+      /* ---- revelação ---- */
+      if (!reduz && 'IntersectionObserver' in window) {
+        doc.documentElement.classList.add('anim');
+        doc.querySelectorAll('[data-stagger]').forEach(function (g) {
+          var step = parseInt(g.getAttribute('data-step'), 10) || 90;
+          var base = parseInt(g.getAttribute('data-base'), 10) || 0;
+          Array.prototype.forEach.call(g.children, function (c, i) { c.style.transitionDelay = (base + i * step) + 'ms'; });
+        });
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+        doc.querySelectorAll('[data-rv], [data-stagger]').forEach(function (el) { io.observe(el); });
+      }
+
+      /* ---- simulador ---- */
+      var raiz = doc.getElementById('sim');
+      var tela = doc.getElementById('sim-tela');
+      var titulo = doc.getElementById('sim-titulo');
+      var btnX = doc.getElementById('sim-x');
+      var st = { v: 'lista', i: 0, j: 0 }; /* v: lista | git | ct | ajuda */
+      var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      var cur = function () { return SIM[st.i]; };
+      var rodape = function (txt) { return '<p class="sim-pe">' + txt + '</p>'; };
+
+      function viewLista() {
+        titulo.textContent = '~/projetos — devscope';
+        return '<p class="sim-h"><b>PROJETOS</b> <i>' + SIM.length + ' encontrados</i></p>' +
+          SIM.map(function (p, k) {
+            var ligado = p.on || p.ct.some(function (c) { return c[2]; });
+            var onda = ligado && p.on ? '<span class="verde">' + p.w + '</span>' : '<span class="perigo">' + p.w + '</span>';
+            return '<p class="sim-l' + (k === st.i ? ' sel' : '') + '">' + onda + '<span>' + esc(p.n) + '</span><em class="' + (p.on ? '' : 'perigo') + '">' + esc(p.s) + '</em></p>';
+          }).join('') +
+          rodape('↑↓ mover · Enter git · c containers · ? ajuda');
+      }
+      function viewGit() {
+        var p = cur(), g = p.git, c = g.c[st.j];
+        titulo.textContent = p.n + ' — git';
+        return '<p class="sim-h"><b>GIT</b> <i>' + esc(p.n) + ' · ' + esc(g.b) + (g.sujo ? ' · <u>' + g.sujo + ' alterações</u>' : ' · limpo') + '</i></p>' +
+          g.c.map(function (x, k) {
+            return '<p class="sim-l' + (k === st.j ? ' sel' : '') + '"><span class="acento">' + x[0] + '</span><span>' + esc(x[1]) + '</span></p>';
+          }).join('') +
+          '<div class="sim-diff">' + c[2].map(function (l) {
+            return '<p class="' + (l[0] === '+' ? 'mais' : 'menos') + '">' + esc(l) + '</p>';
+          }).join('') + '</div>' +
+          rodape('↑↓ commits · Esc voltar');
+      }
+      function viewCt() {
+        var p = cur(), c = p.ct[st.j];
+        titulo.textContent = p.n + ' — containers';
+        return '<p class="sim-h"><b>CONTAINERS</b> <i>' + esc(p.n) + '</i></p>' +
+          p.ct.map(function (x, k) {
+            return '<p class="sim-l' + (k === st.j ? ' sel' : '') + '"><span class="' + (x[2] ? 'verde' : 'perigo') + '">' + (x[2] ? '●' : '○') + '</span><span>' + esc(x[0]) + '</span><em>:' + esc(x[1]) + ' · cpu ' + esc(x[3]) + '</em></p>';
+          }).join('') +
+          '<div class="sim-diff"><p>' + (c[2] ? 'GET :' + esc(c[1]) + ' → <span class="verde">200 OK</span> · 12 ms' : '<span class="perigo">parado</span> · x inicia') + '</p>' +
+          '<p>POSTGRES_PASSWORD=<span class="azul">s3••••••••</span></p></div>' +
+          rodape('↑↓ mover · x parar/iniciar · Esc voltar');
+      }
+      function viewAjuda() {
+        titulo.textContent = 'ajuda — devscope';
+        return '<p class="sim-h"><b>ATALHOS</b></p>' +
+          [['↑ ↓', 'mover na lista'], ['Enter', 'abrir o Git do projeto'], ['c', 'abrir os containers'], ['x', 'parar/iniciar container'], ['Esc', 'voltar um nível'], ['?', 'esta ajuda']]
+            .map(function (a) { return '<p class="sim-l"><span class="acento">' + a[0] + '</span><span>' + a[1] + '</span></p>'; }).join('') +
+          rodape('Esc voltar · no app real: / filtra, Ctrl P busca fuzzy, Tab troca de módulo');
+      }
+      function pinta() {
+        tela.innerHTML = { lista: viewLista, git: viewGit, ct: viewCt, ajuda: viewAjuda }[st.v]();
+        btnX.hidden = st.v !== 'ct';
+      }
+      function tecla(k) {
+        var n = st.v === 'lista' ? SIM.length : st.v === 'git' ? cur().git.c.length : st.v === 'ct' ? cur().ct.length : 0;
+        var campo = st.v === 'lista' ? 'i' : 'j';
+        if (k === 'ArrowDown' && n) st[campo] = (st[campo] + 1) % n;
+        else if (k === 'ArrowUp' && n) st[campo] = (st[campo] + n - 1) % n;
+        else if (k === 'Enter' && st.v === 'lista') { st.v = 'git'; st.j = 0; }
+        else if (k === 'c' && st.v === 'lista') { st.v = 'ct'; st.j = 0; }
+        else if (k === 'x' && st.v === 'ct') { var c = cur().ct[st.j]; c[2] = !c[2]; c[3] = c[2] ? '1%' : '—'; }
+        else if (k === '?') st.v = 'ajuda';
+        else if (k === 'Escape' && st.v !== 'lista') st.v = 'lista';
+        else return false;
+        pinta();
+        return true;
+      }
+      raiz.addEventListener('keydown', function (e) {
+        /* botão focado mantém o clique nativo; sem isto Enter num botão viraria "abrir Git" */
+        if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('button')) return;
+        if (tecla(e.key)) e.preventDefault();
+      });
+      raiz.querySelectorAll('[data-k]').forEach(function (b) {
+        b.addEventListener('click', function () { tecla(b.dataset.k); });
+      });
+      pinta();
+    })();
+  </script>
+</Base>
+
+<style is:global>
+  .ds {
+    --bg: #0b0e13; --bg-2: #0f131a; --surface: #141920; --surface-2: #1b212b;
+    --line: #232a35; --line-2: #333b47;
+    --text: #e8ecf1; --text-2: #a9b3bf; --text-3: #808b98;
+    --primary: #46d17e; --on-primary: #06130b; --accent: #f2b84b; --danger: #f2665c;
+    --c-code: #e3b341; --c-run: #5aa9ff; --c-net: #46d17e; --c-data: #f47ab8; --c-desk: #f39a4c;
+    --sans: 'Geist', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --bounce: cubic-bezier(.34, 1.56, .64, 1); --ease: cubic-bezier(.2, .7, .2, 1);
+    --sec-y: 128px; --gut: 24px;
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    font-size: 17px; line-height: 1.6; min-height: 100vh;
+  }
+  .ds a { color: var(--primary); }
+  .ds a:hover { color: #7fe3a6; }
+  .ds ::selection { background: #46d17e33; color: inherit; }
+  .ds :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 6px; }
+  .ds h1, .ds h2, .ds h3, .ds p, .ds pre, .ds ul, .ds ol, .ds figure { margin: 0; }
+  .ds ul, .ds ol { padding: 0; list-style: none; }
+  .ds .mono, .ds code, .ds pre { font-family: var(--mono); }
+  .ds code { font-size: .9em; color: var(--text); }
+  .ds i, .ds em { font-style: normal; }
+  .ds .verde { color: var(--primary); }
+  .ds .perigo { color: var(--danger); }
+  .ds .azul { color: var(--c-run); }
+  .ds .acento { color: var(--accent); }
+  .ds .mudo { color: var(--text-3); }
+  .ds .cinza { color: var(--text-2); }
+  .ds .cinza strong, .ds strong { color: var(--text); font-weight: 600; }
+  .ds .peq { font-size: 13px; }
+  .ds .caixa { max-width: 1200px; margin: 0 auto; padding: var(--sec-y) var(--gut); position: relative; }
+  .ds .pular { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--primary); color: var(--on-primary); padding: 10px 16px; border-radius: 8px; }
+  .ds .pular:focus { left: 8px; }
+
+  .ds .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 8px; box-sizing: border-box; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 6px; background: var(--surface-2); color: var(--text); font-family: var(--mono); font-size: 12px; font-weight: 500; white-space: nowrap; transition: transform .15s var(--ease), border-color .15s, color .15s; }
+  .ds button.kbd { cursor: pointer; min-height: 44px; padding: 0 14px; font-size: 13px; }
+  .ds .kbd:hover { transform: translateY(1px); border-color: var(--accent); color: var(--accent); }
+  .ds .idx { font-family: var(--mono); font-size: 13px; color: var(--text-3); }
+  .ds .idx b { color: var(--primary); font-weight: 500; }
+  .ds h2 { font-weight: 600; font-size: clamp(34px, 4.6vw, 52px); line-height: 1.04; letter-spacing: -0.035em; color: var(--text); }
+  .ds .lead { font-size: 19px; line-height: 1.55; color: var(--text-2); max-width: 31em; }
+
+  /* botões */
+  .ds .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; box-sizing: border-box; border-radius: 10px; font-weight: 600; font-size: 16px; text-decoration: none; transition: transform .35s var(--bounce), background .2s, border-color .2s; }
+  .ds .btn:hover { transform: translateY(-2px); }
+  .ds .btn:active { transform: scale(.97); }
+  .ds .btn-sm { min-height: 44px; padding: 0 16px; font-size: 14px; }
+  .ds .btn-primary { background: var(--primary); color: var(--on-primary); }
+  .ds .btn-primary:hover { background: #5fdc92; color: var(--on-primary); }
+  .ds .btn-ghost { border: 1px solid var(--line-2); color: var(--text); font-weight: 500; }
+  .ds .btn-ghost:hover { border-color: var(--text-3); color: var(--text); }
+  .ds .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  /* topo */
+  .ds .topo { position: sticky; top: 0; z-index: 20; background: rgba(11, 14, 19, .85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .ds .nav { max-width: 1200px; margin: 0 auto; padding: 8px var(--gut); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .ds .marca { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-family: var(--mono); font-weight: 700; font-size: 17px; min-height: 44px; }
+  .ds .marca:hover { color: var(--text); }
+  .ds .marca span { color: var(--primary); }
+  .ds .nav-links { display: flex; align-items: center; gap: 26px; font-size: 15px; }
+  .ds .nav-links a { color: var(--text-2); text-decoration: none; transition: color .2s; padding: 10px 0; }
+  .ds .nav-links a:hover { color: var(--text); }
+  .ds .nav-acoes { display: flex; align-items: center; gap: 10px; }
+  .ds .progresso { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--primary); transform-origin: 0 50%; transform: scaleX(0); }
+
+  /* fundos */
+  .ds .sec { position: relative; overflow: clip; }
+  .ds .sec > .caixa { z-index: 1; }
+  .ds .deco { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: clip; }
+  .ds .deco > * { position: absolute; }
+  .ds .fundo2 { background: var(--bg-2); }
+  .ds .borda, .ds .sec + .sec { border-top: 1px solid var(--line); }
+  .ds .dots { background-image: radial-gradient(#2a323e 1px, transparent 1.3px); background-size: 22px 22px; -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%); mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%); }
+  .ds .gridlines { background-image: linear-gradient(#1a2029 1px, transparent 1px), linear-gradient(90deg, #1a2029 1px, transparent 1px); background-size: 48px 48px; -webkit-mask-image: radial-gradient(ellipse at center, #000 15%, transparent 68%); mask-image: radial-gradient(ellipse at center, #000 15%, transparent 68%); }
+  .ds .dia { width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--line-2); transform: rotate(45deg); }
+  .ds .dia-g { border-color: rgba(70, 209, 126, .22); }
+  .ds .dia-fill { background: var(--surface-2); }
+  .ds .ring { width: 100%; height: 100%; box-sizing: border-box; border: 1px dashed #2c3440; border-radius: 50%; }
+  .ds .glow { border-radius: 50%; background: radial-gradient(circle, rgba(70, 209, 126, .13), transparent 62%); }
+  .ds .cross { font-family: var(--mono); font-size: 20px; line-height: 1; color: #3a4350; }
+  .ds .spin { animation: ds-spin 80s linear infinite; }
+  .ds .spin-r { animation: ds-spin 120s linear infinite reverse; }
+  .ds .spin-ring { animation: ds-ring 90s linear infinite; }
+  .ds .float { animation: ds-float 6s cubic-bezier(.45, 0, .55, 1) infinite; }
+  .ds .float-2 { animation: ds-float 7.5s cubic-bezier(.45, 0, .55, 1) infinite -2s; }
+  @keyframes ds-spin { from { transform: rotate(45deg); } to { transform: rotate(405deg); } }
+  @keyframes ds-ring { to { transform: rotate(360deg); } }
+  @keyframes ds-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -16px; } }
+
+  /* hero */
+  .ds .hero-in { display: flex; flex-wrap: wrap; gap: 64px; align-items: center; padding-top: 96px; padding-bottom: 72px; }
+  .ds .hero-txt { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 26px; }
+  .ds .selo { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-2); }
+  .ds .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: ds-ping 2s ease-out infinite; flex: none; }
+  @keyframes ds-ping { 0% { box-shadow: 0 0 0 0 #46d17e88; } 80%, 100% { box-shadow: 0 0 0 10px #46d17e00; } }
+  .ds h1 { font-weight: 600; font-size: clamp(46px, 7vw, 80px); line-height: .98; letter-spacing: -0.045em; }
+  .ds h1 .mono { font-weight: 700; letter-spacing: -0.06em; }
+  .ds .cue { display: inline-block; animation: ds-cue 1.6s var(--ease) infinite; }
+  @keyframes ds-cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+  .ds .hero-fig { flex: 1 1 560px; min-width: 0; position: relative; }
+  .ds .hero-fig figcaption { margin-top: 10px; font-size: 13px; color: var(--text-3); text-align: right; }
+  .ds .janela { border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden; background: #05070a; box-shadow: 0 40px 100px rgba(0, 0, 0, .55); }
+  .ds .janela video { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 686; background: #05070a; }
+  .ds .janela-barra { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .ds .janela-barra i { width: 11px; height: 11px; border-radius: 50%; background: #3a414c; }
+  .ds .janela-barra span { margin-left: 10px; font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+  .ds .hero-cards { position: relative; z-index: 2; margin: -96px 0 0 -20px; width: min(330px, 92%); display: flex; flex-direction: column; gap: 8px; }
+  .ds .hero-cards > div { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 10px; background: rgba(20, 25, 32, .96); box-shadow: 0 16px 40px rgba(0, 0, 0, .5); font-family: var(--mono); font-size: 13px; transition: transform .45s var(--bounce); }
+  .ds .hero-cards > div:hover { transform: translateY(-5px); }
+  .ds .hero-cards > div > span:nth-child(2) { flex: 1; color: var(--text); }
+  .ds .hero-cards em { color: var(--text-3); }
+  .ds .hero-cards em.perigo { color: var(--danger); }
+  .ds .wave b { display: inline-block; font-weight: 400; animation: ds-wave 1.8s ease-in-out infinite; animation-delay: calc(var(--i) * 90ms); }
+  @keyframes ds-wave { 0%, 100% { opacity: .35; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-2px); } }
+
+  /* instalar */
+  .ds .instala { border: 1px solid var(--line-2); border-radius: 12px; background: var(--surface); overflow: hidden; max-width: 560px; }
+  .ds .instala.grande { max-width: none; border-radius: 14px; box-shadow: 0 40px 100px rgba(0, 0, 0, .55); }
+  .ds .instala-abas { display: flex; border-bottom: 1px solid var(--line); }
+  .ds .instala-abas button { flex: 1; min-height: 44px; border: 0; background: var(--surface); color: var(--text-3); font-family: var(--mono); font-size: 13px; cursor: pointer; transition: background .2s, color .2s; }
+  .ds .instala-abas button + button { border-left: 1px solid var(--line); }
+  .ds .instala-abas button[aria-selected='true'] { background: var(--surface-2); color: var(--text); }
+  .ds .instala-cmd { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 18px; }
+  .ds .instala-cmd code { flex: 1; min-width: 0; font-size: 13px; line-height: 1.55; word-break: break-all; }
+  .ds .instala-corpo { padding: 22px; font-size: 13.5px; line-height: 1.7; color: var(--text); word-break: break-all; }
+  .ds .instala-pe { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 0 16px 16px 22px; font-size: 13px; color: var(--text-3); }
+  .ds .copiar { flex: none; min-height: 44px; min-width: 96px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface-2); color: var(--text); font-family: var(--mono); font-size: 13px; cursor: pointer; transition: background .2s, color .2s; }
+  .ds .copiar.ok { background: var(--primary); color: var(--on-primary); }
+
+  /* faixa + números */
+  .ds .faixa { border-top: 1px solid var(--line); overflow: hidden; padding: 18px 0; }
+  .ds .marquee { display: flex; width: max-content; font-size: 14px; color: var(--text-2); animation: ds-marquee 48s linear infinite; }
+  .ds .marquee:hover { animation-play-state: paused; }
+  .ds .marquee > div { display: flex; gap: 36px; padding-right: 36px; white-space: nowrap; }
+  @keyframes ds-marquee { to { transform: translateX(-50%); } }
+  .ds .numeros { border-block: 1px solid var(--line); background: var(--bg-2); }
+  .ds .numeros-grade { padding-block: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 24px; }
+  .ds .numeros-grade b { display: block; font-size: 40px; font-weight: 700; line-height: 1.1; }
+  .ds .numeros-grade span { font-size: 14px; color: var(--text-2); }
+
+  /* seções em duas colunas */
+  .ds .cab { display: flex; flex-direction: column; gap: 18px; max-width: 720px; margin-bottom: 56px; }
+  .ds .cab-linha { max-width: none; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 24px; }
+  .ds .cab-linha > div { display: flex; flex-direction: column; gap: 18px; max-width: 640px; }
+  .ds .cab-linha .lead { max-width: 26em; }
+  .ds .duas { display: flex; flex-wrap: wrap; gap: 48px; }
+  .ds .col-fixa { flex: 1 1 320px; min-width: 0; }
+  .ds .col-larga { flex: 1.5 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+  .ds .fixa { position: sticky; top: 104px; display: flex; flex-direction: column; gap: 20px; }
+  .ds .fixa .lead { font-size: 18px; }
+  .ds .cartao { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+  .ds .cartao.depois { border-color: #2b5a3d; padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .ds .cartao-cab { display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .ds .depois .cartao-cab { padding: 0; border: 0; }
+  .ds .antes { display: flex; flex-direction: column; padding: 18px; font-size: 13px; line-height: 1.9; color: var(--text-2); white-space: pre; overflow-x: auto; }
+  .ds .antes i, .ds .term i, .ds .cod i { color: var(--text-3); }
+  .ds .cartao-pe { padding: 0 18px 18px; font-size: 15px; color: var(--text-2); }
+  .ds .cmd-grande { font-size: 22px; color: var(--text); }
+  .ds .caret { display: inline-block; width: 9px; height: 1.05em; background: var(--primary); vertical-align: -2px; margin-left: 4px; animation: ds-blink 1.1s steps(1) infinite; }
+  @keyframes ds-blink { 50% { opacity: 0; } }
+  .ds .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ds .tags span { font-size: 12px; padding: 5px 10px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); }
+  .ds .pilares-sec { padding-top: 32px; padding-bottom: 128px; }
+  .ds .pilares { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); border-top: 1px solid var(--line); }
+  .ds .pilares > div { padding: 28px 24px 8px; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid var(--line); }
+  .ds .pilares > div:first-child { padding-left: 0; }
+  .ds .pilares > div:last-child { border-right: 0; padding-right: 0; }
+  .ds .pilares h3 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; }
+  .ds .pilares p:last-child { color: var(--text-2); font-size: 15px; }
+
+  /* simulador */
+  .ds .sim-sec .cab { margin-inline: auto; text-align: center; align-items: center; }
+  .ds .sim { max-width: 860px; margin: 0 auto; outline-offset: 6px; }
+  .ds .sim .janela { box-shadow: 0 40px 100px rgba(0, 0, 0, .6), 0 0 0 1px rgba(70, 209, 126, .12); }
+  .ds .sim:focus-within .janela { border-color: #2b5a3d; }
+  .ds .sim-tela { padding: 16px 18px; min-height: 330px; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; gap: 2px; }
+  .ds .sim-h { padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line); color: var(--text-2); }
+  .ds .sim-h b { color: var(--primary); letter-spacing: .08em; margin-right: 10px; }
+  .ds .sim-h i { color: var(--text-3); }
+  .ds .sim-h u { color: var(--accent); text-decoration: none; }
+  .ds .sim-l { display: flex; align-items: center; gap: 14px; padding: 6px 10px; border-radius: 6px; color: var(--text-2); }
+  .ds .sim-l.sel { background: var(--surface-2); color: var(--text); box-shadow: inset 2px 0 0 var(--primary); }
+  .ds .sim-l > span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ds .sim-l em { color: var(--text-3); font-size: 13px; }
+  .ds .sim-l em.perigo { color: var(--danger); }
+  .ds .sim-l > span:first-child { min-width: 4.2ch; }
+  .ds .sim-diff { margin-top: 10px; padding: 12px 14px; border-radius: 8px; background: #05070a; border: 1px solid var(--line); font-size: 13px; color: var(--text-2); overflow-x: auto; }
+  .ds .sim-diff p { white-space: pre; }
+  .ds .sim-diff .mais { color: var(--primary); }
+  .ds .sim-diff .menos { color: var(--danger); }
+  .ds .sim-pe { margin-top: auto; padding-top: 14px; font-size: 12px; color: var(--text-3); }
+  .ds .sim-teclas { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line); background: var(--surface); }
+  .ds .sim-teclas [hidden] { display: none; }
+  .ds .sim-nota { margin-top: 18px; text-align: center; font-size: 13px; color: var(--text-3); }
+
+  /* lado a lado */
+  .ds .lado { display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start; }
+  .ds .lado-inv { flex-wrap: wrap-reverse; }
+  .ds .lado-m { flex: 1.3 1 560px; min-width: 0; }
+  .ds .lado-t { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+  .ds .atalhos-lista { border-top: 1px solid var(--line); }
+  .ds .atalhos-lista li { display: flex; gap: 16px; justify-content: space-between; align-items: center; padding: 13px 4px; border-bottom: 1px solid var(--line); transition: background .2s, padding-left .35s var(--bounce); }
+  .ds .atalhos-lista li:hover { background: var(--surface); padding-left: 14px; }
+  .ds .ks { display: flex; gap: 6px; flex: none; }
+  .ds .aviso { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 10px; border: 1px solid #4b3d1c; background: #18150d; }
+  .ds .aviso p { font-size: 15px; }
+  .ds .aviso p span { color: var(--text-2); }
+  .ds .aviso .kbd { border-color: var(--accent); color: var(--accent); flex: none; }
+  .ds .aviso.azul { flex-direction: column; gap: 8px; border-color: #1f3b5c; background: #0e1724; }
+  .ds .aviso.azul code { font-size: 14px; }
+  .ds .aviso.azul i { color: var(--c-run); }
+  .ds .grade-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .ds .card { border: 1px solid var(--line); border-radius: 10px; padding: 18px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+  .ds .card span { font-size: 14px; color: var(--text-2); }
+  .ds .lift { transition: transform .45s var(--bounce), border-color .25s; }
+  .ds .lift:hover { transform: translateY(-5px); border-color: var(--line-2); }
+
+  /* módulos */
+  .ds .modulos { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; gap: 0; }
+  .ds .modulos-cab { display: flex; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-3); }
+  .ds .modulos-cab span:first-child { width: 92px; }
+  .ds .modulo { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); border-left: 3px solid var(--cor); transition: background .2s, padding-left .35s var(--bounce); }
+  .ds .modulo:last-child { border-bottom: 0; }
+  .ds .modulo:hover { background: var(--surface-2); padding-left: 28px; }
+  .ds .modulo > b { width: 92px; font-size: 12px; font-weight: 700; color: var(--cor); padding-top: 4px; }
+  .ds .modulo > div { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
+  .ds .modulo > div > div { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ds .modulo > div > div span { font-size: 13px; padding: 3px 9px; border-radius: 6px; background: var(--surface-2); }
+  .ds .modulo:hover > div > div span { background: var(--bg); }
+  .ds .modulo p { font-size: 14px; color: var(--text-2); }
+
+  /* entrega */
+  .ds .duplo { display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch; }
+  .ds .painel { flex: 1 1 460px; min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+  .ds .painel-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .ds .painel-cab h3 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+  .ds .painel-cab span { font-size: 12px; }
+  .ds .passos { display: flex; flex-direction: column; gap: 14px; }
+  .ds .passos li { display: flex; gap: 14px; }
+  .ds .passos li > span:first-child { color: var(--accent); }
+  .ds .painel-pe { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); font-size: 15px; color: var(--text-2); }
+  .ds .term { border-radius: 10px; background: #05070a; border: 1px solid var(--line); padding: 16px 18px; font-size: 13px; line-height: 1.9; }
+
+  /* atalhos */
+  .ds .grade-atalhos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; align-content: start; }
+  .ds .grade-atalhos > div { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 15px; }
+
+  /* arquitetura */
+  .ds .arch { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 32px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); }
+  .ds .arch-col { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .ds .arch-col > p:first-child { font-size: 12px; }
+  .ds .chip { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line-2)); background: var(--surface); font-size: 13px; }
+  .ds .arch-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ds .seta { flex: none; color: var(--text-3); }
+  .ds .arch-no { flex: 1 1 200px; min-width: 0; padding: 28px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); text-align: center; display: flex; flex-direction: column; gap: 6px; }
+  .ds .arch-no.verde-no { border-color: var(--primary); background: #0f1d15; flex-basis: 220px; }
+  .ds .arch-no p { font-size: 12px; }
+  .ds .arch-no b { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .ds .arch-no span { font-size: 14px; color: var(--text-2); }
+  .ds .arch-pe { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+  .ds .arch-pe p { font-size: 13px; }
+  .ds .arch-pe a { font-size: 15px; font-weight: 500; }
+
+  /* config */
+  .ds .duplo-cod { display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; }
+  .ds .duplo-cod > div { flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .ds .duplo-cod h3 { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+  .ds .cod { flex: 1; padding: 20px; border-radius: 14px; background: #05070a; border: 1px solid var(--line); font-size: 13px; line-height: 2; color: var(--text); white-space: pre; overflow-x: auto; }
+  .ds .cod b { color: var(--accent); font-weight: 400; }
+
+  /* cta */
+  .ds .cta-in { display: flex; flex-wrap: wrap; gap: 56px; align-items: center; padding-block: calc(var(--sec-y) + 8px); }
+  .ds .cta-txt { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+  .ds .cta-txt .wave { font-size: 26px; letter-spacing: 3px; }
+  .ds .cta-txt h2 { font-size: clamp(40px, 6vw, 68px); line-height: 1; letter-spacing: -0.045em; }
+  .ds .cta-cmd { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+
+  .ds .rodape { border-top: 1px solid var(--line); }
+  .ds .rodape-in { padding-block: 28px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; font-size: 14px; }
+  .ds .rodape-in p { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--text); }
+  .ds .rodape-in nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .ds .rodape-in nav a { color: var(--text-2); text-decoration: none; padding: 10px 0; }
+  .ds .rodape-in nav a:hover { color: var(--text); }
+
+  /* revelação: só liga com html.anim */
+  .anim .ds [data-rv] { opacity: 0; transform: translateY(28px); transition: opacity .7s var(--ease), transform .8s var(--bounce); }
+  .anim .ds [data-rv='left'] { transform: translateX(-36px); }
+  .anim .ds [data-rv='right'] { transform: translateX(36px); }
+  .anim .ds [data-rv='zoom'] { transform: scale(.94) translateY(16px); }
+  .anim .ds [data-rv].in { opacity: 1; transform: none; }
+  .anim .ds [data-stagger] > * { opacity: 0; transform: translateY(26px) scale(.97); transition: opacity .6s var(--ease), transform .75s var(--bounce); }
+  .anim .ds [data-stagger='left'] > * { transform: translateX(-28px); }
+  .anim .ds [data-stagger='right'] > * { transform: translateX(28px); }
+  .anim .ds [data-stagger='pop'] > * { transform: scale(.6); }
+  .anim .ds [data-stagger].in > * { opacity: 1; transform: none; }
+
+  @media (max-width: 1024px) { .ds { --sec-y: 104px; } }
+  @media (max-width: 860px) {
+    .ds { --sec-y: 80px; --gut: 20px; }
+    .ds .nav-links, .ds .nav-gh { display: none; }
+    .ds .hero-in { padding-top: 44px; padding-bottom: 56px; gap: 40px; }
+    .ds .hero-cards { margin: -44px 0 0 12px; width: calc(100% - 24px); max-width: 340px; }
+    .ds .pilares > div { border-right: 0; border-bottom: 1px solid var(--line); padding: 22px 0; }
+    .ds .arch { padding: 20px; }
+    .ds .seta { rotate: 90deg; margin: 0 auto; }
+    .ds h2 { font-size: clamp(30px, 8.6vw, 42px); }
+    .ds .lead { font-size: 17px; }
+    .ds .fixa { position: static; }
+    .ds .painel { padding: 22px; }
+    .ds .cta-row .btn { flex: 1 1 auto; justify-content: center; }
+    .ds .sim-tela { min-height: 300px; font-size: 13px; }
+    .ds .sim-l em { display: none; }
+  }
+  @media (hover: none) {
+    .ds .lift:hover, .ds .hero-cards > div:hover { transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ds .spin, .ds .spin-r, .ds .spin-ring, .ds .float, .ds .float-2, .ds .marquee,
+    .ds .wave b, .ds .dot-live, .ds .cue, .ds .caret { animation: none; }
+  }
+</style>
