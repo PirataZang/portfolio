@@ -1,0 +1,796 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  SPILL — site do app de cartas (Android, offline, sem cadastro).
+
+  Mesa de jogo à noite: fundo escuro, uma luz ambiente que toma a cor da seção
+  em vista e as cartas como objeto principal. Tudo que se vê é demonstração
+  funcional: o baralho do topo se arrasta, os sete baralhos de conversa e os
+  seis jogos de shot trocam de carta. O Modo Drink fica atrás de uma
+  confirmação de +18 (guardada só na sessão do navegador).
+*/
+
+const BASE = import.meta.env.BASE_URL;
+const titulo = 'Spill — cartas para a roda de amigos';
+const descricao =
+  'App de cartas para Android, grátis e offline: 140 cartas de conversa em sete baralhos e um Modo Drink +18 com seis jogos de shot.';
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta name="theme-color" content="#16151B" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Unbounded:wght@400..900&display=swap"
+    />
+  </Fragment>
+
+<div class="amb" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="bar" id="bar">
+  <div class="wrap">
+    <a class="brand" href="#topo" aria-label="Spill, voltar ao topo">
+      <svg viewBox="-12 44 264 160" aria-hidden="true"><use href="#fan"/></svg>
+      <b>spill</b>
+    </a>
+    <nav class="nav" aria-label="Seções">
+      <a href="#conversa">Conversa</a>
+      <a href="#como-jogar">Como jogar</a>
+      <a href="#drink">Modo Drink</a>
+      <a href="#baixar">Baixar</a>
+    </nav>
+    <a class="btn btn-main" href="https://github.com/PirataZang/Spill/releases/latest/download/Spill.apk" target="_blank" rel="noopener">Baixar APK</a>
+  </div>
+</header>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="fs" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".32"/></filter>
+    <g id="fan">
+      <g transform="rotate(-30 120 236)"><rect x="84" y="56" width="72" height="104" rx="11" fill="#168048" filter="url(#fs)"/><rect x="89.5" y="61.5" width="61" height="93" rx="7" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"/><circle cx="97" cy="74" r="3.2" fill="#fff"/></g>
+      <g transform="rotate(-15 120 236)"><rect x="84" y="56" width="72" height="104" rx="11" fill="#2A5BE8" filter="url(#fs)"/><rect x="89.5" y="61.5" width="61" height="93" rx="7" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"/><circle cx="97" cy="74" r="3.2" fill="#fff"/></g>
+      <g><rect x="84" y="56" width="72" height="104" rx="11" fill="#F7C531" filter="url(#fs)"/><rect x="89.5" y="61.5" width="61" height="93" rx="7" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="2"/><circle cx="97" cy="74" r="3.2" fill="#fff"/></g>
+      <g transform="rotate(15 120 236)"><rect x="84" y="56" width="72" height="104" rx="11" fill="#D7263D" filter="url(#fs)"/><rect x="89.5" y="61.5" width="61" height="93" rx="7" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"/><circle cx="97" cy="74" r="3.2" fill="#fff"/></g>
+      <g transform="rotate(30 120 236)"><rect x="84" y="56" width="72" height="104" rx="11" fill="#0D0D10" stroke="#fff" stroke-opacity=".16" stroke-width="1" filter="url(#fs)"/><rect x="89.5" y="61.5" width="61" height="93" rx="7" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"/><circle cx="97" cy="74" r="3.2" fill="#fff"/><path d="M107 97h26a6 6 0 0 1 6 6v11a6 6 0 0 1-6 6h-14l-8 7v-7h-4a6 6 0 0 1-6-6v-11a6 6 0 0 1 6-6z" fill="#fff"/><circle cx="113" cy="108.5" r="2.4" fill="#0D0D10"/><circle cx="120" cy="108.5" r="2.4" fill="#0D0D10"/><circle cx="127" cy="108.5" r="2.4" fill="#0D0D10"/></g>
+    </g>
+  </defs>
+</svg>
+
+<main id="topo">
+  <!-- HERO -->
+  <section class="hero" data-glow="#2A5BE8" aria-labelledby="h1">
+    <div class="wrap">
+      <div class="hero-copy">
+        <svg class="logo-fan" viewBox="-12 44 264 160" role="img" aria-label="Logo do Spill: cinco cartas em leque">
+          <g class="fg" style="--a:-30deg"><use href="#fan"/></g>
+        </svg>
+        <p class="eyebrow">App Android · grátis · sem internet</p>
+        <h1 id="h1">Cartas para a roda de amigos.</h1>
+        <p class="lede">Puxe uma carta, puxe assunto. Ou puxe um shot.</p>
+        <p class="sub">140 cartas de conversa em sete baralhos e um Modo Drink +18 com seis jogos de shot. Sem cadastro, sem anúncio. Abriu, escolheu, jogou.</p>
+        <div class="cta">
+          <a class="btn btn-main" href="https://github.com/PirataZang/Spill/releases/latest/download/Spill.apk" target="_blank" rel="noopener">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Baixar o APK
+          </a>
+          <a class="btn btn-ghost" href="#o-que-e">Como funciona</a>
+        </div>
+        <p class="fine"><span>Android 8.0 ou mais novo</span><span>Baixa sempre a versão mais recente</span></p>
+      </div>
+
+      <div class="deck-zone">
+        <div class="deck" id="deck" tabindex="0" role="region" aria-roledescription="baralho" aria-label="Baralho de exemplo. Use as setas ou o botão Próxima carta para puxar a próxima."></div>
+        <div class="deck-ctl">
+          <span id="deckHint">Arraste a carta pra puxar a próxima</span>
+          <button class="btn btn-ghost" type="button" id="deckNext">Próxima carta →</button>
+        </div>
+        <p class="sr" id="deckLive" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FACTS -->
+  <section class="facts" aria-label="O Spill em números">
+    <div class="wrap">
+      <ul>
+        <li><b>140</b><span>cartas de conversa, em 7 baralhos</span></li>
+        <li><b>1.200</b><span>cartas de shot, em 6 jogos</span></li>
+        <li><b>PT · EN</b><span>troque o idioma no topo da tela</span></li>
+        <li><b>0</b><span>permissões pedidas pelo app</span></li>
+        <li><b>Offline</b><span>sem cadastro, sem internet, sem anúncio</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- O QUE É -->
+  <section id="o-que-e" data-glow="#D7263D" aria-labelledby="h-what">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">O que é o Spill</p>
+        <h2 class="h2" id="h-what">O celular deixa de ser distração e vira pretexto pra conversar.</h2>
+        <p class="lede">O Spill é um app de cartas feito para <b>juntar gente</b>: numa mesa, num churrasco, numa viagem ou numa resenha de sexta. A ideia é rir, puxar assunto e se conhecer melhor. Ele tem dois lados.</p>
+      </div>
+      <div class="sides">
+        <a class="side" href="#conversa" style="--c:var(--green)">
+          <span class="side-tag">Spill, a conversa</span>
+          <dl>
+            <div><dt>Pra quê</dt><dd>Quebrar o gelo e puxar assunto de verdade.</dd></div>
+            <div><dt>Como</dt><dd>Cartas de filmes, séries, músicas, temas e cantadas, em 7 baralhos coloridos.</dd></div>
+            <div><dt>Clima</dt><dd>Leve, pra qualquer idade.</dd></div>
+            <div><dt>Cartas</dt><dd>140, em português e inglês.</dd></div>
+          </dl>
+          <span class="side-go">Ver a conversa →</span>
+        </a>
+        <a class="side" href="#drink" style="--c:var(--wine)">
+          <span class="side-tag">Modo Drink +18</span>
+          <dl>
+            <div><dt>Pra quê</dt><dd>Animar a noite com jogos de bebida.</dd></div>
+            <div><dt>Como</dt><dd>6 jogos com níveis de intensidade e escala de shots.</dd></div>
+            <div><dt>Clima</dt><dd>Só para maiores de 18.</dd></div>
+            <div><dt>Cartas</dt><dd>1.200, em português.</dd></div>
+          </dl>
+          <span class="side-go">Ver os jogos de shot →</span>
+        </a>
+      </div>
+      <p class="lede" style="margin-top:28px">Sem cadastro, sem internet, sem anúncio. <b>Abriu, escolheu, jogou.</b></p>
+    </div>
+  </section>
+
+  <!-- CONVERSA -->
+  <section id="conversa" data-glow="#168048" aria-labelledby="h-conv">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Spill, a conversa</p>
+        <h2 class="h2" id="h-conv">Uma boa pergunta começa a conversa.</h2>
+        <p class="lede">Cada carta traz uma, puxada de um filme, uma série, uma música ou da vida. São <b>sete baralhos</b>, cada um com seu clima, de perguntas para um encontro a cantadas para testar na roda. Toque num deles.</p>
+      </div>
+      <div class="rail" id="decks" role="group" aria-label="Baralhos"></div>
+      <div class="deck-show">
+        <div id="deckCard"></div>
+        <div class="deck-info" aria-live="polite">
+          <p class="eyebrow" id="deckName"></p>
+          <h3 id="deckLabel"></h3>
+          <p id="deckBlurb"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO JOGAR -->
+  <section id="como-jogar" data-glow="#F7C531" aria-labelledby="h-how">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Como se joga</p>
+        <h2 class="h2" id="h-how">Cinco passos, nenhuma regra difícil.</h2>
+      </div>
+      <ol class="steps">
+        <li class="step" style="--i:0;--c:var(--green);--ink:#F2FFF7"><div><h3>Escolha um modo</h3><p><b>Aleatório</b> mistura todos os baralhos. <b>Temático</b> fica numa cor só, e a rodada inteira tem o mesmo clima.</p></div></li>
+        <li class="step" style="--i:1;--c:var(--blue);--ink:#F4F6FF"><div><h3>Leia a carta em voz alta</h3><p>E fale por mais ou menos um minuto.</p></div></li>
+        <li class="step" style="--i:2;--c:var(--yellow);--ink:#1B1608"><div><h3>Continue a conversa</h3><p>Todo mundo pode fazer perguntas ou entrar com a própria história.</p></div></li>
+        <li class="step" style="--i:3;--c:var(--red);--ink:#FFF3F4"><div><h3>Próxima carta</h3><p>Arraste a carta para qualquer lado da tela, ou toque em Próxima.</p></div></li>
+        <li class="step" style="--i:4;--c:#3A3646;--ink:#F1EFF6"><div><h3>Pontos, se quiserem</h3><p>Depois de cada resposta, o grupo dá um ponto para a mais criativa. Ninguém ganha de verdade.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- DRINK -->
+  <section id="drink" class="drink" data-glow="#7A1022" aria-labelledby="h-drink">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="badge18" aria-hidden="true">+18</span>
+        <p class="eyebrow">Modo Drink · só para maiores de 18</p>
+        <h2 class="h2" id="h-drink">Seis jogos de shot dentro do mesmo app.</h2>
+        <p class="lede">Visual próprio, fundo escuro e <b>uma cor e um ícone para cada jogo</b>. Antes de abrir, o app pede a confirmação de idade. Escolha um jogo e um nível pra ver uma carta.</p>
+      </div>
+      <div class="rail games" id="games" role="group" aria-label="Jogos de shot"></div>
+      <p class="mixnote">E o <b>Misturado</b>, que alterna Desafio e Eu nunca, uma carta de cada.</p>
+
+      <div class="gshow">
+        <div class="stage locked" id="stage">
+          <div id="gcard"></div>
+          <div class="gate" id="gate">
+            <span class="badge18" aria-hidden="true">+18</span>
+            <p>As cartas deste modo falam de sexo, bebida e vergonha alheia.</p>
+            <button class="btn btn-main" type="button" id="gateYes">Tenho 18 anos ou mais</button>
+          </div>
+        </div>
+        <div class="ginfo" aria-live="polite">
+          <p class="one" id="gOne"></p>
+          <h3 id="gName"></h3>
+          <p id="gHow"></p>
+          <div class="levels" role="group" aria-label="Nível da carta" id="levels"></div>
+        </div>
+      </div>
+
+      <div class="shots">
+        <h3>Quanto se bebe</h3>
+        <p class="lede" style="font-size:17px">Cada carta tem de uma a três caveiras. É o nível, e <b>cada caveira vale 1 shot</b>.</p>
+        <ul id="shots"></ul>
+        <p class="tot">São <b>200 cartas por jogo</b>, <b>1.200 no total</b>, sem repetir enunciado.</p>
+      </div>
+
+      <div class="round">
+        <h3>Monte a rodada</h3>
+        <ul>
+          <li><b>Jogo</b><span>Uma fila deslizante com os 6 jogos e o Misturado.</span></li>
+          <li><b>Níveis</b><span>Quais entram na rodada. Pelo menos um fica sempre ligado.</span></li>
+          <li><b>Escalada</b><span>A rodada começa no mico e esquenta até o pesado. Desligada, as cartas vêm embaralhadas.</span></li>
+          <li><b>Modo leve</b><span>Gole em vez de shot, pra noite durar.</span></li>
+        </ul>
+      </div>
+
+      <div class="warn"><span class="badge18" aria-hidden="true">+18</span><p>Ninguém é obrigado a responder: é pra isso que existe o shot. Beba com responsabilidade e nunca dirija depois de beber.</p></div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section id="baixar" data-glow="#168048" aria-labelledby="h-dl">
+    <div class="wrap">
+      <div class="dl-card">
+        <div class="dl-cta">
+          <p class="eyebrow">Baixar e instalar</p>
+          <h2 class="h2" id="h-dl">Chama a galera. Baixa o Spill.</h2>
+          <p class="lede">O APK sai direto do GitHub, na versão mais recente. O app não pede permissão nenhuma e funciona totalmente offline.</p>
+          <a class="btn btn-main" href="https://github.com/PirataZang/Spill/releases/latest/download/Spill.apk" target="_blank" rel="noopener">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Baixar Spill.apk
+          </a>
+          <a href="https://github.com/PirataZang/Spill/releases/latest" target="_blank" rel="noopener" style="font-size:15px;color:var(--muted)">Ver notas da versão</a>
+        </div>
+        <ol class="dl-steps">
+          <li><div><b>Baixe o Spill.apk</b><br><span>Pelo botão ao lado ou pela página de Releases do GitHub.</span></div></li>
+          <li><div><b>Abra o arquivo no Android</b><br><span>Precisa ser Android 8.0 ou mais novo. Se ele pedir, libere “instalar apps desconhecidos” para o navegador ou o gerenciador de arquivos.</span></div></li>
+          <li><div><b>Abra o Spill e escolha como jogar</b><br><span>Conversa ou Modo Drink. Sem cadastro.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <svg viewBox="-12 44 264 160" aria-hidden="true"><use href="#fan"/></svg>
+    <p>Feito para juntar gente.</p>
+    <nav aria-label="Links">
+      <a href={`${BASE}#projetos`}>← Portfólio do Igor</a>
+      <a href="https://github.com/PirataZang/Spill" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/PirataZang/Spill/releases/latest" target="_blank" rel="noopener">Releases</a>
+      <a href="https://github.com/PirataZang/Spill/blob/main/LICENSE" target="_blank" rel="noopener">Licença MIT</a>
+    </nav>
+  </div>
+</footer>
+</Base>
+
+<style is:global>
+/* Layout: a game table at night. One dark world (the app's own), an ambient glow behind everything that
+   takes the color of whatever is in view, cards as the hero object, rails that scroll sideways on phones. */
+@property --ga { syntax: '<color>'; inherits: false; initial-value: #2A5BE8; }
+:root {
+  color-scheme: dark;
+  --bg: #16151B;
+  --deep: #0B0A0E;
+  --surface: #201E27;
+  --raised: #2B2834;
+  --line: #38343F;
+  --fg: #F2F0F7;
+  --muted: #A7A2B5;
+  --green: #168048;
+  --blue: #2A5BE8;
+  --yellow: #F7C531;
+  --red: #D7263D;
+  --black: #0D0D10;
+  --wine: #7A1022;
+  --purple: #6B3FD9;
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --body: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --gut-l: max(16px, env(safe-area-inset-left, 0px));
+  --gut-r: max(16px, env(safe-area-inset-right, 0px));
+  --g: #2A5BE8;
+}
+html { scroll-behavior: smooth; overflow-x: clip; }
+body {
+  margin: 0; overflow-x: clip;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 17px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+* { box-sizing: border-box; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2.5px solid var(--fg); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ambient light: follows the section in view */
+.amb {
+  position: fixed; inset: -10% -10% 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(55% 38% at var(--mx, 50%) 30%, color-mix(in srgb, var(--ga) 55%, transparent), transparent 70%),
+    radial-gradient(40% 30% at 85% 85%, color-mix(in srgb, var(--ga) 22%, transparent), transparent 70%);
+  opacity: .55; transition: --ga .9s ease; will-change: transform; contain: strict;
+}
+.grain { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .05; will-change: transform;
+  background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 3px 3px; }
+main, header, footer { position: relative; z-index: 1; }
+
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding-left: var(--gut-l); padding-right: var(--gut-r); }
+section { padding-block: clamp(72px, 12vw, 128px); }
+.eyebrow { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.h2 { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 7.4vw, 56px); line-height: 1.02; letter-spacing: -.03em; }
+.lede { font-size: clamp(17px, 2.4vw, 20px); color: var(--muted); max-width: 58ch; }
+.lede b { color: var(--fg); font-weight: 600; }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 0 22px; border-radius: 16px; border: 0;
+  font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: .01em; text-decoration: none; cursor: pointer;
+  transition: transform .15s, box-shadow .2s, background .2s;
+}
+.btn-main { background: var(--fg); color: var(--bg); box-shadow: 0 0 0 0 var(--g), 0 14px 40px -12px color-mix(in srgb, var(--g) 80%, transparent); }
+.btn-main:hover { transform: translateY(-2px); box-shadow: 0 0 0 4px color-mix(in srgb, var(--g) 45%, transparent), 0 18px 50px -12px color-mix(in srgb, var(--g) 90%, transparent); }
+.btn-main:active { transform: translateY(1px); }
+.btn-ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); font-family: var(--body); font-weight: 600; font-size: 16px; }
+.btn-ghost:hover { background: var(--surface); border-color: var(--muted); }
+.btn svg { flex: none; }
+
+/* ---------- top bar ---------- */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  border-bottom: 1px solid transparent; transition: background .3s, border-color .3s;
+}
+.bar.on { background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-color: var(--line); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand svg { width: 46px; height: auto; }
+.brand b { font-family: var(--display); font-weight: 900; font-size: 22px; letter-spacing: -.04em; }
+.nav { display: none; gap: 22px; font-size: 15px; font-weight: 600; color: var(--muted); }
+.nav a { text-decoration: none; }
+.nav a:hover { color: var(--fg); }
+.bar .btn { min-height: 44px; padding: 0 16px; font-size: 13px; border-radius: 12px; }
+@media (min-width: 860px) { .nav { display: flex; } }
+
+/* ---------- hero ---------- */
+.hero { padding-block: 28px 64px; }
+.hero .wrap { display: grid; gap: 40px; align-items: center; }
+.hero-copy { display: grid; gap: 20px; justify-items: start; }
+.logo-fan { width: 168px; }
+.logo-fan .fg { transform-box: fill-box; transform-origin: 50% 100%; animation: fan 1s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes fan { from { transform: translateY(14px) scale(.86); opacity: 0; } }
+.hero h1 { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 11vw, 84px); line-height: .95; letter-spacing: -.045em; }
+.hero .lede { font-size: clamp(19px, 4.6vw, 23px); color: var(--fg); font-weight: 600; }
+.hero .sub { color: var(--muted); max-width: 46ch; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.fine { font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.fine span { display: inline-flex; align-items: center; gap: 6px; }
+.fine span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--g); transition: background .9s; }
+
+.deck-zone { display: grid; justify-items: center; gap: 14px; }
+.deck { --w: min(76vw, 320px); position: relative; width: var(--w); height: calc(var(--w) / .7 + 40px); touch-action: pan-y; }
+.deck:focus-visible { outline-offset: 10px; border-radius: 24px; }
+.deck .card { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; transition: transform .45s cubic-bezier(.2, .8, .2, 1), opacity .45s; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none; will-change: transform; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent), 0 24px 40px -24px #000; }
+.deck .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: #0B0A0E; opacity: var(--dim, 0); transition: opacity .45s; pointer-events: none; }
+.deck .card[data-pos="1"] { transform: translateY(18px) scale(.95) rotate(2deg); --dim: .34; }
+.deck .card[data-pos="2"] { transform: translateY(36px) scale(.9) rotate(-2deg); --dim: .58; }
+.deck .card[data-pos="3"] { transform: translateY(54px) scale(.85); opacity: 0; }
+.deck .card.held { transition: none; cursor: grabbing; }
+.deck-ctl { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--muted); }
+.deck-ctl .btn { min-height: 44px; font-size: 14px; padding: 0 16px; white-space: nowrap; }
+
+@media (min-width: 900px) {
+  .hero { padding-block: 56px 96px; }
+  .hero .wrap { grid-template-columns: 1.1fr .9fr; }
+}
+
+/* ---------- cards (shared) ---------- */
+.card {
+  container-type: inline-size; width: var(--w, 300px); aspect-ratio: .7;
+  border-radius: calc(var(--w, 300px) * .07); background: var(--c); color: var(--ink);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent), 0 40px 70px -30px #000;
+}
+.frame {
+  position: absolute; inset: 3.4cqi; overflow: hidden;
+  display: flex; flex-direction: column; padding: 5.4cqi 6cqi 4.4cqi;
+  border: 2px solid color-mix(in srgb, var(--ink) 50%, transparent); border-radius: 5cqi;
+}
+.oval::before {
+  content: ""; position: absolute; inset: 24% -22%; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  background: color-mix(in srgb, var(--ink) 6%, transparent); transform: rotate(-28deg);
+}
+.corner { position: absolute; font-family: var(--display); font-weight: 800; font-size: 6.4cqi; line-height: 1; }
+.corner.tl { top: 4cqi; left: 4.4cqi; } .corner.br { bottom: 4cqi; right: 4.4cqi; transform: rotate(180deg); }
+.face { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4.2cqi; text-align: center; }
+.pill { padding: 1.5cqi 3.4cqi; border: 1.5px solid color-mix(in srgb, var(--ink) 45%, transparent); border-radius: 999px; font-family: var(--display); font-size: max(9px, 3cqi); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
+.title { font-family: var(--body); font-weight: 800; font-size: 11cqi; line-height: .95; letter-spacing: -.025em; margin: 0; }
+.title.long { font-size: 8.6cqi; }
+.prompt { font-size: max(13px, 5.2cqi); font-weight: 500; line-height: 1.3; max-width: 24ch; }
+.deckname { position: relative; align-self: center; opacity: .85; font-family: var(--display); font-size: max(8px, 2.7cqi); letter-spacing: .2em; text-transform: uppercase; }
+
+/* drink card */
+.dtop { position: relative; display: flex; justify-content: space-between; align-items: center; }
+.skulls { display: flex; gap: .6cqi; }
+.skulls svg { width: 6cqi; height: 6cqi; }
+.skulls .off { opacity: .25; }
+.dmid { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.4cqi; text-align: center; }
+.dbg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: .13; pointer-events: none; }
+.deye { font-family: var(--display); font-size: max(8px, 3cqi); font-weight: 500; letter-spacing: .16em; text-transform: uppercase; opacity: .85; }
+.dlead { font-family: var(--display); font-size: max(11px, 4.4cqi); font-weight: 700; }
+.dmain { font-weight: 800; font-size: 8cqi; line-height: 1.06; letter-spacing: -.015em; margin: 0; }
+.dmain.big { font-size: 10cqi; }
+.dbot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1.6cqi; padding-top: 4cqi; border-top: 1.5px dashed color-mix(in srgb, var(--ink) 38%, transparent); text-align: center; }
+.drule { font-family: var(--display); font-size: max(8px, 3cqi); font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.dall { font-size: max(12px, 4.7cqi); font-weight: 500; line-height: 1.3; }
+.ddet { font-size: max(10px, 3.6cqi); opacity: .8; }
+.dfoot { position: relative; align-self: center; margin-top: 3cqi; opacity: .85; font-family: var(--display); font-size: max(8px, 2.8cqi); letter-spacing: .2em; text-transform: uppercase; }
+.opt { align-self: stretch; display: flex; align-items: center; gap: 3.4cqi; padding: 3.2cqi 4cqi; border: 1.5px solid color-mix(in srgb, var(--ink) 45%, transparent); border-radius: 4cqi; background: color-mix(in srgb, var(--ink) 8%, transparent); text-align: left; font-size: max(12px, 5.6cqi); font-weight: 700; line-height: 1.2; }
+.num { flex: none; display: grid; place-items: center; width: 8.6cqi; height: 8.6cqi; border-radius: 50%; background: var(--ink); color: var(--c); font-family: var(--display); font-size: 4cqi; font-weight: 800; }
+
+/* ---------- facts ---------- */
+.facts { padding-block: 0 24px; }
+.facts ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.facts li { padding: 18px 16px; border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--surface) 70%, transparent); display: grid; gap: 4px; }
+.facts li:last-child { grid-column: 1 / -1; }
+.facts b { font-family: var(--display); font-weight: 800; font-size: clamp(24px, 6vw, 34px); letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.facts span { font-size: 14px; color: var(--muted); }
+@media (min-width: 760px) { .facts ul { grid-template-columns: repeat(5, minmax(0, 1fr)); } .facts li:last-child { grid-column: auto; } }
+
+/* ---------- o que é ---------- */
+.sides { display: grid; gap: 14px; }
+.side { position: relative; overflow: hidden; display: grid; gap: 18px; padding: 24px 22px; border-radius: 24px; text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--c) 55%, var(--line)); background: color-mix(in srgb, var(--c) 14%, var(--surface)); transition: transform .2s, border-color .2s; }
+.side::before { content: ""; position: absolute; inset: -40% -30% auto auto; width: 60%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(color-mix(in srgb, var(--c) 60%, transparent), transparent 65%); pointer-events: none; }
+.side:hover { transform: translateY(-3px); border-color: var(--c); }
+.side > * { position: relative; }
+.side-tag { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+.side dl { margin: 0; display: grid; gap: 12px; }
+.side dl div { display: grid; grid-template-columns: 76px 1fr; gap: 12px; }
+.side dt { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+.side dd { margin: 0; }
+.side-go { font-weight: 700; font-size: 15px; }
+@media (min-width: 760px) { .sides { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- conversa ---------- */
+.sec-head { display: grid; gap: 14px; margin-bottom: 34px; }
+.rail { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  margin-left: calc(-1 * var(--gut-l)); margin-right: calc(-1 * var(--gut-r)); padding: 8px var(--gut-r) 16px var(--gut-l); scroll-padding-left: var(--gut-l); }
+.rail::-webkit-scrollbar { display: none; }
+.deckbtn { flex: none; width: 128px; scroll-snap-align: start; display: grid; gap: 10px; justify-items: start; padding: 10px 10px 14px; border-radius: 20px; border: 1.5px solid var(--line); background: var(--surface); cursor: pointer; text-align: left; transition: border-color .2s, transform .2s, background .2s; }
+.deckbtn:hover { transform: translateY(-3px); }
+.deckbtn[aria-pressed="true"] { border-color: var(--fg); background: var(--raised); }
+.mini { position: relative; display: block; width: 100%; aspect-ratio: .78; border-radius: 12px; background: var(--c); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.mini::before { content: ""; position: absolute; inset: 6px; border-radius: 8px; border: 1.5px solid color-mix(in srgb, var(--ink) 55%, transparent); }
+.deckbtn b { font-family: var(--display); font-size: 14px; font-weight: 700; padding-inline: 2px; }
+.deckbtn span { font-size: 13px; color: var(--muted); padding-inline: 2px; }
+.deck-show { margin-top: 28px; display: grid; gap: 28px; align-items: center; }
+#deckCard { --w: min(78vw, 300px); justify-self: center; }
+.deck-show .card { position: relative; }
+.deck-info { display: grid; gap: 12px; }
+.deck-info h3 { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 6vw, 38px); letter-spacing: -.03em; }
+.deck-info p { color: var(--muted); max-width: 44ch; }
+.swap { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (min-width: 820px) { .deck-show { grid-template-columns: auto 1fr; gap: 56px; } #deckCard { justify-self: start; } }
+
+/* ---------- how to play: stacked sticky cards ---------- */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
+.step {
+  counter-increment: s; position: sticky; top: calc(76px + env(safe-area-inset-top, 0px) + var(--i) * 12px);
+  display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start;
+  padding: 22px 20px; border-radius: 22px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, var(--c)); box-shadow: 0 -18px 40px -24px #000;
+}
+.step::before {
+  content: counter(s); display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px;
+  background: var(--c); color: var(--ink); font-family: var(--display); font-weight: 800; font-size: 17px;
+}
+.step h3 { font-family: var(--display); font-size: 18px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 6px; }
+.step p { color: var(--muted); }
+
+/* ---------- drink ---------- */
+.drink { position: relative; background: color-mix(in srgb, var(--deep) 78%, transparent); border-block: 1px solid var(--line); }
+.badge18 { display: inline-grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; border: 3px solid var(--red); font-family: var(--display); font-weight: 900; font-size: 18px; box-shadow: 0 0 30px -4px color-mix(in srgb, var(--red) 70%, transparent); }
+.games .gbtn { width: 132px; }
+.gico { display: grid; place-items: center; width: 100%; height: 76px; border-radius: 14px; background: var(--c); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); }
+.gico svg { height: 54px; width: auto; }
+.deckbtn .gico { color: var(--ink); padding: 0; }
+.mixnote { margin-top: 4px; font-size: 15px; color: var(--muted); }
+.mixnote b { color: var(--fg); }
+.gshow { margin-top: 28px; display: grid; gap: 28px; align-items: center; }
+.stage { position: relative; justify-self: center; }
+.stage { --w: min(78vw, 320px); }
+.stage .card { position: relative; }
+.stage.locked .card { filter: blur(16px) saturate(.8); }
+.gate { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 20px; text-align: center; }
+.gate p { font-size: 15px; color: var(--fg); max-width: 24ch; text-shadow: 0 2px 10px #000; }
+.stage:not(.locked) .gate { display: none; }
+.hold { all: unset; display: block; cursor: pointer; border-radius: calc(var(--w, 300px) * .07); touch-action: none; -webkit-user-select: none; user-select: none; }
+.hold:focus-visible { outline: 2.5px solid var(--fg); outline-offset: 4px; }
+.ginfo { display: grid; gap: 14px; }
+.ginfo h3 { font-family: var(--display); font-size: clamp(26px, 6vw, 38px); font-weight: 800; letter-spacing: -.03em; color: var(--tint); }
+.ginfo .one { font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.ginfo p { color: var(--muted); max-width: 46ch; }
+.levels { display: flex; flex-wrap: wrap; gap: 8px; }
+.lvl { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 600; font-size: 15px; }
+.lvl svg { width: 16px; height: 16px; }
+.lvl[aria-pressed="true"] { border-color: var(--fg); background: var(--raised); }
+@media (min-width: 820px) { .gshow { grid-template-columns: auto 1fr; gap: 56px; } .stage { justify-self: start; } }
+
+.shots { margin-top: 64px; display: grid; gap: 12px; }
+.shots h3, .round h3 { font-family: var(--display); font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.shots ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.shots li { display: grid; grid-template-columns: 88px 1fr auto; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 18px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 80%, transparent); }
+.shots li .sk { display: flex; gap: 3px; }
+.shots li .sk svg { width: 22px; height: 22px; }
+.shots li b { font-family: var(--display); font-size: 16px; }
+.shots li span { display: block; font-size: 14px; color: var(--muted); }
+.shots li em { font-style: normal; font-family: var(--display); font-weight: 700; font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.shots .tot { font-size: 15px; color: var(--muted); }
+.shots .tot b { color: var(--fg); }
+.round { margin-top: 56px; display: grid; gap: 14px; }
+.round ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.round li { padding: 16px 18px; border-radius: 18px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 80%, transparent); }
+.round li b { display: block; font-family: var(--display); font-size: 15px; margin-bottom: 2px; }
+.round li span { color: var(--muted); font-size: 15px; }
+@media (min-width: 760px) { .round ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.warn { margin-top: 40px; display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px; border-radius: 18px; border: 1px solid color-mix(in srgb, var(--red) 55%, var(--line)); background: color-mix(in srgb, var(--red) 9%, transparent); }
+.warn .badge18 { width: 40px; height: 40px; font-size: 12px; border-width: 2px; flex: none; box-shadow: none; }
+.warn p { font-size: 16px; }
+
+/* ---------- download ---------- */
+.dl-card { position: relative; overflow: hidden; display: grid; gap: 28px; padding: clamp(24px, 5vw, 48px); border-radius: 28px; border: 1px solid var(--line); background: var(--surface); }
+.dl-card::before { content: ""; position: absolute; inset: -40% -20% auto auto; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(color-mix(in srgb, var(--g) 50%, transparent), transparent 65%); pointer-events: none; }
+.dl-card > * { position: relative; }
+.dl-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: d; }
+.dl-steps li { counter-increment: d; display: grid; grid-template-columns: 36px 1fr; gap: 14px; align-items: start; }
+.dl-steps li::before { content: counter(d); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--raised); font-family: var(--display); font-weight: 700; font-size: 14px; }
+.dl-steps b { font-weight: 700; }
+.dl-steps span { color: var(--muted); }
+.dl-cta { display: grid; gap: 12px; justify-items: start; }
+.dl-cta .btn-main { min-height: 60px; font-size: 16px; padding: 0 26px; }
+@media (min-width: 860px) { .dl-card { grid-template-columns: 1.1fr .9fr; align-items: center; } }
+
+/* ---------- footer ---------- */
+footer { padding-block: 48px 64px; border-top: 1px solid var(--line); }
+footer .wrap { display: grid; gap: 18px; justify-items: center; text-align: center; }
+footer svg { width: 72px; }
+footer p { color: var(--muted); font-size: 15px; }
+footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 20px; font-size: 15px; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
+}
+</style>
+
+<script is:inline>
+(() => {
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- data (from the app's catalog) ---------- */
+const DECKS = {
+  green:  { c: '#168048', ink: '#F2FFF7', name: 'Verde', label: 'Dia a Dia', blurb: 'Escola, trabalho, faculdade e histórias da vida. Assuntos leves, onde errar é bem-vindo.' },
+  blue:   { c: '#2A5BE8', ink: '#F4F6FF', name: 'Azul', label: 'E Se…', blurb: 'Situações aleatórias: apocalipse, outros planetas, superpoderes estranhos.' },
+  yellow: { c: '#F7C531', ink: '#1B1608', name: 'Amarelo', label: 'Conquistas', blurb: 'Vitórias, sonhos e lugares que você quer conhecer.' },
+  red:    { c: '#D7263D', ink: '#FFF3F4', name: 'Vermelho', label: 'Romance', blurb: 'Amor, primeiros encontros, crushes e histórias de casal.' },
+  black:  { c: '#0D0D10', ink: '#F1EFF6', name: 'Preto', label: 'Cringe', blurb: 'Momentos vergonhosos, micos e comédia pura.', glow: '#5d5873' },
+  orange: { c: '#F06A24', ink: '#1F0E04', name: 'Laranja', label: 'Dates', blurb: 'Perguntas para um encontro. Para sair do papo de elevador e conhecer a pessoa de verdade.' },
+  pink:   { c: '#C72A73', ink: '#FFF0F6', name: 'Rosa', label: 'Cantadas', blurb: 'Cantadas e elogios melhores que um “linda” ou “lindo”. Leia para alguém da roda e deixe a pessoa dar nota.' },
+};
+const CARDS = [
+  ['green', 1, 'Filme', 'O Diabo Veste Prada', 'Quem foi o chefe ou professor mais difícil que você já teve? O que ele fazia?'],
+  ['blue', 3, 'Filme', 'De Volta para o Futuro', 'Você pode visitar um ano, do passado ou do futuro. Qual escolhe, e o que faz lá?'],
+  ['yellow', 3, 'Tema', 'Passaporte', 'Qual país você quer visitar em seguida? Qual é a primeira coisa que você faz lá?'],
+  ['red', 1, 'Filme', 'Titanic', 'Qual foi a coisa mais romântica que alguém já fez por você?'],
+  ['black', 1, 'Tema', 'Conversa Errada', 'Você já mandou mensagem para a pessoa errada? O que aconteceu depois?'],
+  ['orange', 2, 'Filme', 'Antes do Amanhecer', 'Se a gente só tivesse esta noite, o que você ia querer fazer?'],
+  ['pink', 6, 'Cantada', 'Previsão do Tempo', '“A previsão dizia céu limpo. Ninguém avisou que ia ter você.”'],
+];
+
+const SKULL = 'M12 2C17 2 20.5 5.4 20.5 10C20.5 12.6 19.3 14.6 17.5 15.8V19A1 1 0 0 1 16.5 20H15V18H13.5V20H10.5V18H9V20H7.5A1 1 0 0 1 6.5 19V15.8C4.7 14.6 3.5 12.6 3.5 10C3.5 5.4 7 2 12 2ZM6.6 10.8a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0ZM13 10.8a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0ZM12 13.4L13.1 15.4H10.9Z';
+const skull = (cls = '') => `<svg viewBox="0 0 24 24" class="${cls}" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${SKULL}"/></svg>`;
+const ICON = {
+  bottle: `<svg viewBox="0 0 60 140" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" aria-hidden="true"><path d="M22.5 5.5A2.5 2.5 0 0 1 25 3H35A2.5 2.5 0 0 1 37.5 5.5V18H22.5Z"/><path d="M21.8 18H38.2V21.5H21.8Z"/><path d="M24.5 21.5H35.5C35.5 29 36 35 37 40C38.5 46.5 53 49 53 59V129C53 133 50.5 135.5 46.5 135.5H13.5C9.5 135.5 7 133 7 129V59C7 49 21.5 46.5 23 40C24 35 24.5 29 24.5 21.5Z"/><path d="M12 72C20 68 40 68 48 72V112C40 115.5 20 115.5 12 112Z"/><path transform="translate(23 84) scale(.58)" fill="currentColor" stroke="none" fill-rule="evenodd" d="${SKULL}"/></svg>`,
+  glass: `<svg viewBox="0 0 60 70" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M15.2 50H44.8L46 58C45.8 61 44 62.5 41 62.5H19C16 62.5 14.2 61 14 58Z" fill="currentColor" fill-opacity=".2" stroke="none"/><path d="M14.3 22C24 24.2 36 24.2 45.7 22L43.4 50H16.6Z" fill="currentColor" fill-opacity=".4" stroke="none"/><path d="M10 8H50L46 58C45.8 61 44 62.5 41 62.5H19C16 62.5 14.2 61 14 58Z"/><path d="M10 8C20 10.6 40 10.6 50 8" stroke-opacity=".7"/><path d="M19 16L20.8 44" stroke-opacity=".7"/></svg>`,
+  balance: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.2V20"/><path d="M7.5 20.5H16.5"/><path d="M4.2 7.3L19.8 3.1"/><circle cx="12" cy="5.2" r="1.2" fill="currentColor"/><path d="M4.2 7.3L1.9 13M4.2 7.3L6.5 13"/><path d="M1.4 13H7A2.8 2.8 0 0 1 1.4 13Z" fill="currentColor"/><path d="M2.9 12.6L3.3 10.2H5.1L5.5 12.6Z" fill="currentColor"/><path d="M19.8 3.1L17.5 8.8M19.8 3.1L22.1 8.8"/><path d="M17 8.8H22.6A2.8 2.8 0 0 1 17 8.8Z"/></svg>`,
+  spiral: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 12a1 1 0 0 1 2 0a2 2 0 0 1 -4 0a3 3 0 0 1 6 0a4 4 0 0 1 -8 0a5 5 0 0 1 10 0a6 6 0 0 1 -12 0"/></svg>`,
+  skullq: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8C15.9 1.8 18.6 4.4 18.6 7.9C18.6 11.4 15.9 13.4 12 13.4C8.1 13.4 5.4 11.4 5.4 7.9C5.4 4.4 8.1 1.8 12 1.8ZM8.1 8.2a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0 -3.4 0ZM12.5 8.2a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0 -3.4 0ZM12 10.4L12.8 11.9H11.2Z"/><path fill="currentColor" d="M7.6 12.2H11.6V14.6H10.7V13.6H9.6V14.6H8.6V13.6H7.6Z"/><path d="M16.2 11.6C15.6 14 12.4 14.3 12.4 16.6V17.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="12.4" cy="21" r="1.7" fill="currentColor"/></svg>`,
+  fork: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.5V13.5"/><path d="M12 13.5C12 10.5 9.5 9 6.5 6.5"/><path d="M12 13.5C12 10.5 14.5 9 17.5 6.5"/><path d="M6 10.4L5.8 5.8L10.4 6"/><path d="M18 10.4L18.2 5.8L13.6 6"/></svg>`,
+};
+const GAMES = [
+  { id: 'dare', name: 'Desafio', one: 'Responde ou bebe', c: '#0D0D10', ink: '#F1EFF6', tint: '#F1EFF6', glow: '#5d5873', icon: 'bottle', bgw: '50%',
+    how: 'Alguém lê a carta e responde. Quem não quiser, bebe. Depois vem o “Para todos”: a roda inteira responde, e quem fugir bebe 1 (quem leu a carta bebe 2).',
+    cards: [['Qual foi a pior cantada que você já levou?', 'Mande agora a sua pior cantada para alguém da roda.'], ['Qual é a fantasia que dá para contar em voz alta?', 'Qual personagem de filme ou série você acha mais sexy?'], ['Já traiu ou foi traído? Conte como foi.', 'Perdoar traição: sim ou não? Justifique.']] },
+  { id: 'never', name: 'Eu nunca', one: 'Quem já fez, bebe', c: '#7A1022', ink: '#FFF1F3', tint: '#FF7A93', glow: '#7A1022', icon: 'glass', bgw: '72%',
+    how: 'A carta diz algo que alguém pode já ter feito. Quem já fez, assume e bebe. Só uma pessoa bebeu? Ela conta a história ou bebe +1.',
+    cards: [['dormi com a roupa da festa.'], ['fui pego no flagra.'], ['fui traído e perdoei.']] },
+  { id: 'doit', name: 'Faz ou bebe', one: 'Faz a ação ou bebe', c: '#168048', ink: '#F2FFF7', tint: '#3DDC84', glow: '#168048', icon: 'balance', bgw: '82%',
+    how: 'A carta pede uma ação, de imitar alguém a entregar o celular desbloqueado. Ou faz, ou bebe. A roda decide se valeu.',
+    cards: [['Faça 10 polichinelos.'], ['Sussurre um elogio no ouvido de alguém da roda.'], ['Mande um “oi, tudo bem?” para o seu ex.']] },
+  { id: 'paranoia', name: 'Paranoia', one: 'Pergunta secreta', c: '#2A5BE8', ink: '#F4F6FF', tint: '#8FADFF', glow: '#2A5BE8', icon: 'spiral', bgw: '96%',
+    how: 'A pergunta fica escondida: quem está com o celular segura a carta para ler e responde só com um nome. O citado bebe para saber a pergunta. Segure a carta pra testar.',
+    cards: [['Quem aqui é o mais atrasado?'], ['Quem aqui é o mais safado?'], ['Quem aqui seria o pior traído?']] },
+  { id: 'likely', name: 'Mais provável', one: 'A roda aponta', c: '#F7C531', ink: '#1B1608', tint: '#F7C531', glow: '#F7C531', icon: 'skullq', bgw: '86%',
+    how: '“Quem é mais provável de…?” No 3, todo mundo aponta ao mesmo tempo. O mais apontado bebe.',
+    cards: [['perder o celular?'], ['ficar com alguém desta roda?'], ['ter um caso com alguém casado?']] },
+  { id: 'prefer', name: 'Prefere', one: 'A minoria bebe', c: '#6B3FD9', ink: '#F5F1FF', tint: '#B79BFF', glow: '#6B3FD9', icon: 'fork', bgw: '86%',
+    how: 'Duas opções, uma escolha difícil. No 3, todo mundo mostra 1 ou 2 dedos. A minoria bebe. Empate: todo mundo bebe 1.',
+    cards: [['perder o celular por um mês', 'perder a carteira por um mês'], ['ficar com a pessoa mais bonita do bar', 'ficar com a pessoa mais engraçada do bar'], ['descobrir que o seu par traiu há anos', 'descobrir que o seu par traiu ontem']] },
+];
+const LEVELS = [['Mico', 1, 50], ['Picante', 2, 100], ['Pesado', 3, 50]];
+const shots = n => n === 1 ? '1 shot' : n + ' shots';
+
+/* ---------- ambient glow ---------- */
+const root = document.documentElement;
+let current = document.querySelector('.hero');
+const amb = document.querySelector('.amb');
+const refreshGlow = () => { const c = current.dataset.glow; if (root.style.getPropertyValue('--g') !== c) { root.style.setProperty('--g', c); amb.style.setProperty('--ga', c); } };
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { current = e.target; refreshGlow(); } }), { rootMargin: '-45% 0px -45% 0px' });
+  document.querySelectorAll('[data-glow]').forEach(s => io.observe(s));
+}
+let mxQueued = false, mx = 50;
+addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; mx = e.clientX / innerWidth * 100; if (!mxQueued) { mxQueued = true; requestAnimationFrame(() => { amb.style.setProperty('--mx', mx.toFixed(1) + '%'); mxQueued = false; }); } }, { passive: true });
+const bar = $('#bar');
+const onScroll = () => bar.classList.toggle('on', scrollY > 8);
+addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+/* ---------- conversation card ---------- */
+function convCard([key, no, kind, title, prompt]) {
+  const d = DECKS[key];
+  return `<article class="card" style="--c:${d.c};--ink:${d.ink}" aria-label="${esc(d.label)}: ${esc(title)}. ${esc(prompt)}">
+    <div class="frame oval">
+      <span class="corner tl">${String(no).padStart(2, '0')}</span><span class="corner br">${String(no).padStart(2, '0')}</span>
+      <div class="face"><span class="pill">${kind}</span><h3 class="title${title.length > 14 ? ' long' : ''}">${esc(title)}</h3><p class="prompt">${esc(prompt)}</p></div>
+      <span class="deckname">${d.name} · ${d.label}</span>
+    </div></article>`;
+}
+
+/* ---------- hero deck ---------- */
+const deck = $('#deck');
+let order = CARDS.map((_, i) => (i + 1) % CARDS.length), top = 0, busy = false, drag = null;
+function stack() {
+  const have = [...deck.children];
+  for (let k = have.length; k < 3; k++) {
+    const holder = document.createElement('div');
+    holder.innerHTML = convCard(CARDS[order[(top + k) % order.length]]);
+    const el = holder.firstElementChild; el.dataset.pos = 3; deck.append(el);
+  }
+  deck.offsetWidth;
+  [...deck.children].forEach((el, k) => { el.dataset.pos = k; el.setAttribute('aria-hidden', k ? 'true' : 'false'); el.style.zIndex = 3 - k; });
+  const c = CARDS[order[top % order.length]];
+  $('#deckLive').textContent = `${DECKS[c[0]].label}: ${c[3]}. ${c[4]}`;
+  const dk = DECKS[c[0]]; document.querySelector('.hero').dataset.glow = dk.glow || dk.c; refreshGlow();
+}
+function fling(card, dx, dy) {
+  if (busy) return; busy = true;
+  const len = Math.hypot(dx, dy) || 1, far = Math.max(innerWidth, 800) * 1.2;
+  card.style.transition = 'transform .4s cubic-bezier(.4,0,1,1), opacity .4s';
+  card.style.transform = `translate(${dx / len * far}px, ${dy / len * far}px) rotate(${dx / len * 30}deg)`;
+  card.style.opacity = 0;
+  setTimeout(() => { card.remove(); top++; busy = false; stack(); }, reduce ? 0 : 360);
+}
+const topCard = () => deck.querySelector('.card[data-pos="0"]');
+deck.addEventListener('pointerdown', e => {
+  const card = e.target.closest('.card');
+  if (busy || !card || card !== topCard()) return;
+  card.setPointerCapture(e.pointerId);
+  drag = { card, x: e.clientX, y: e.clientY, dx: 0, dy: 0 };
+  card.classList.add('held');
+});
+deck.addEventListener('pointermove', e => {
+  if (!drag) return;
+  drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y;
+  if (drag.raf) return;
+  drag.raf = requestAnimationFrame(() => { if (!drag) return; drag.raf = 0; drag.card.style.transform = `translate3d(${drag.dx}px, ${drag.dy}px, 0) rotate(${drag.dx * .06}deg)`; });
+});
+const release = () => {
+  if (!drag) return;
+  const { card, dx, dy } = drag; drag = null; card.classList.remove('held');
+  if (Math.hypot(dx, dy) > 90) fling(card, dx, dy); else card.style.transform = '';
+};
+deck.addEventListener('pointerup', release); deck.addEventListener('pointercancel', release);
+deck.addEventListener('keydown', e => {
+  const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (dir && topCard()) { e.preventDefault(); fling(topCard(), ...dir); }
+});
+$('#deckNext').addEventListener('click', () => topCard() && fling(topCard(), 1, -.15));
+stack();
+
+/* ---------- conversation decks rail ---------- */
+const deckKeys = Object.keys(DECKS);
+let curDeck = 'green', curIdx = 0;
+$('#decks').innerHTML = deckKeys.map(k => { const d = DECKS[k];
+  return `<button class="deckbtn" type="button" data-k="${k}" aria-pressed="false"><span class="mini" style="--c:${d.c};--ink:${d.ink}" aria-hidden="true"></span><b>${d.label}</b><span>${d.name}</span></button>`; }).join('');
+function showDeck(k, step = 0) {
+  curDeck = k;
+  const list = CARDS.filter(c => c[0] === k);
+  curIdx = (curIdx + step) % list.length;
+  const d = DECKS[k];
+  $('#deckCard').innerHTML = convCard(list[curIdx]);
+  $('#deckName').textContent = 'Baralho ' + d.name;
+  $('#deckLabel').textContent = d.label;
+  $('#deckBlurb').textContent = d.blurb;
+  document.querySelectorAll('.deckbtn').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  document.getElementById('conversa').dataset.glow = d.glow || d.c; refreshGlow();
+}
+$('#decks').addEventListener('click', e => { const b = e.target.closest('.deckbtn'); if (b) { curIdx = 0; showDeck(b.dataset.k); } });
+showDeck('green');
+
+/* ---------- drink ---------- */
+let game = GAMES[0], level = 2, unlocked = false, holding = false;
+try { unlocked = sessionStorage.getItem('spill18') === '1'; } catch {}
+const skullRow = lv => `<span class="skulls" role="img" aria-label="Nível ${lv}">${[1, 2, 3].map(i => skull(i <= lv ? '' : 'off')).join('')}</span>`;
+function drinkCard(g, lv) {
+  const data = g.cards[lv - 1];
+  let bg = `<span class="dbg" style="width:${g.bgw}">${ICON[g.icon]}</span>`;
+  let mid, bot;
+  if (g.id === 'dare') {
+    mid = `<span class="deye">Responda ou ${shots(lv)}</span><p class="dmain">${esc(data[0])}</p>`;
+    bot = `<span class="drule">Para todos</span><span class="dall">${esc(data[1])}</span><span class="ddet">Não respondeu: 1 shot · Quem leu: 2</span>`;
+  } else if (g.id === 'never') {
+    mid = `<span class="dlead">Eu nunca…</span><p class="dmain big">${esc(data[0])}</p>`;
+    bot = `<span class="drule">Quem já fez bebe ${shots(lv)}</span><span class="ddet">Só uma pessoa bebeu? Conta a história ou +1.</span>`;
+  } else if (g.id === 'doit') {
+    mid = `<span class="deye">Faça ou beba ${shots(lv)}</span><p class="dmain big">${esc(data[0])}</p>`;
+    bot = `<span class="drule">Recusou: ${shots(lv)}</span><span class="ddet">A roda decide se valeu.</span>`;
+  } else if (g.id === 'paranoia') {
+    mid = holding ? `<span class="deye">Pergunta secreta · não leia alto</span><p class="dmain big">${esc(data[0])}</p>`
+      : `<span style="width:42%;display:block">${ICON.spiral}</span><span class="dlead">Segure para ler</span><span class="ddet" style="max-width:22ch">Só quem está com o celular pode ver a pergunta.</span>`;
+    if (!holding) bg = '';
+    bot = `<span class="drule">Responda só com um nome</span><span class="ddet">Quem foi citado bebe ${lv} pra saber a pergunta.</span>`;
+  } else if (g.id === 'likely') {
+    mid = `<span class="dlead">Quem é mais provável de…</span><p class="dmain big">${esc(data[0])}</p>`;
+    bot = `<span class="drule">No 3, todo mundo aponta</span><span class="ddet">Mais apontado bebe ${lv}. Empate: todos bebem.</span>`;
+  } else {
+    mid = `<span class="dlead">Você prefere…</span><span class="opt"><span class="num">1</span><span>${esc(data[0])}</span></span><span class="drule" style="opacity:.85">ou</span><span class="opt"><span class="num">2</span><span>${esc(data[1])}</span></span>`;
+    bot = `<span class="drule">No 3, mostre 1 ou 2 dedos</span><span class="ddet">A minoria bebe ${lv}. Empate: todo mundo bebe 1.</span>`;
+  }
+  return `<div class="card" style="--c:${g.c};--ink:${g.ink}"><div class="frame">${g.id === 'paranoia' && !holding ? '' : bg}
+    <div class="dtop"><span class="pill">${g.name}</span>${skullRow(lv)}</div>
+    <div class="dmid">${mid}</div><div class="dbot">${bot}</div><span class="dfoot">Drink · ${g.name}</span></div></div>`;
+}
+$('#games').innerHTML = GAMES.map(g => `<button class="deckbtn gbtn" type="button" data-g="${g.id}" aria-pressed="false" style="--c:${g.c};--ink:${g.ink}"><span class="gico">${ICON[g.icon]}</span><b>${g.name}</b><span>${g.one}</span></button>`).join('');
+$('#levels').innerHTML = LEVELS.map(([n, lv]) => `<button class="lvl" type="button" data-lv="${lv}" aria-pressed="false">${'<span style="display:flex;gap:2px">' + [1, 2, 3].slice(0, lv).map(() => skull()).join('') + '</span>'}${n}</button>`).join('');
+$('#shots').innerHTML = LEVELS.map(([n, lv, count]) => `<li><span class="sk" aria-label="${lv} caveira${lv > 1 ? 's' : ''}">${[1, 2, 3].map(i => skull(i <= lv ? '' : 'off')).join('')}</span><div><b>${n}</b><span>${shots(lv)} por carta</span></div><em>${count} cartas</em></li>`).join('');
+document.querySelectorAll('#shots .off').forEach(s => s.style.opacity = .22);
+
+function renderGame() {
+  const stage = $('#stage');
+  stage.classList.toggle('locked', !unlocked);
+  const card = drinkCard(game, level);
+  $('#gcard').innerHTML = game.id === 'paranoia' && unlocked
+    ? `<button class="hold" type="button" id="hold" aria-label="Segure para ler a pergunta secreta">${card}</button>` : card;
+  $('#gName').textContent = game.name; $('#gName').style.setProperty('--tint', game.tint);
+  $('#gOne').textContent = game.one;
+  $('#gHow').textContent = game.how;
+  document.querySelectorAll('.gbtn').forEach(b => b.setAttribute('aria-pressed', b.dataset.g === game.id));
+  document.querySelectorAll('.lvl').forEach(b => b.setAttribute('aria-pressed', +b.dataset.lv === level));
+  document.getElementById('drink').dataset.glow = game.glow; refreshGlow();
+  const hold = $('#hold');
+  if (hold) {
+    const paint = () => { hold.innerHTML = drinkCard(game, level); };
+    const on = e => { if (e.type === 'keydown') { if (e.key !== ' ' && e.key !== 'Enter') return; e.preventDefault(); } if (!holding) { holding = true; paint(); } };
+    const off = () => { if (holding) { holding = false; paint(); } };
+    hold.addEventListener('pointerdown', e => { hold.setPointerCapture?.(e.pointerId); on(e); });
+    hold.addEventListener('keydown', on);
+    ['pointerup', 'pointercancel', 'keyup', 'blur'].forEach(t => hold.addEventListener(t, off));
+    hold.addEventListener('contextmenu', e => e.preventDefault());
+  }
+}
+$('#games').addEventListener('click', e => { const b = e.target.closest('.gbtn'); if (b) { game = GAMES.find(g => g.id === b.dataset.g); holding = false; renderGame(); } });
+$('#levels').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (b) { level = +b.dataset.lv; holding = false; renderGame(); } });
+$('#gateYes').addEventListener('click', () => { unlocked = true; try { sessionStorage.setItem('spill18', '1'); } catch {} renderGame(); });
+renderGame();
+})();
+</script>
