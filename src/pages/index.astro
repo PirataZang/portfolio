@@ -4,15 +4,19 @@ import Base from '../layouts/Base.astro';
 /*
   PORTFOLIO — Igor Fronza.
 
-  Home enxuta: uma página que vende (sites prontos, preço, processo, projetos,
-  dúvidas, contato) e nada que só enfeite. Fundo quase preto, amarelo de
-  fita métrica como único acento, formas geométricas finas ao fundo.
+  Conceito: terminal. A home mostra o que eu sei fazer e a prova de cada coisa
+  (skills, projetos, segurança), e deixa os sites sob medida e os preços para
+  o fim da página.
 
-  O fechamento acontece no WhatsApp: o formulário monta a mensagem e abre
-  wa.me — site estático não tem para onde postar, e nada fica gravado aqui.
+  Tudo é HTML estático. O JavaScript só cuida do que é interativo: o terminal
+  do topo que se monta sozinho, o filtro de skills, a vitrine de sites, o
+  simulador de preço e o botão de copiar o e-mail. As animações de digitação,
+  fade, glitch e parallax são CSS puro (`animation-timeline: view()` onde o
+  navegador suporta) e param com `prefers-reduced-motion`.
 
-  Os preços moram em PRECO e alimentam o simulador, os cards, o JSON-LD e o
-  FAQ ao mesmo tempo: mudou o valor, muda num lugar só.
+  Os preços moram em PRECO e alimentam os cards, o simulador e o JSON-LD.
+  Textos que dependem de você (disponibilidade, estudo, provas) estão nas
+  constantes logo abaixo: troque ali.
 */
 
 const BASE = import.meta.env.BASE_URL;
@@ -30,176 +34,159 @@ const EU = {
   linkedin: 'https://www.linkedin.com/in/igor-fronza-592796249',
   insta: 'https://www.instagram.com/igorfronza_official',
 };
-const ZAP = `https://wa.me/${EU.zap}`;
+const zap = (msg: string) => `https://wa.me/${EU.zap}?text=${encodeURIComponent(msg)}`;
 
 const PRECO = { pagina: 500, extra: 250, pix: 0.1, hospedagem: 50 };
+const brl = (v: number) =>
+  'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
 
-const CHECK =
-  '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
-const SETA =
-  '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg>';
-const GITHUB =
-  '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-4 1.3-4-2-6-2.5M15 21v-3.5a3 3 0 0 0-.9-2.3c3-.3 6-1.5 6-6.5a5 5 0 0 0-1.4-3.5 4.6 4.6 0 0 0-.1-3.5s-1.1-.3-3.6 1.4a12.4 12.4 0 0 0-6.5 0C6 1.4 4.9 1.7 4.9 1.7a4.6 4.6 0 0 0-.1 3.5A5 5 0 0 0 3.4 8.7c0 5 3 6.2 6 6.5a3 3 0 0 0-.9 2.3V21"></path></svg>';
+const DISPONIBILIDADE = 'disponível para conversar';
 
-const NAV = [
-  ['sites', 'Sites prontos'],
-  ['projetos', 'Projetos'],
-  ['servicos', 'Serviços'],
-  ['processo', 'Como funciona'],
-  ['duvidas', 'Dúvidas'],
+/* rampa de braille das barras de nível, como no DevScope */
+const RAMPA = ['⣀', '⣤', '⣶', '⣾', '⣿'];
+const AREAS = {
+  dev: { rotulo: 'dev', cor: '#fcaf3e' },
+  infra: { rotulo: 'infra', cor: '#729fcf' },
+  seg: { rotulo: 'seg', cor: '#8ae234' },
+} as const;
+type Area = keyof typeof AREAS;
+
+const SKILLS: { area: Area; nome: string; nivel: number; prova: string }[] = [
+  { area: 'dev', nome: 'Go', nivel: 4, prova: 'DevScope: TUI em Go, binário único, com releases automatizadas.' },
+  { area: 'dev', nome: 'Vue 3 e Nuxt', nivel: 4, prova: 'Interfaces e sites sob medida do dia a dia.' },
+  { area: 'dev', nome: 'Laravel, PHP e NestJS', nivel: 4, prova: 'Back-ends e APIs dos sistemas sob medida.' },
+  { area: 'dev', nome: 'TypeScript e Astro', nivel: 4, prova: 'Este portfólio e os sites de projetos, estáticos e rápidos.' },
+  { area: 'dev', nome: 'HTML, CSS e Tailwind', nivel: 5, prova: 'Demos de sites completos, do layout ao responsivo.' },
+  { area: 'dev', nome: 'JavaScript no navegador', nivel: 4, prova: 'Simulador do DevScope: teclado, Git e containers funcionando no navegador.' },
+  { area: 'dev', nome: 'Trabalho com IA (prompts)', nivel: 4, prova: 'Uso o Claude no dia a dia para construir este portfólio e os projetos.' },
+  { area: 'infra', nome: 'Docker e Compose', nivel: 4, prova: 'Todo o ambiente deste portfólio sobe com um comando.' },
+  { area: 'infra', nome: 'Linux e nginx', nivel: 4, prova: 'Servidor, proxy e publicação configurados à mão.' },
+  { area: 'infra', nome: 'Git e CI', nivel: 3, prova: 'GitHub Actions e releases versionadas no DevScope.' },
+  { area: 'seg', nome: 'Segurança web (OWASP)', nivel: 2, prova: 'Em estudo: OWASP Top 10 e laboratórios práticos.' },
+  { area: 'seg', nome: 'Redes e HTTP', nivel: 3, prova: 'Base do estudo de segurança web e do hardening deste site.' },
+  { area: 'seg', nome: 'Hardening de servidor', nivel: 3, prova: 'Em andamento: CSP, HSTS e security.txt neste site.' },
+  { area: 'seg', nome: 'CTF e laboratórios', nivel: 2, prova: 'Começando: laboratórios práticos de segurança web.' },
 ];
+const FILTROS: [string, string][] = [['all', 'todos'], ['dev', 'dev'], ['infra', 'infra'], ['seg', 'segurança']];
+const contar = (f: string) => (f === 'all' ? SKILLS.length : SKILLS.filter((s) => s.area === f).length);
+const resumoSkills = (lista: typeof SKILLS) =>
+  `Habilidades carregadas: ${lista.length} · em estudo: ${lista.filter((s) => s.nivel <= 2).length} · falhas: 0`;
 
-const STACK = ['Vue 3', 'Nuxt', 'React', 'Laravel', 'PHP', 'NestJS', 'Go', 'Docker', 'Git', 'Claude', 'OpenAI', 'Gemini'];
+const LAB = [
+  { status: 'em andamento', cor: '#4fe3b0', titulo: 'Trilha de segurança web', nota: 'Estudo guiado do OWASP Top 10, anotando o que aprendo em cada tópico.' },
+  { status: 'em andamento', cor: '#4fe3b0', titulo: 'Hardening deste site', nota: 'CSP, HSTS e demais headers, com a nota pública em securityheaders.com.' },
+  { status: 'a publicar', cor: '#f5a524', titulo: 'Write-up #1', nota: 'O passo a passo de um laboratório, incluindo os becos sem saída.' },
+  { status: 'a publicar', cor: '#f5a524', titulo: 'Ferramenta própria', nota: 'Uma ferramenta de segurança com código aberto no GitHub.' },
+  { status: 'meta', cor: '#8b95a3', titulo: 'Primeira certificação', nota: 'Entra aqui só depois de aprovado.' },
+];
 
 const DEMOS = [
   { slug: 'alpine-refresh', nome: 'Alpine Refresh', nicho: 'Marca de bebidas', desc: 'A página conta a história da marca conforme você rola, com cenas em parallax de várias camadas.', tags: ['Narrativa por scroll', 'Parallax em camadas'] },
   { slug: 'barbearia', nome: "Daniel's", nicho: 'Barbearia', desc: 'Capa com foto e agendamento em um toque.', tags: ['Capa com foto', 'Agendamento em 1 toque'] },
   { slug: 'arquitetura', nome: 'PRUMO', nicho: 'Arquitetura e engenharia', desc: 'Planta interativa para explorar o projeto e uma cena guiada pelo scroll.', tags: ['Planta interativa', 'Cena por scroll'] },
   { slug: 'marmoraria', nome: 'Marmoraria', nicho: 'Mármores e granitos', desc: 'Comparador de acabamentos lado a lado e pedido de orçamento.', tags: ['Comparador de acabamentos', 'Orçamento'] },
-  { slug: 'nova', nome: 'Vereda', nicho: 'Psicologia clínica', desc: 'Fotografia grande e planos lado a lado, fáceis de comparar.', tags: ['Fotografia grande', 'Planos comparáveis'] },
+  { slug: 'imobiliaria', nome: 'Meridiano Imóveis', nicho: 'Imobiliária', desc: 'Carteira de imóveis com ficha em modal e ilustrações geradas no próprio build, sem fotos.', tags: ['Ficha em modal', 'Ilustrações no build'] },
   { slug: 'pulse', nome: 'PULSE', nicho: 'Festival de música eletrônica', desc: 'Carrinho, compra simulada e ingresso com QR code no final.', tags: ['Carrinho', 'Compra simulada', 'Ingresso com QR'] },
+].map((d) => ({ ...d, img: `${BASE}demos/${d.slug}.webp`, url: `${BASE}sites/${d.slug}/`, ask: zap(`Oi, Igor. Quero um site como o ${d.nome}.`) }));
+const DEMO0 = 3;
+
+const PLANOS = [
+  { id: 'site', nome: 'Criação de site', prazo: '1 a 2 semanas', de: PRECO.pagina, un: '', destaque: true, cta: 'Quero um site',
+    d: `Uma página com escopo fechado. Página extra: + ${brl(PRECO.extra)}.`, itens: ['Design próprio', 'Formulário que chega no WhatsApp', 'Domínio e SSL configurados', '30 dias de ajustes'] },
+  { id: 'sistema', nome: 'Sistema sob medida', prazo: '4 a 12 semanas', de: 3000, un: '', destaque: false, cta: 'Quero um sistema',
+    d: 'Entregue em etapas, cada uma com escopo e preço fechados.', itens: ['Login por usuário', 'Relatórios em Excel e PDF', 'Integrações com nova tentativa automática', 'Backup automático'] },
+  { id: 'consultoria', nome: 'Consultoria técnica', prazo: 'por hora', de: 280, un: '/h', destaque: false, cta: 'Quero uma consultoria',
+    d: 'Ou pacote de 10 horas por R$ 2.500, com relatório escrito.', itens: ['Revisão de código', 'Medição de desempenho', 'Escolha de ferramentas', 'Pair programming'] },
+  { id: 'hospedagem', nome: 'Hospedagem', prazo: 'por site · opcional', de: PRECO.hospedagem, un: '/mês', destaque: false, cta: 'Quero hospedagem',
+    d: 'Sistema em servidor dedicado: R$ 300/mês.', itens: ['Banco de dados', 'Backups', 'Monitoramento'] },
+];
+const INCLUI = ['Design próprio, sem template', 'Imagens leves em WebP e botões fáceis de tocar no celular', 'Prévia bonita quando o link é compartilhado', 'Animação e 3D só quando ajudam, respeitando quem prefere menos movimento'];
+const PAGTO = ['40% na entrada, o restante na entrega', 'Até 6x sem juros no cartão', '10% de desconto no Pix à vista', 'Emito nota fiscal'];
+
+const RESUMO = [
+  ['cargo', 'Engenheiro de software'],
+  ['stack', 'Go · Vue · Laravel · NestJS'],
+  ['infra', 'Linux · Docker · nginx'],
+  ['foco', 'segurança de aplicações (estudando)'],
+  ['local', `${EU.cidade}, ${EU.uf} · atendo o Brasil inteiro`],
+  ['status', DISPONIBILIDADE],
 ];
 
-/* ícones: só o conteúdo do <svg>, 24x24, traço 1.8 */
-const SERVICOS = [
-  {
-    id: 'site', t: 'Criação de site', de: PRECO.pagina, unidade: '', prazo: '1 a 2 semanas', destaque: true,
-    d: `Uma página com escopo fechado. Página extra: + R$ ${PRECO.extra}.`,
-    itens: ['Design próprio', 'Formulário que chega no WhatsApp', 'Domínio e SSL configurados', '30 dias de ajustes'],
-    cta: 'Quero um site',
-    icone: '<rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M7 6.5h.01M10 6.5h.01"></path>',
-  },
-  {
-    id: 'sistema', t: 'Sistema sob medida', de: 3000, unidade: '', prazo: '4 a 12 semanas',
-    d: 'Entregue em etapas, cada uma com escopo e preço fechados.',
-    itens: ['Login por usuário', 'Relatórios em Excel e PDF', 'Integrações com nova tentativa automática', 'Backup automático'],
-    cta: 'Quero um sistema',
-    icone: '<path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 13l9 5 9-5"></path>',
-  },
-  {
-    id: 'consultoria', t: 'Consultoria técnica', de: 280, unidade: '/h', prazo: 'por hora',
-    d: 'Ou pacote de 10 horas por R$ 2.500, com relatório escrito.',
-    itens: ['Revisão de código', 'Medição de desempenho', 'Escolha de ferramentas', 'Pair programming'],
-    cta: 'Quero uma consultoria',
-    icone: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 6l-3 12"></path>',
-  },
-  {
-    id: 'hospedagem', t: 'Hospedagem', de: PRECO.hospedagem, unidade: '/mês', prazo: 'por site · opcional',
-    d: 'Sistema em servidor dedicado: R$ 300/mês.',
-    itens: ['Banco de dados', 'Backups', 'Monitoramento'],
-    cta: 'Quero hospedagem',
-    icone: '<rect x="3" y="4" width="18" height="7" rx="2"></rect><rect x="3" y="13" width="18" height="7" rx="2"></rect><path d="M7 7.5h.01M7 16.5h.01"></path>',
-  },
+/* ---- terminal do topo ---- */
+const T_LOGS = [
+  { label: 'skills', val: '11 módulos', s: 1500, ok: 2100 },
+  { label: 'projetos', val: 'devscope · spill', s: 1850, ok: 2500 },
+  { label: 'interface', val: 'terminal', s: 2200, ok: 3000 },
+  { label: 'hardening', val: 'em andamento', s: 2550, ok: 0 },
 ];
-
-const PROCESSO = [
-  { t: 'Conversa', tempo: '30 min', d: 'A gente entende o problema. O resumo escrito chega no mesmo dia.', icone: '<path d="M4 5h16v11H9l-5 4V5z"></path><path d="M8 9.5h8M8 12.5h5"></path>' },
-  { t: 'Proposta', tempo: 'até 48 h', d: 'Escopo, preço e prazo por escrito. Nada muda no meio do caminho.', icone: '<path d="M7 3h7l5 5v13H7z"></path><path d="M14 3v5h5M10 13h6M10 17h6"></path>' },
-  { t: 'Construção', tempo: 'ao vivo', vivo: true, d: 'Você acompanha cada etapa em tempo real por um link privado.', icone: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 6l-3 12"></path>' },
-  { t: 'Entrega', tempo: 'tudo seu', d: 'Arquivos, código e instruções para publicar onde quiser.', icone: '<path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7M12 11v10"></path>' },
-  { t: 'Lançamento', tempo: '+ 30 dias', d: 'Site no ar, configurado, com 30 dias de ajustes inclusos.', icone: '<path d="M9 15l-3-3c1.5-4.5 5-8 12-9-1 7-4.5 10.5-9 12z"></path><path d="M6 12H3l2.5-3.5H9M12 18v3l3.5-2.5V15"></path><circle cx="15" cy="9" r="1.5"></circle>' },
+const LETRAS = {
+  I: [' ___ ', '|_ _|', ' | | ', ' | | ', '|___|'],
+  G: ['  ____ ', ' / ___|', '| |  _ ', '| |_| |', ' \\____|'],
+  O: ['  ___  ', ' / _ \\ ', '| | | |', '| |_| |', ' \\___/ '],
+  R: [' ____  ', '|  _ \\ ', '| |_) |', '|  _ < ', '|_| \\_\\'],
+};
+const BANNER = [0, 1, 2, 3, 4].map((i) => LETRAS.I[i] + LETRAS.G[i] + LETRAS.O[i] + LETRAS.R[i]);
+const mix = (a: string, b: string, f: number) => {
+  const h = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const A = h(a), B = h(b);
+  return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * f).toString(16).padStart(2, '0')).join('');
+};
+const BANNER_COR = BANNER.map((_, i) => mix('#4fe3b0', '#f5a524', i / 4));
+const T_INFO: [string, string, string][] = [
+  ['nome', 'Igor Fronza', '#f5a524'],
+  ['cargo', 'Engenheiro de software', '#f5a524'],
+  ['stack', 'Go · Vue · Laravel · NestJS', '#f5a524'],
+  ['infra', 'Linux · Docker · nginx', '#f5a524'],
+  ['foco', 'Segurança de aplicações', '#4fe3b0'],
+  ['local', `${EU.cidade}, ${EU.uf}`, '#8b95a3'],
+  ['status', DISPONIBILIDADE, '#8b95a3'],
 ];
+const T_PAL = ['#e5484d', '#f5a524', '#4fe3b0', '#5fd3ff', '#7aa2ff', '#c4b5fd', '#d8dde5', '#4a5461'];
 
-/* Projetos que ganharam site próprio, em src/pages/projetos/<slug>/. */
-const PROJETOS = [
-  {
-    previa: 'term', slug: 'devscope', nome: 'DevScope', tag: 'Ferramenta open source', cor: '#46d17e',
-    desc: 'O htop dos seus projetos: containers, Git, CI, túneis e banco numa tela só, dentro do terminal. O site tem um simulador para experimentar sem instalar nada.',
-    tags: ['Go', 'Terminal (TUI)', 'MIT'],
-    codigo: `https://github.com/${EU.gh}/devscope`,
-  },
-  {
-    previa: 'cartas', slug: 'spill', nome: 'Spill', tag: 'App Android', cor: '#f7c531',
-    desc: 'App de cartas para a roda de amigos: 140 cartas de conversa em sete baralhos e um Modo Drink +18 com seis jogos de shot. Offline, sem cadastro. O site deixa puxar as cartas na hora.',
-    tags: ['Android', 'Cartas', 'Offline'],
-    codigo: `https://github.com/${EU.gh}/Spill`,
-  },
-];
-
-/*
-  As perguntas que chegam por WhatsApp antes de qualquer orçamento, já
-  respondidas com número, não com "depende".
-*/
-const DUVIDAS = [
-  {
-    p: 'Quanto custa um site?',
-    r: 'A partir de R$ 500 para uma página com escopo fechado, e R$ 250 por página adicional. Sistema sob medida começa em R$ 3.000 e é orçado por etapa. São pontos de partida, não teto: o preço final depende do que o projeto precisa fazer, fecha depois da conversa, por escrito, e não muda no meio.',
-  },
-  {
-    p: 'Em quanto tempo fica pronto?',
-    r: 'Site: de 1 a 2 semanas a partir do aceite, contando que o conteúdo chegue. Sistema: de 4 a 12 semanas, entregue por etapas — você vê o primeiro pedaço funcionando bem antes do fim. Consultoria entra na agenda da mesma semana.',
-  },
-  {
-    p: 'O que eu preciso ter pronto antes de começar?',
-    r: 'Textos, fotos e logo, se existirem. Se não existirem, eu escrevo a estrutura e indico onde a foto faz falta — projeto não trava esperando conteúdo perfeito. O endereço do site é comprado por você, no seu nome: fica registrado na sua mão, e eu cuido da configuração e do cadeado de segurança, que já entram no pacote.',
-  },
-  {
-    p: 'O código fica comigo?',
-    r: 'Fica. O código é seu desde o primeiro dia, e a entrega vem pronta para rodar em qualquer empresa de hospedagem. Não uso plataforma fechada que prende o projeto: se um dia você quiser trocar de desenvolvedor, leva tudo junto. A hospedagem comigo é opcional e cobrada à parte — contratando ou não, o código é seu do mesmo jeito.',
-  },
-  {
-    p: 'E depois que o site está no ar?',
-    r: 'Os 30 primeiros dias de ajuste vão inclusos, sem custo. Depois disso, manutenção mensal é opcional e cotada separada, conforme o tamanho do site. Se quiser o site no ar comigo, com endereço próprio e cadeado de segurança, a hospedagem sai por R$ 50 ao mês, e visita no site não gera cobrança extra. E dá para me chamar pontualmente por hora quando aparecer alguma coisa.',
-  },
-  {
-    p: 'Você atende fora de Rio do Sul?',
-    r: 'Atendo o Brasil inteiro. Reunião por vídeo, entrega por link e acompanhamento pelo WhatsApp — a maior parte dos projetos acontece assim. Se você estiver no Vale do Itajaí, dá para conversar pessoalmente.',
-  },
-  {
-    p: 'Como funciona o pagamento?',
-    r: 'Entrada de 40% no aceite e o restante na entrega. Parcelo em até 6× sem juros no cartão, ou 10% de desconto no Pix à vista. Nota fiscal emitida em todo projeto.',
-  },
-  {
-    p: 'Já tenho um site. Dá para aproveitar?',
-    r: 'Quase sempre dá. Começo por uma consultoria técnica — R$ 280 a hora, ou 10 h por R$ 2.500 — para olhar o que existe e dizer o que vale manter, o que vale reescrever e quanto custa cada caminho. Se depois disso virar projeto, as horas da análise entram como crédito.',
-  },
-];
-
-const NECESSIDADES = [...SERVICOS.map((s) => s.t), 'Ainda não sei'];
-
-const titulo = `${EU.nome} — Engenheiro de software: sites, sistemas sob medida e consultoria`;
+/* ---- SEO ---- */
+const titulo = `${EU.nome} — Engenheiro de software em ${EU.cidade}, ${EU.uf}`;
 const descricao =
-  'Engenheiro de software em Rio do Sul (SC). Sites a partir de R$ 500, sistemas sob medida por etapa, consultoria técnica por hora e hospedagem a partir de R$ 50 por mês. O código fica com você, e os projetos são abertos no GitHub.';
+  'Engenheiro de software em Rio do Sul (SC). Ferramentas em Go, sites em Vue e Astro, Docker e Linux, com foco em segurança de aplicações. Projetos: DevScope e Spill. Sites sob medida a partir de R$ 500.';
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'ProfessionalService',
-      '@id': `${EU.site}/#servico`,
-      name: `${EU.nome} · Desenvolvimento`,
-      description: descricao,
+      '@type': 'Person',
+      '@id': `${EU.site}/#igor`,
+      name: EU.nome,
+      jobTitle: EU.papel,
       url: EU.site,
       email: EU.email,
-      areaServed: 'BR',
       address: { '@type': 'PostalAddress', addressLocality: EU.cidade, addressRegion: EU.uf, addressCountry: 'BR' },
-      founder: { '@type': 'Person', name: EU.nome, jobTitle: EU.papel, sameAs: `https://github.com/${EU.gh}` },
-      hasOfferCatalog: {
-        '@type': 'OfferCatalog',
-        name: 'Serviços',
-        itemListElement: SERVICOS.map((s) => ({
-          '@type': 'Offer',
-          name: s.t,
-          description: s.d.replace(/ /g, ' '),
-          priceCurrency: 'BRL',
-          price: String(s.de),
-          priceSpecification: { '@type': 'PriceSpecification', minPrice: String(s.de), priceCurrency: 'BRL' },
-        })),
-      },
+      knowsAbout: ['Go', 'Vue', 'Laravel', 'NestJS', 'Astro', 'Docker', 'Linux', 'Segurança de aplicações'],
       sameAs: [EU.linkedin, EU.insta, `https://github.com/${EU.gh}`],
     },
     {
-      '@type': 'FAQPage',
-      mainEntity: DUVIDAS.map((d) => ({
-        '@type': 'Question',
-        name: d.p,
-        acceptedAnswer: { '@type': 'Answer', text: d.r },
-      })),
+      '@type': 'ProfessionalService',
+      '@id': `${EU.site}/#servico`,
+      name: `${EU.nome} · Desenvolvimento`,
+      url: EU.site,
+      areaServed: 'BR',
+      provider: { '@id': `${EU.site}/#igor` },
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Serviços',
+        itemListElement: PLANOS.map((p) => ({
+          '@type': 'Offer',
+          name: p.nome,
+          description: p.d,
+          priceCurrency: 'BRL',
+          price: String(p.de),
+          priceSpecification: { '@type': 'PriceSpecification', minPrice: String(p.de), priceCurrency: 'BRL' },
+        })),
+      },
     },
   ],
 };
 
-const brl = (v: number) => 'R$ ' + v.toLocaleString('pt-BR');
+const fim = (s: string) => s; // legibilidade dos blocos estáticos abaixo
+const HOST = `${BASE}projetos`;
 ---
 
 <Base title={titulo} description={descricao}>
@@ -211,599 +198,959 @@ const brl = (v: number) => 'R$ ' + v.toLocaleString('pt-BR');
     <meta property="og:title" content={titulo} />
     <meta property="og:description" content={descricao} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#07080f" />
+    <meta name="theme-color" content="#0b0d11" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Ubuntu+Mono:wght@400;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
     />
+    <script is:inline>document.documentElement.classList.add('js');</script>
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </Fragment>
 
-  <div class="pf">
+  <div class="tm">
     <a class="pular" href="#conteudo">Pular para o conteúdo</a>
 
-    <!-- NAV -->
-    <header class="topo">
-      <nav class="nav caixa" aria-label="Principal">
-        <a class="marca" href="#topo">Igor Fronza</a>
-        <div class="nav-links">
-          {NAV.map(([id, t]) => <a href={`#${id}`}>{t}</a>)}
+      <!-- BARRA -->
+      <header style="border-bottom:1px solid #232a33">
+        <div style="max-width:1160px;margin:0 auto;padding:0 32px;min-height:64px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px">
+          <a href="#topo" style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:#d8dde5;padding:10px 0">igor@fronza<span style="color:#8b95a3">:~$</span></a>
+          <nav class="nav" aria-label="Seções" style="display:flex;flex-wrap:wrap;gap:4px 22px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8b95a3">
+            <a href="#skills" style="padding:12px 0">skills/</a>
+            <a href="#projetos" style="padding:12px 0">projetos/</a>
+            <a href="#seguranca" style="padding:12px 0">seguranca/</a>
+            <a href="#sites" style="padding:12px 0">sites/</a>
+            <a href="#contato" style="padding:12px 0">contato.sh</a>
+          </nav>
         </div>
-        <div class="nav-acoes">
-          <a class="btn btn-ghost btn-sm nav-wa" href={ZAP} rel="noopener">WhatsApp</a>
-          <a class="btn btn-primary btn-sm" href="#contato">Pedir orçamento</a>
-          <button class="nav-burger" type="button" data-menu aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">
-            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
-          </button>
-        </div>
-      </nav>
-      <div class="nav-panel" id="menu" hidden>
-        {NAV.map(([id, t]) => <a href={`#${id}`}>{t}</a>)}
-        <a href={ZAP} rel="noopener">WhatsApp</a>
-      </div>
-    </header>
+      </header>
 
     <main id="conteudo">
       <!-- HERO -->
-      <section id="topo" class="shape-sec borda-b">
-        <div class="shapes" aria-hidden="true">
-          <div class="shp dotgrid" style="inset:0"></div>
-          <div class="shp glow" data-px="0.04" style="--d:12;width:760px;height:760px;right:-140px;top:-60px"></div>
-          <div class="shp" data-px="0.08" style="--d:20;width:520px;height:520px;right:-60px;top:40px"><div class="sq spin"></div></div>
-          <div class="shp anel" data-px="0.05" style="--d:12;width:460px;height:460px;left:-220px;bottom:-220px"></div>
-          <div class="shp" data-px="0.18" style="--d:36;width:26px;height:26px;left:46%;top:70px"><div class="sq sq-yfill float"></div></div>
-          <div class="shp" data-px="0.14" style="--d:28;width:54px;height:54px;left:4%;top:58%"><div class="sq sq-fill float-2"></div></div>
-          <span class="shp plus" data-px="0.1" style="--d:22;left:38%;bottom:60px">+</span>
+      <div style="position:relative;isolation:isolate;overflow:hidden">
+      <div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none">
+        <div class="dots" style="position:absolute;inset:0"></div>
+        <div class="ruler" style="position:absolute;left:0;top:0;bottom:0"></div>
+        <div class="dr" style="position:absolute;right:-170px;top:-130px;width:660px;height:660px"><div class="anel spin" style="width:100%;height:100%"></div></div>
+        <div class="dr" style="position:absolute;left:-130px;bottom:-150px;width:380px;height:380px"><div class="anel2" style="width:100%;height:100%"></div></div>
+        <div class="dr" style="position:absolute;right:30%;top:70px;width:170px;height:170px"><div class="sq" style="width:100%;height:100%"></div></div>
+        <div class="cross" style="position:absolute;left:11%;top:64px"></div>
+        <div class="cross" style="position:absolute;left:49%;bottom:90px;color:#f5a524"></div>
+        <div class="cross" style="position:absolute;right:7%;top:62%;color:#4fe3b0"></div>
+        <div class="cur" style="--c:#f5a524;position:absolute;left:7%;top:44%;width:9px;height:9px"></div>
+        <span style="position:absolute;left:36px;bottom:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:#3a4552">27°12′S 49°38′W</span>
+      </div>
+      <section id="topo" style="max-width:1160px;margin:0 auto;padding:88px 32px 96px;display:flex;flex-wrap:wrap;gap:56px;align-items:center">
+        <div style="flex:1 1 480px;min-width:0;display:flex;flex-direction:column;gap:24px">
+          <div class="h-ty" style="--w:8.3ch;--n:8;--dur:.7s;--delay:.2s;--caret:#f5a524;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8b95a3">$ whoami</div>
+          <h1 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(44px,8vw,92px);line-height:1;letter-spacing:-.04em;color:#fff">
+            <span class="h-ty" style="--w:2.4em;--n:4;--dur:.5s;--delay:1s;--caret:#f5a524">Igor</span>
+            <span class="h-ty" style="--w:3.5em;--n:6;--dur:.7s;--delay:1.6s;--caret:#f5a524">Fronza</span>
+          </h1>
+          <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Mono',monospace;font-size:clamp(16px,2.4vw,22px);line-height:1.5;color:#f5a524">
+            <span class="h-ty" style="--w:22.3ch;--n:22;--dur:.9s;--delay:2.5s;--caret:#f5a524">engenheiro de software</span>
+            <span class="h-ty" style="--w:19.3ch;--n:19;--dur:.8s;--delay:3.5s;--caret:#f5a524">estudando segurança</span>
+          </div>
+          <p class="fx" style="--d:4.5s;margin:0;font-size:18px;line-height:1.6;color:#aab3bf;max-width:56ch">Escrevo ferramentas em <span class="kw" style="--c:#f5a524;--d:5.6s">Go</span>, sites em <span class="kw" style="--c:#f5a524;--d:6s">Vue e Astro</span> e rodo tudo em <span class="kw" style="--c:#f5a524;--d:6.4s">Docker</span>. Agora estou levando esse mesmo cuidado para a <span class="kw" style="--c:#4fe3b0;--d:6.8s">segurança</span>: aprender como as coisas quebram para construir as que não quebram. Aqui embaixo está o que eu sei fazer e a prova de cada coisa.</p>
+          <div class="fx" aria-hidden="true" style="--d:4.9s;display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#d8dde5">
+            <span style="color:#4fe3b0">$</span>
+            <span style="display:grid">
+              <span class="cyc" style="--w:14.2ch;--n:14;--delay:5.2s;--caret:#f5a524">go build ./...</span>
+              <span class="cyc" style="--w:20.2ch;--n:20;--delay:9.2s;--caret:#f5a524">docker compose up -d</span>
+              <span class="cyc" style="--w:28.2ch;--n:28;--delay:13.2s;--caret:#f5a524">curl -sI localhost | grep -i csp</span>
+            </span>
+          </div>
+          <div class="fx" style="--d:5.1s;display:flex;flex-wrap:wrap;gap:12px;padding-top:8px">
+            <a class="bt" href="#projetos" style="--sh:#d8dde5;display:inline-flex;align-items:center;min-height:48px;padding:0 22px;border-radius:8px;background:#f5a524;color:#0b0d11;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px">ls projetos/</a>
+            <a class="lnk bt" href="#skills" style="--sh:#f5a524;display:inline-flex;align-items:center;min-height:48px;padding:0 22px;border-radius:8px;border:1px solid #2c3540;color:#d8dde5;font-family:'IBM Plex Mono',monospace;font-size:15px">cat skills.md</a>
+          </div>
         </div>
-        <div class="caixa hero-in">
-          <div class="hero-txt">
-            <p class="eyebrow">Igor Fronza · engenheiro de software em Rio do Sul, SC</p>
-            <h1>Sites e sistemas feitos <span class="hl">sob medida</span>, não sobre molde.</h1>
-            <p class="lead">Transformo ideias, processos e problemas em software que funciona — do site de uma página ao sistema que a sua equipe usa todo dia.</p>
-            <div class="cta-row">
-              <a class="btn btn-primary" href="#contato">Pedir orçamento</a>
-              <a class="btn btn-ghost" href="#sites">Ver sites prontos</a>
+
+        <div class="fx" style="--d:.4s;flex:1 1 440px;min-width:0">
+          <div class="term" data-terminal>
+            <div class="term-bar">
+              <span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:#2c3540"></span>
+              <span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:#2c3540"></span>
+              <span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:#2c3540"></span>
+              <span style="margin-left:10px;font-size:13px;color:#8b95a3">igor@fronza: ~</span>
+              <button class="rp" type="button" data-replay aria-label="Repetir a animação do terminal">↻ replay</button>
             </div>
-            <ul class="garantias">
-              <li class="check"><Fragment set:html={CHECK} />O código é seu desde o dia 1</li>
-              <li class="check"><Fragment set:html={CHECK} />Preço e prazo por escrito</li>
-              <li class="check"><Fragment set:html={CHECK} />Atendo todo o Brasil</li>
-            </ul>
+            <p class="sr">Terminal animado com o resumo do Igor Fronza: engenheiro de software em {EU.cidade}, {EU.uf}. Stack em Go, Vue, Laravel e NestJS. Infra em Linux, Docker e nginx. Foco em segurança de aplicações.</p>
+            <div class="term-body tb-pending" aria-hidden="true" data-body>
+              <div style="white-space:pre"><span style="color:#4fe3b0">$</span> <span data-typed data-full="./montar-portfolio.sh">./montar-portfolio.sh</span><span class="caret" data-caret style="background:#f5a524;display:none"></span></div>
+
+              <div style="display:flex;flex-direction:column;gap:2px">
+                {T_LOGS.map((l) => (
+                  <div data-log data-s={l.s} data-ok={l.ok} style="display:flex;align-items:baseline;gap:10px">
+                    <span style="flex:0 0 auto;white-space:pre;color:#8b95a3">[<span style="display:inline-block;width:4ch;text-align:center"><span data-oktag style={`color:#4fe3b0;${l.ok ? '' : 'display:none'}`}>ok</span><span class="sp" data-sp style={`color:#f5a524;${l.ok ? 'display:none' : ''}`}></span></span>]</span>
+                    <span style="flex:0 0 auto;color:#d8dde5">{l.label}</span>
+                    <span style="flex:1 1 12px;min-width:12px;border-bottom:1px dotted #2c3540;transform:translateY(-4px)"></span>
+                    <span data-val style={`flex:0 0 auto;color:${l.ok ? '#8b95a3' : '#f5a524'}`}>{l.val}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div data-build style="display:flex;align-items:center;gap:12px">
+                <span style="flex:0 0 auto;color:#d8dde5">build</span>
+                <span style="position:relative;flex:1 1 120px;height:10px;background:repeating-linear-gradient(90deg,#222a33 0 8px,transparent 8px 11px)"><span data-fill style="position:absolute;left:0;top:0;bottom:0;width:100%;background:repeating-linear-gradient(90deg,#f5a524 0 8px,transparent 8px 11px)"></span></span>
+                <span data-pct style="flex:0 0 4ch;text-align:right;color:#4fe3b0">100%</span>
+              </div>
+
+              <div style="display:flex;flex-direction:column;font-size:16px;line-height:1.12;padding:2px 0">
+                {BANNER.map((l, i) => (
+                  <div data-b data-s={4900 + i * 110} data-full={l} style="white-space:pre"><span data-done style={`color:${BANNER_COR[i]}`}>{l}</span><span data-rest style="color:#3a4552"></span></div>
+                ))}
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:3px">
+                {T_INFO.map(([k, v, c], i) => (
+                  <div data-info data-s={6100 + i * 260} data-full={v} style="white-space:pre"><span style={`color:${c}`}>{k.padEnd(7)}</span><span data-done style={`color:${v.startsWith('[') ? '#8b95a3' : '#d8dde5'}`}>{v}</span><span data-rest style="color:#3a4552"></span></div>
+                ))}
+              </div>
+
+              <div style="display:flex;gap:4px">
+                {T_PAL.map((c) => <span data-pal style={`width:26px;height:14px;background:${c}`}></span>)}
+              </div>
+
+              <div data-final style="white-space:pre"><span style="color:#4fe3b0">$</span> <span class="cur" style="--c:#f5a524"></span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      </div>
+
+      <!-- SKILLS -->
+      <section id="skills" style="position:relative;isolation:isolate;overflow:hidden;border-top:1px solid #232a33">
+        <div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none">
+          <div class="dots" style="position:absolute;inset:0;-webkit-mask-image:radial-gradient(50% 60% at 90% 30%,#000,transparent);mask-image:radial-gradient(50% 60% at 90% 30%,#000,transparent)"></div>
+          <div class="dr" style="position:absolute;right:-220px;top:120px;width:520px;height:520px"><div class="anel2" style="width:100%;height:100%"></div></div>
+          <div class="cross" style="position:absolute;right:9%;top:70px;color:#f5a524"></div>
+          <div class="cross" style="position:absolute;left:5%;bottom:60px"></div>
+        </div>
+        <div style="max-width:1160px;margin:0 auto;padding:96px 32px;display:flex;flex-direction:column;gap:36px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <p class="cmd" style="--w:20.4ch;--n:20;margin:0;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8b95a3">$ skills --com-prova</p>
+            <h2 class="sv" style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(30px,5vw,52px);line-height:1.05;letter-spacing:-.03em;color:#fff">Cada habilidade aponta para um projeto.</h2>
+            <p style="margin:0;font-size:18px;line-height:1.6;color:#aab3bf;max-width:60ch">Role a página e as habilidades vão carregando. A barra é o nível de 1 a 5, sem inflar: 1 é “já usei”, 3 é “uso no dia a dia”, 5 é “resolvo problema difícil”. O comentário ao lado diz onde conferir.</p>
           </div>
 
-          <figure class="hero-fig">
-            <div class="card painel">
-              <div class="painel-cab"><span>Acompanhamento do projeto</span><span class="pilula">exemplo</span></div>
-              <div class="painel-corpo">
-                <div class="painel-linha"><b>Site institucional</b><span class="mono">62%</span></div>
-                <div class="barra"><div class="barra-cheia"></div></div>
-                <ol class="etapas">
-                  <li><Fragment set:html={CHECK.replace('width="16" height="16"', 'width="18" height="18"')} /><span>Conversa de 30 min</span><em>Feito</em></li>
-                  <li><Fragment set:html={CHECK.replace('width="16" height="16"', 'width="18" height="18"')} /><span>Proposta escrita</span><em>Feito</em></li>
-                  <li><span class="ponto" aria-hidden="true"><i class="live"></i></span><span class="forte">Construção</span><em class="amarelo">Em andamento</em></li>
-                  <li class="apagado"><span class="ponto" aria-hidden="true"><i class="vazio"></i></span><span>Entrega dos arquivos</span></li>
-                  <li class="apagado"><span class="ponto" aria-hidden="true"><i class="vazio"></i></span><span>Lançamento + 30 dias de ajustes</span></li>
-                </ol>
+          <!-- janela de terminal do Ubuntu -->
+          <div style="border-radius:10px;overflow:hidden;box-shadow:0 22px 60px -20px #000,0 0 0 1px #000">
+            <div aria-hidden="true" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 12px 0 16px;background:#2b2b2b;border-bottom:1px solid #1d1d1d">
+              <span style="display:flex;flex-direction:column;gap:3px;width:16px"><i style="display:block;height:2px;background:#bdbdbd"></i><i style="display:block;height:2px;background:#bdbdbd"></i><i style="display:block;height:2px;background:#bdbdbd"></i></span>
+              <span style="font-family:'Ubuntu Mono',monospace;font-size:15px;color:#eeeeec">igor@ubuntu: ~</span>
+              <span style="display:flex;gap:10px;align-items:center">
+                <span style="display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#444;color:#eee;font-size:13px;line-height:1">–</span>
+                <span style="display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#444"><i style="display:block;width:8px;height:8px;border:1.5px solid #eee"></i></span>
+                <span style="display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#e95420;color:#fff;font-size:15px;line-height:1">×</span>
+              </span>
+            </div>
+
+
+        <div class="ubu-body">
+          <div class="cmd" style="--w:34.4ch;--n:34;white-space:nowrap"><b style="color:#8ae234;font-weight:700">igor@ubuntu</b>:<b style="color:#729fcf;font-weight:700">~</b>$ sudo skills install</div>
+          <div class="sv" style="color:#b9aebb">[sudo] senha para igor: ••••••••</div>
+          <div class="sv" style="color:#b9aebb">Lendo listas de habilidades... Pronto</div>
+          <div class="sv" style="color:#b9aebb;padding-bottom:10px">Resolvendo dependências entre projetos... Pronto</div>
+
+          <div role="group" aria-label="Filtrar por área" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-bottom:12px" data-filtros>
+            <span style="color:#b9aebb;margin-right:4px">filtrar:</span>
+            {FILTROS.map(([id, rotulo], i) => (
+              <button type="button" class={`fb${i === 0 ? ' on' : ''}`} data-f={id} aria-pressed={i === 0 ? 'true' : 'false'}>{rotulo}<span style="opacity:.7;margin-left:8px">{contar(id)}</span></button>
+            ))}
+          </div>
+
+          {SKILLS.map((s) => (
+            <div class="ur" data-area={s.area} style="display:flex;flex-wrap:wrap;align-items:center;gap:2px 16px;padding:6px 8px;margin:0 -8px;border-radius:4px">
+              <span style={`flex:0 0 7ch;color:${AREAS[s.area].cor}`}>[{AREAS[s.area].rotulo}]</span>
+              <span style="flex:0 0 26ch;color:#fff;font-weight:700">{s.nome}</span>
+              <span role="img" aria-label={`Nível ${s.nivel} de 5`} style="flex:0 0 auto;display:flex;align-items:center;gap:12px">
+                <span style="display:flex;font-size:20px;line-height:1;letter-spacing:3px">
+                  {RAMPA.map((ch, k) => (
+                    <b class="bc" style={`--i:${k};font-weight:400`}><i class={k < s.nivel ? 'wv' : ''} style={`--i:${k};font-style:normal;color:${k < s.nivel ? AREAS[s.area].cor : '#5b3a52'}`}>{ch}</i></b>
+                  ))}
+                </span>
+                <span class="lv" style={`--p:${s.nivel};flex:0 0 4ch;color:#eeeeec`}></span>
+              </span>
+              <span style="flex:1 1 260px;min-width:0;color:#b9aebb"># {s.prova}</span>
+            </div>
+          ))}
+
+          <div class="sv" data-resumo-skills style="padding-top:14px;color:#eeeeec">{resumoSkills(SKILLS)}</div>
+          <div aria-hidden="true" style="padding-top:6px"><b style="color:#8ae234;font-weight:700">igor@ubuntu</b>:<b style="color:#729fcf;font-weight:700">~</b>$ <span class="cur" style="--c:#eeeeec"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+      <!-- PROJETOS -->
+      <section id="projetos" style="position:relative;isolation:isolate;overflow:hidden;border-top:1px solid #232a33;background:#0e1116">
+        <div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none">
+          <div class="ruler" style="position:absolute;right:0;top:0;bottom:0;transform:scaleX(-1)"></div>
+          <div class="dr" style="position:absolute;left:-260px;bottom:-120px;width:600px;height:600px"><div class="anel spin" style="width:100%;height:100%"></div></div>
+          <div class="dr" style="position:absolute;right:6%;top:140px;width:130px;height:130px"><div class="sq" style="width:100%;height:100%"></div></div>
+          <div class="cross" style="position:absolute;left:8%;top:60px;color:#4fe3b0"></div>
+        </div>
+        <div style="max-width:1160px;margin:0 auto;padding:96px 32px;display:flex;flex-direction:column;gap:36px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <p class="cmd" style="--w:17.4ch;--n:17;margin:0;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8b95a3">$ ls -l projetos/</p>
+            <h2 class="sv" style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(30px,5vw,52px);line-height:1.05;letter-spacing:-.03em;color:#fff">O que eu construí.</h2>
+          </div>
+
+          <!-- DEVSCOPE: terminal técnico, verde sobre grafite -->
+          <article class="gl" style="display:flex;flex-wrap:wrap;gap:32px 48px;padding:32px;border:1px solid #232a33;border-radius:10px;background:#0b0e13;box-shadow:inset 0 1px 0 rgba(70,209,126,.28)">
+            <div style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:16px;font-family:'Geist','IBM Plex Sans',sans-serif">
+              <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:#808b98">drwxr-xr-x  01  ferramenta open source</p>
+              <h3 class="tg" style="--ofs:0s;margin:0;font-weight:700;font-size:38px;letter-spacing:-.04em;color:#e8ecf1"><span style="color:#46d17e;font-family:'JetBrains Mono',monospace;font-weight:500">/</span>devscope</h3>
+              <p style="margin:0;font-size:17px;line-height:1.6;color:#a9b3bf">O htop dos seus projetos: containers, Git, CI, túneis e banco numa tela só, dentro do terminal. Binário único, zero configuração.</p>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px">
+                <span style="padding:4px 10px;border:1px solid #232a33;border-radius:4px;color:#a9b3bf">Go</span>
+                <span style="padding:4px 10px;border:1px solid #232a33;border-radius:4px;color:#a9b3bf">TUI</span>
+                <span style="padding:4px 10px;border:1px solid #232a33;border-radius:4px;color:#a9b3bf">Docker API</span>
+                <span style="padding:4px 10px;border:1px solid #232a33;border-radius:4px;color:#a9b3bf">GitHub Actions</span>
+              </div>
+              <p style="margin:4px 0 0;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#808b98">O que prova</p>
+              <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:16px;line-height:1.5;color:#d3dae2">
+                <li style="display:flex;gap:12px"><span aria-hidden="true" style="color:#46d17e;font-family:'JetBrains Mono',monospace">▸</span>Go de ponta a ponta, do binário à release</li>
+                <li style="display:flex;gap:12px"><span aria-hidden="true" style="color:#46d17e;font-family:'JetBrains Mono',monospace">▸</span>Integra Docker, Git, CI e túneis numa interface só</li>
+                <li style="display:flex;gap:12px"><span aria-hidden="true" style="color:#46d17e;font-family:'JetBrains Mono',monospace">▸</span>Mascara segredos na tela e valida SSL</li>
+              </ul>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;padding-top:6px">
+                <a class="bt" href={`${HOST}/devscope/`} style="--sh:#d8dde5;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:6px;background:#46d17e;color:#0b0e13;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px">abrir demo ↗</a>
+                <a class="lnk bt" href="https://github.com/PirataZang/devscope" style="--sh:#46d17e;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:6px;border:1px solid #2c3540;font-family:'JetBrains Mono',monospace;font-size:14px">código</a>
               </div>
             </div>
-            <figcaption>Você acompanha cada etapa por um link privado.</figcaption>
-          </figure>
-        </div>
-      </section>
 
-      <!-- FAIXA DE STACKS -->
-      <section aria-label="Ferramentas que uso" class="borda-b">
-        <ul class="sr-only">{STACK.map((s) => <li>{s}</li>)}</ul>
-        <div class="tape" aria-hidden="true">
-          <div class="marquee">
-            {[0, 1].map(() => STACK.map((s, i) => <span class="stack-item">{s}<small class="mono">{(i + 1) * 10}</small></span>))}
-          </div>
-        </div>
-      </section>
+            <div aria-hidden="true" style="flex:1 1 400px;min-width:0;align-self:center;border:1px solid #232a33;border-radius:10px;background:#080b10;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.5;color:#a9b3bf;overflow:hidden">
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 14px;background:#10151c;border-bottom:1px solid #232a33">
+                <span><b style="color:#5aa9ff">DevScope v1.6.9</b> <span style="color:#808b98">· projetos 4</span></span>
+                <span class="stk"><span class="ph pa" style="color:#46d17e;text-align:right">● ao vivo</span><span class="ph pe" style="color:#f2665c;text-align:right">✗ 1 erro</span></span>
+              </div>
+              <div style="padding:10px 14px 12px;display:flex;flex-direction:column;gap:2px">
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;padding:3px 6px;margin:0 -6px;color:#808b98;font-size:11px"><span></span><span>PROJETO</span><span>STATUS</span></div>
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px">
+                  <span style="color:#46d17e;font-size:15px;letter-spacing:1px"><b class="wv" style="--i:0;font-weight:400">⣀</b><b class="wv" style="--i:1;font-weight:400">⣤</b><b class="wv" style="--i:2;font-weight:400">⣶</b><b class="wv" style="--i:3;font-weight:400">⣿</b></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">api-pedidos <span style="color:#808b98">laravel · main</span></span>
+                  <span style="color:#46d17e">rodando</span>
+                </div>
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px">
+                  <span style="color:#46d17e;font-size:15px;letter-spacing:1px"><b class="wv" style="--i:2;font-weight:400">⣠</b><b class="wv" style="--i:3;font-weight:400">⣴</b><b class="wv" style="--i:4;font-weight:400">⣾</b><b class="wv" style="--i:5;font-weight:400">⣿</b></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">landing <span style="color:#808b98">vite · :5173</span></span>
+                  <span style="color:#46d17e">rodando</span>
+                </div>
+                <div class="rowerr" style="--ofs:0s;display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px;border-radius:4px">
+                  <span class="stk" style="font-size:15px;letter-spacing:1px">
+                    <span class="ph pa" style="color:#46d17e"><b class="wv" style="--i:1;font-weight:400">⣀</b><b class="wv" style="--i:2;font-weight:400">⣤</b><b class="wv" style="--i:3;font-weight:400">⣶</b><b class="wv" style="--i:4;font-weight:400">⣿</b></span>
+                    <span class="ph p2" style="color:#f2665c">⣀⣀⡀⠀</span>
+                    <span class="ph p3" style="color:#f2b84b">⣀⣀⣤⣶</span>
+                  </span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">worker-fila <span style="color:#808b98">node · main</span></span>
+                  <span class="stk" style="text-align:right">
+                    <span class="ph p1" style="color:#46d17e">rodando</span>
+                    <span class="ph p2" style="color:#f2665c">✗ exit 1</span>
+                    <span class="ph p3" style="color:#f2b84b">↻ restart</span>
+                    <span class="ph p4" style="color:#46d17e">rodando <span class="pop" style="--ofs:0s">:]</span></span>
+                  </span>
+                </div>
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px">
+                  <span style="color:#46d17e;font-size:15px;letter-spacing:1px"><b class="wv" style="--i:4;font-weight:400">⣤</b><b class="wv" style="--i:5;font-weight:400">⣶</b><b class="wv" style="--i:6;font-weight:400">⣿</b><b class="wv" style="--i:7;font-weight:400">⣿</b></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">painel-admin <span style="color:#808b98">vue · main</span></span>
+                  <span style="color:#46d17e">rodando</span>
+                </div>
+              </div>
+              <div class="stk" style="padding:10px 14px;border-top:1px solid #232a33;background:#0a0d12;font-size:12px">
+                <span class="ph p1" style="color:#808b98">$ <span class="cur" style="--c:#46d17e;width:.55em;height:1em"></span></span>
+                <span class="ph p2" style="color:#f2665c">✗ worker-fila saiu com código 1</span>
+                <span class="ph p3" style="color:#f2b84b">$ docker compose restart worker-fila</span>
+                <span class="ph p4" style="color:#46d17e">✓ worker-fila saudável. tudo certo :]</span>
+              </div>
+            </div>
+          </article>
 
-      <!-- SITES PRONTOS -->
-      <section id="sites" class="secao">
-        <div class="caixa">
-          <div class="cab cab-linha" data-rv>
-            <div><p class="eyebrow">Sites prontos</p><h2>Sites completos, para você abrir e clicar.</h2></div>
-            <p class="cab-nota">Seis demos publicadas, cada uma para um tipo de negócio. Escolha uma, veja no computador ou no celular e abra para clicar.</p>
-          </div>
-
-          <div class="showcase" data-rv data-showcase>
-            <div class="showcase-lista">
-              <ol class="demo-list" aria-label="Escolha uma demo">
-                {DEMOS.map((d, i) => (
-                  <li>
-                    <button type="button" class:list={['demo-btn', { on: i === 0 }]} aria-pressed={i === 0 ? 'true' : 'false'} data-demo={i}>
-                      <span class="n">0{i + 1}</span><span class="nm">{d.nome}</span><span class="ni">{d.nicho}</span>
-                      <svg class="ch" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
-                    </button>
-                  </li>
-                ))}
-              </ol>
-              <a class="list-cta" href="#contato">Quero um site assim →</a>
+          <!-- SPILL: mesmo estilo do DevScope, mas assumidamente de zoeira -->
+          <article class="gl" style="display:flex;flex-wrap:wrap;gap:32px 48px;padding:32px;border:1px solid #232a33;border-radius:10px;background:#0b0e13;box-shadow:inset 0 1px 0 rgba(247,197,49,.32)">
+            <div style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:16px;font-family:'Geist','IBM Plex Sans',sans-serif">
+              <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:#808b98">drwxr-xr-x  02  app android · <span style="color:#F7C531">modo zoeira</span></p>
+              <h3 class="tg" style="--ofs:-2s;margin:0;font-weight:700;font-size:38px;letter-spacing:-.04em;color:#e8ecf1"><span style="color:#F7C531;font-family:'JetBrains Mono',monospace;font-weight:500">/</span>spill</h3>
+              <p style="margin:0;font-size:17px;line-height:1.6;color:#a9b3bf">App de cartas para a roda de amigos: 140 cartas de conversa em sete baralhos e um Modo Drink +18 com seis jogos. Offline, sem cadastro, sem permissões.</p>
+              <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#808b98"><span style="color:#F7C531;letter-spacing:2px">⣀⣀⣀⣀⣀</span> seriedade 0/10 <span style="color:#5d6773"># aviso: só o código é sério</span></p>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px">
+                <span style="padding:4px 10px;border:1px solid rgba(247,197,49,.5);border-radius:4px;color:#F7C531">zoeira</span>
+                <span style="padding:4px 10px;border:1px solid #232a33;border-radius:4px;color:#a9b3bf">Android</span>
+                <span style="padding:4px 10px;border:1px solid #232a33;border-radius:4px;color:#a9b3bf">0 permissões</span>
+                <span style="padding:4px 10px;border:1px solid #232a33;border-radius:4px;color:#a9b3bf">Offline</span>
+              </div>
+              <p style="margin:4px 0 0;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#808b98">O que prova</p>
+              <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:16px;line-height:1.5;color:#d3dae2">
+                <li style="display:flex;gap:12px"><span aria-hidden="true" style="color:#F7C531;font-family:'JetBrains Mono',monospace">▸</span>Produto completo, do app ao site de divulgação</li>
+                <li style="display:flex;gap:12px"><span aria-hidden="true" style="color:#F7C531;font-family:'JetBrains Mono',monospace">▸</span>Privacidade por padrão: nada coletado, nada enviado</li>
+                <li style="display:flex;gap:12px"><span aria-hidden="true" style="color:#F7C531;font-family:'JetBrains Mono',monospace">▸</span>Distribuição por APK direto do GitHub Releases</li>
+              </ul>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;padding-top:6px">
+                <a class="bt" href={`${HOST}/spill/`} style="--sh:#d8dde5;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:6px;background:#F7C531;color:#0b0e13;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px">abrir demo ↗</a>
+                <a class="lnk bt" href="https://github.com/PirataZang/Spill" style="--sh:#F7C531;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:6px;border:1px solid #2c3540;font-family:'JetBrains Mono',monospace;font-size:14px">código</a>
+              </div>
             </div>
 
-            <div class="card janela">
-              <div class="janela-barra">
-                <span class="semaforo" aria-hidden="true"><i style="background:#ff6b5e"></i><i style="background:var(--primary)"></i><i style="background:var(--ok)"></i></span>
-                <span class="tb-url mono" data-url>{EU.site.replace('https://', '')}/sites/{DEMOS[0].slug}</span>
-                <span class="seg" role="group" aria-label="Ver no">
-                  <button type="button" class="on" aria-pressed="true" data-device="desk">Computador</button>
-                  <button type="button" aria-pressed="false" data-device="phone">Celular</button>
+            <div aria-hidden="true" style="flex:1 1 400px;min-width:0;align-self:center;border:1px solid #232a33;border-radius:10px;background:#080b10;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.5;color:#a9b3bf;overflow:hidden">
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 14px;background:#10151c;border-bottom:1px solid #232a33">
+                <span><b style="color:#F7C531">Spill v1.0</b> <span style="color:#808b98">· modo zoeira</span></span>
+                <span class="stk"><span class="ph pa" style="--ofs:-2s;color:#3DDC84;text-align:right">● rodada ao vivo</span><span class="ph pe" style="--ofs:-2s;color:#f2665c;text-align:right">✗ 1 vergonha</span></span>
+              </div>
+              <div style="padding:10px 14px 12px;display:flex;flex-direction:column;gap:2px">
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;padding:3px 6px;margin:0 -6px;color:#808b98;font-size:11px"><span></span><span>BARALHO</span><span>CLIMA</span></div>
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px">
+                  <span style="color:#3DDC84;font-size:15px;letter-spacing:1px"><b class="wv" style="--i:0;font-weight:400">⣀</b><b class="wv" style="--i:1;font-weight:400">⣤</b><b class="wv" style="--i:2;font-weight:400">⣶</b><b class="wv" style="--i:3;font-weight:400">⣿</b></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">verde <span style="color:#808b98">Dia a Dia</span></span>
+                  <span style="color:#3DDC84">leve</span>
+                </div>
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px">
+                  <span style="color:#8FADFF;font-size:15px;letter-spacing:1px"><b class="wv" style="--i:2;font-weight:400">⣠</b><b class="wv" style="--i:3;font-weight:400">⣴</b><b class="wv" style="--i:4;font-weight:400">⣾</b><b class="wv" style="--i:5;font-weight:400">⣿</b></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">azul <span style="color:#808b98">E Se…</span></span>
+                  <span style="color:#8FADFF">médio</span>
+                </div>
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px">
+                  <span style="color:#FF7A93;font-size:15px;letter-spacing:1px"><b class="wv" style="--i:4;font-weight:400">⣤</b><b class="wv" style="--i:5;font-weight:400">⣶</b><b class="wv" style="--i:6;font-weight:400">⣿</b><b class="wv" style="--i:7;font-weight:400">⣿</b></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">vermelho <span style="color:#808b98">Romance</span></span>
+                  <span style="color:#FF7A93">picante</span>
+                </div>
+                <div class="rowerr" style="--ofs:-2s;display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px;border-radius:4px">
+                  <span class="stk" style="font-size:15px;letter-spacing:1px">
+                    <span class="ph pa" style="--ofs:-2s;color:#a9b3bf"><b class="wv" style="--i:1;font-weight:400">⣀</b><b class="wv" style="--i:2;font-weight:400">⣤</b><b class="wv" style="--i:3;font-weight:400">⣶</b><b class="wv" style="--i:4;font-weight:400">⣿</b></span>
+                    <span class="ph p2" style="--ofs:-2s;color:#f2665c">⣀⣀⡀⠀</span>
+                    <span class="ph p3" style="--ofs:-2s;color:#f2b84b">⣀⣀⣤⣶</span>
+                  </span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">preto <span style="color:#808b98">Cringe</span></span>
+                  <span class="stk" style="text-align:right">
+                    <span class="ph p1" style="--ofs:-2s;color:#a9b3bf">pesado</span>
+                    <span class="ph p2" style="--ofs:-2s;color:#f2665c">✗ undefined</span>
+                    <span class="ph p3" style="--ofs:-2s;color:#f2b84b">↻ coragem</span>
+                    <span class="ph p4" style="--ofs:-2s;color:#a9b3bf">pesado <span class="pop" style="--ofs:-2s">:]</span></span>
+                  </span>
+                </div>
+                <div style="display:grid;grid-template-columns:5ch minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:3px 6px;margin:0 -6px">
+                  <span style="color:#F06CA8;font-size:15px;letter-spacing:1px"><b class="wv" style="--i:6;font-weight:400">⣀</b><b class="wv" style="--i:7;font-weight:400">⣠</b><b class="wv" style="--i:8;font-weight:400">⣴</b><b class="wv" style="--i:9;font-weight:400">⣾</b></span>
+                  <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8ecf1">rosa <span style="color:#808b98">Cantadas</span></span>
+                  <span style="color:#F06CA8">duvidoso</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding-top:8px;color:#808b98;font-size:11px">
+                  <span style="width:18px;height:12px;border-radius:2px;background:#168048"></span><span style="width:18px;height:12px;border-radius:2px;background:#2A5BE8"></span><span style="width:18px;height:12px;border-radius:2px;background:#F7C531"></span><span style="width:18px;height:12px;border-radius:2px;background:#D7263D"></span><span style="width:18px;height:12px;border-radius:2px;background:#0D0D10;border:1px solid #38343F"></span><span style="width:18px;height:12px;border-radius:2px;background:#F06A24"></span><span style="width:18px;height:12px;border-radius:2px;background:#C72A73"></span>
+                  <span style="margin-left:6px">7 baralhos</span>
+                </div>
+              </div>
+              <div class="stk" style="padding:10px 14px;border-top:1px solid #232a33;background:#0a0d12;font-size:12px">
+                <span class="ph p1" style="--ofs:-2s;color:#808b98">$ spill puxar --baralho preto <span class="cur" style="--c:#F7C531;width:.55em;height:1em"></span></span>
+                <span class="ph p2" style="--ofs:-2s;color:#f2665c">✗ TypeError: vergonha is undefined</span>
+                <span class="ph p3" style="--ofs:-2s;color:#f2b84b">↻ recarregando coragem…</span>
+                <span class="ph p4" style="--ofs:-2s;color:#3DDC84">✓ carta puxada. ninguém escapa :]</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- 03: em construção, com erro e correção -->
+          <div style="border:1.5px dashed #2c3540;border-radius:12px;padding:24px 28px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#4fe3b0">drwxr-xr-x  03</span>
+            <span style="flex:1 1 280px;font-size:16px;line-height:1.5;color:#aab3bf"><b style="color:#fff;font-weight:600;font-family:'IBM Plex Mono',monospace">/proximo-projeto</b> · uma ferramenta de segurança com código aberto, ainda em construção</span>
+            <span aria-hidden="true" class="stk" style="min-width:24ch;font-family:'IBM Plex Mono',monospace;font-size:13px">
+              <span class="ph p1" style="--ofs:-5s;color:#8b95a3">$ ./scan --alvo meu-site</span>
+              <span class="ph p2" style="--ofs:-5s;color:#f2665c">permission denied :[</span>
+              <span class="ph p3" style="--ofs:-5s;color:#f2b84b">$ sudo !!</span>
+              <span class="ph p4" style="--ofs:-5s;color:#4fe3b0">acesso liberado :]</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8b95a3">em construção</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEGURANÇA -->
+      <section id="seguranca" style="position:relative;isolation:isolate;overflow:hidden;border-top:1px solid #232a33">
+        <div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none">
+          <div class="dots" style="position:absolute;inset:0;-webkit-mask-image:radial-gradient(50% 60% at 15% 80%,#000,transparent);mask-image:radial-gradient(50% 60% at 15% 80%,#000,transparent)"></div>
+          <div class="dr" style="position:absolute;right:-200px;top:-80px;width:520px;height:520px"><div class="anel" style="width:100%;height:100%;border-color:#25423a"></div></div>
+          <div class="dr" style="position:absolute;left:44%;bottom:60px;width:110px;height:110px"><div class="sq" style="width:100%;height:100%;border-color:#25423a"></div></div>
+          <div class="cross" style="position:absolute;right:12%;bottom:80px;color:#4fe3b0"></div>
+          <div class="cur" style="--c:#4fe3b0;position:absolute;left:6%;top:90px;width:9px;height:9px"></div>
+        </div>
+        <div style="max-width:1160px;margin:0 auto;padding:96px 32px;display:flex;flex-wrap:wrap;gap:48px 64px">
+          <div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:20px">
+            <p class="cmd" style="--w:25.4ch;--n:25;margin:0;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8b95a3">$ cat seguranca/README.md</p>
+            <h2 class="sv" style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(30px,5vw,52px);line-height:1.05;letter-spacing:-.03em;color:#fff">Aprendendo a quebrar para <span style="color:#4fe3b0">construir melhor</span>.</h2>
+            <p style="margin:0;font-size:18px;line-height:1.6;color:#aab3bf;max-width:56ch">Estou estudando segurança de aplicações e documentando em público: o que tentei, o que funcionou, o que errei. Nada de selo de certificação que eu não tenho. Aqui só entra o que dá para conferir.</p>
+            <div style="margin-top:8px;border:1px solid #232a33;border-radius:12px;background:#0f1217;overflow:hidden">
+              <div style="padding:12px 16px;border-bottom:1px solid #232a33;background:#12161c;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8b95a3">/.well-known/security.txt</div>
+              <pre style="margin:0;padding:18px 20px;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.7;color:#d8dde5;overflow-x:auto">Contact: mailto:igorfronza20@gmail.com
+    Expires: 2027-10-31T23:59:59.000Z
+    Preferred-Languages: pt, en
+    Canonical: https://igorfronza.dev/.well-known/security.txt</pre>
+            </div>
+          </div>
+
+          <div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:12px">
+            <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#8b95a3">Registro de estudos</p>
+        {LAB.map((l) => (
+          <div class="sv" style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 16px;padding:18px 20px;border:1px solid #232a33;border-radius:10px;background:#0f1217">
+            <span style={`flex:0 0 auto;min-width:92px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:${l.cor}`}>[{l.status}]</span>
+            <div style="flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:4px">
+              <b style="font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:16px;color:#fff">{l.titulo}</b>
+              <span style="font-size:15px;line-height:1.5;color:#aab3bf">{l.nota}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+      <!-- CONTATO -->
+      <section id="contato" style="position:relative;isolation:isolate;overflow:hidden;border-top:1px solid #232a33;background:#0e1116">
+        <div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none">
+          <div class="dots" style="position:absolute;inset:0;-webkit-mask-image:radial-gradient(45% 70% at 8% 50%,#000,transparent);mask-image:radial-gradient(45% 70% at 8% 50%,#000,transparent)"></div>
+          <div class="dr" style="position:absolute;right:-140px;bottom:-200px;width:480px;height:480px"><div class="anel2" style="width:100%;height:100%"></div></div>
+          <div class="cross" style="position:absolute;right:46%;top:56px;color:#f5a524"></div>
+        </div>
+        <div style="max-width:1160px;margin:0 auto;padding:96px 32px;display:flex;flex-wrap:wrap;gap:48px 56px;align-items:flex-start">
+
+          <div style="flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:22px">
+            <p class="cmd" style="--w:14.4ch;--n:14;margin:0;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8b95a3">$ ./contato.sh</p>
+            <h2 class="sv" style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(30px,5vw,52px);line-height:1.05;letter-spacing:-.03em;color:#fff">Vamos conversar.</h2>
+            <p style="margin:0;font-size:18px;line-height:1.6;color:#aab3bf;max-width:50ch">Vaga, freela ou dúvida sobre algum dos projetos: me chame por onde for mais fácil. O resumo abaixo é para você decidir em dez segundos se vale a conversa.</p>
+
+            <div class="sv" style="border:1px solid #232a33;border-radius:12px;background:#0b0d11;overflow:hidden">
+              <div aria-hidden="true" style="display:flex;align-items:center;gap:7px;padding:0 6px 0 16px;min-height:44px;border-bottom:1px solid #232a33;background:#12161c">
+                <span style="width:10px;height:10px;border-radius:50%;background:#2c3540"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#2c3540"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#2c3540"></span>
+                <span style="margin-left:10px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8b95a3">igor@fronza: ~</span>
+              </div>
+              <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.5">
+                <div style="color:#d8dde5"><span style="color:#4fe3b0">$</span> cat resumo.txt</div>
+                {RESUMO.map(([k, v]) => (
+                  <div style="display:flex;flex-wrap:wrap;gap:0 16px"><span style="flex:0 0 10ch;color:#f5a524">{k}</span><span style="flex:1 1 200px;min-width:0;color:#d8dde5">{v}</span></div>
+                ))}
+                <div aria-hidden="true" style="color:#d8dde5"><span style="color:#4fe3b0">$</span> <span class="cur" style="--c:#f5a524"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:15px">
+            <span style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8b95a3">Fale comigo</span>
+
+            <a class="bt" href={EU.linkedin} rel="noopener" style="--sh:#d8dde5;display:flex;justify-content:space-between;gap:16px;align-items:center;min-height:60px;padding:0 20px;border-radius:10px;background:#f5a524;color:#0b0d11;font-weight:600"><span>conectar no linkedin</span><span>↗</span></a>
+
+            <div style="display:flex;gap:10px">
+              <a class="lnk" href={`mailto:${EU.email}?subject=${encodeURIComponent('Oportunidade - contato pelo portfólio')}`} style="flex:1 1 auto;min-width:0;display:flex;justify-content:space-between;gap:12px;align-items:center;min-height:56px;padding:0 20px;border:1px solid #2c3540;border-radius:10px"><span style="color:#8b95a3">email</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{EU.email}</span></a>
+              <button class="lnk" type="button" data-copiar={EU.email} style="flex:0 0 auto;min-height:56px;padding:0 16px;border:1px solid #2c3540;border-radius:10px;background:transparent;color:#d8dde5;font-family:'IBM Plex Mono',monospace;font-size:14px;cursor:pointer">copiar</button>
+            </div>
+
+            <a class="lnk" href={`https://github.com/${EU.gh}`} rel="noopener" style="display:flex;justify-content:space-between;gap:16px;align-items:center;min-height:56px;padding:0 20px;border:1px solid #2c3540;border-radius:10px"><span style="color:#8b95a3">github</span><span>{EU.gh} ↗</span></a>
+            <a class="lnk" href={`https://wa.me/${EU.zap}`} rel="noopener" style="display:flex;justify-content:space-between;gap:16px;align-items:center;min-height:56px;padding:0 20px;border:1px solid #2c3540;border-radius:10px"><span style="color:#8b95a3">whatsapp</span><span>{EU.zapFmt} ↗</span></a>
+            <a class="lnk" href="#sites" style="display:flex;justify-content:space-between;gap:16px;align-items:center;min-height:56px;padding:0 20px;border:1px dashed #2c3540;border-radius:10px"><span style="color:#8b95a3">sites sob medida</span><span>ver exemplos e preços ↓</span></a>
+            <span class="sr" aria-live="polite" data-copiado></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SITES E PREÇOS -->
+      <section id="sites" style="position:relative;isolation:isolate;overflow:hidden;border-top:1px solid #232a33">
+        <div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none">
+          <div class="ruler" style="position:absolute;left:0;top:0;bottom:0"></div>
+          <div class="dr" style="position:absolute;right:-180px;top:40px;width:520px;height:520px"><div class="anel spin" style="width:100%;height:100%"></div></div>
+          <div class="cross" style="position:absolute;left:12%;top:70px"></div>
+          <div class="cross" style="position:absolute;right:8%;bottom:70px;color:#4fe3b0"></div>
+        </div>
+        <div style="max-width:1160px;margin:0 auto;padding:96px 32px;display:flex;flex-direction:column;gap:64px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <p class="cmd" style="--w:11.4ch;--n:11;margin:0;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#8b95a3">$ ls sites/</p>
+            <h2 class="sv" style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:clamp(30px,5vw,52px);line-height:1.05;letter-spacing:-.03em;color:#fff">Sites que eu faço, e quanto custa.</h2>
+            <p style="margin:0;font-size:18px;line-height:1.6;color:#aab3bf;max-width:62ch">Seis demos publicadas, cada uma para um tipo de negócio. Escolha uma, veja no computador ou no celular e abra para clicar.</p>
+          </div>
+
+          <!-- vitrine -->
+          <div id="vitrine" data-vitrine data-demos={JSON.stringify(DEMOS)} style="display:flex;flex-wrap:wrap;gap:28px 32px;align-items:flex-start">
+            <div role="group" aria-label="Escolha um site" style="flex:1 1 260px;max-width:340px;min-width:0;display:flex;flex-direction:column;gap:6px">
+              {DEMOS.map((d, i) => (
+                <button type="button" class={`pick${i === DEMO0 ? ' on' : ''}`} data-i={i} aria-pressed={i === DEMO0 ? 'true' : 'false'}>
+                  <span style="flex:0 0 auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#f5a524">{String(i + 1).padStart(2, '0')}</span>
+                  <span style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left"><b style="font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;color:#fff">{d.nome}</b><span style="font-size:13px;color:#8b95a3">{d.nicho}</span></span>
+                  <span class="seta" aria-hidden="true" style="flex:0 0 auto;font-family:'IBM Plex Mono',monospace;color:#f5a524">{i === DEMO0 ? '›' : ''}</span>
+                </button>
+              ))}
+              <a href={zap('Oi, Igor. Quero um site assim.')} rel="noopener" style="padding:14px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#f5a524">quero um site assim →</a>
+            </div>
+
+            <div style="flex:2 1 520px;min-width:0;border:1px solid #232a33;border-radius:12px;background:#0b0d11;overflow:hidden">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 12px;background:#12161c;border-bottom:1px solid #232a33">
+                <span aria-hidden="true" style="display:flex;gap:6px"><i style="width:10px;height:10px;border-radius:50%;background:#e5484d"></i><i style="width:10px;height:10px;border-radius:50%;background:#f5a524"></i><i style="width:10px;height:10px;border-radius:50%;background:#4fe3b0"></i></span>
+                <span data-url style="flex:1 1 200px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 12px;border-radius:6px;background:#0b0d11;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8b95a3">igorfronza.dev{DEMOS[DEMO0].url}</span>
+                <span role="group" aria-label="Tamanho da tela" style="display:flex;gap:4px">
+                  <button type="button" class="dv on" data-dev="desk" aria-pressed="true">Computador</button>
+                  <button type="button" class="dv" data-dev="mob" aria-pressed="false">Celular</button>
                 </span>
               </div>
 
-              <div class="stage" data-stage>
-                <img class="stage-img" data-img src={`${BASE}demos/${DEMOS[0].slug}.webp`} alt={`Primeira tela do site ${DEMOS[0].nome}`} width="960" height="600" />
-                <div class="phone" data-phone hidden>
-                  <iframe data-frame title="Prévia do site no celular" loading="lazy" width="390" height="844"></iframe>
+              <div data-desk>
+                <img data-img src={DEMOS[DEMO0].img} alt={`Captura da página inicial do site ${DEMOS[DEMO0].nome}`} width="1200" height="750" style="display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top;background:#0f1217" />
+              </div>
+              <div data-mob hidden style="place-items:center;padding:28px;background:#0f1217">
+                <div class="fone">
+                  <div class="fone-tela"><iframe data-frame title="Prévia do site no celular" loading="lazy" tabindex="-1"></iframe></div>
                 </div>
               </div>
 
-              <div class="demo-info" aria-live="polite">
-                <div class="demo-topo">
-                  <div>
-                    <h3 data-nome>{DEMOS[0].nome}</h3>
-                    <p class="mudo" data-nicho>{DEMOS[0].nicho}</p>
-                  </div>
-                  <div class="setas">
-                    <button type="button" class="nav-arrow" data-nav="-1" aria-label="Demo anterior"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg></button>
-                    <span class="mono mudo" data-num>01 / 0{DEMOS.length}</span>
-                    <button type="button" class="nav-arrow" data-nav="1" aria-label="Próxima demo"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+              <div style="padding:22px 24px 24px;display:flex;flex-direction:column;gap:14px" aria-live="polite">
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+                  <div style="display:flex;flex-direction:column;gap:2px"><h3 data-nome style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:24px;letter-spacing:-.02em;color:#fff">{DEMOS[DEMO0].nome}</h3><span data-nicho style="font-size:15px;color:#8b95a3">{DEMOS[DEMO0].nicho}</span></div>
+                  <div style="display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8b95a3">
+                    <button type="button" class="nv" data-nav="-1" aria-label="Site anterior">‹</button>
+                    <span data-n>{String(DEMO0 + 1).padStart(2, '0')} / {String(DEMOS.length).padStart(2, '0')}</span>
+                    <button type="button" class="nv" data-nav="1" aria-label="Próximo site">›</button>
                   </div>
                 </div>
-                <p class="cinza" data-desc>{DEMOS[0].desc}</p>
-                <div class="tags" data-tags>{DEMOS[0].tags.map((t) => <span class="tag">{t}</span>)}</div>
-                <div class="demo-acoes">
-                  <a class="btn btn-primary" data-abrir href={`${BASE}sites/${DEMOS[0].slug}/`}>Abrir o site ↗</a>
-                  <a class="btn btn-ghost" href="#contato">Quero um assim</a>
+                <p data-desc style="margin:0;font-size:16px;line-height:1.6;color:#aab3bf">{DEMOS[DEMO0].desc}</p>
+                <div data-tags style="display:flex;flex-wrap:wrap;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+                  {DEMOS[DEMO0].tags.map((t) => <span style="padding:4px 10px;border:1px solid #2c3540;border-radius:999px;color:#aab3bf">{t}</span>)}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;padding-top:4px">
+                  <a class="bt" data-abrir href={DEMOS[DEMO0].url} style="--sh:#d8dde5;display:inline-flex;align-items:center;min-height:48px;padding:0 22px;border-radius:8px;background:#f5a524;color:#0b0d11;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px">abrir o site ↗</a>
+                  <a class="lnk bt" data-quero href={DEMOS[DEMO0].ask} rel="noopener" style="--sh:#f5a524;display:inline-flex;align-items:center;min-height:48px;padding:0 22px;border-radius:8px;border:1px solid #2c3540;font-family:'IBM Plex Mono',monospace;font-size:15px">quero um assim</a>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <script type="application/json" id="demos-json" set:html={JSON.stringify(DEMOS)} />
-      </section>
 
-      <!-- SERVIÇOS -->
-      <section id="servicos" class="secao fundo2 borda-tb">
-        <div class="caixa">
-          <div class="cab" data-rv>
-            <p class="eyebrow">Serviços e preços</p>
-            <h2>Quatro formas de trabalhar junto.</h2>
-            <p class="lead">Os preços abaixo são o ponto de partida. O valor final fica por escrito depois da nossa conversa.</p>
-          </div>
-
-          <div class="price-grid">
-            {SERVICOS.map((s, i) => (
-              <div data-pop style={`--i:${i}`}>
-                <article class:list={['price-card', { featured: s.destaque }]}>
-                  {s.destaque && <span class="pc-badge">Mais pedido</span>}
-                  <div class="pc-head">
-                    <span class="pc-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={s.icone}></svg></span>
-                    <h3 class="pc-name">{s.t}</h3>
-                  </div>
-                  <div><span class="pc-from">a partir de</span><div class="pc-price">{brl(s.de)}{s.unidade && <small>{s.unidade}</small>}</div><span class="pc-time">{s.prazo}</span></div>
-                  <p class="pc-desc">{s.d}</p>
-                  <ul class="pc-list">{s.itens.map((it) => <li class="check"><Fragment set:html={CHECK} />{it}</li>)}</ul>
-                  <a class:list={['btn', s.destaque ? 'btn-primary' : 'btn-ghost']} href="#contato" data-need={s.t}>{s.cta}</a>
-                </article>
-              </div>
-            ))}
+          <!-- preços -->
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 24px">
+              <h3 class="sv" style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:26px;letter-spacing:-.02em;color:#fff">Preços, sem surpresa.</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#4fe3b0">Pix: 10% de desconto</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px">
+              {PLANOS.map((p) => (
+                <div class="sv" style={`display:flex;flex-direction:column;gap:12px;padding:24px;border-radius:12px;background:#0f1217;border:1px solid ${p.destaque ? '#f5a524' : '#232a33'}`}>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#8b95a3">{p.prazo}</span>
+                  <b style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:#fff">{p.nome}</b>
+                  <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8b95a3">a partir de</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:32px;letter-spacing:-.03em;color:#f5a524">{brl(p.de)}{p.un}</span></div>
+                  <p style="margin:0;font-size:15px;line-height:1.55;color:#aab3bf">{p.d}</p>
+                  <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;flex:1;font-size:14px;line-height:1.5;color:#d8dde5">
+                    {p.itens.map((t) => <li style="display:flex;gap:10px"><span aria-hidden="true" style="color:#4fe3b0;font-family:'IBM Plex Mono',monospace">✓</span>{t}</li>)}
+                  </ul>
+                  <a class="bt" href={zap(`Oi, Igor. ${p.cta}.`)} rel="noopener" style={`--sh:#d8dde5;display:flex;justify-content:center;align-items:center;min-height:46px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;${p.destaque ? 'background:#f5a524;color:#0b0d11' : 'border:1px solid #2c3540;color:#d8dde5'}`}>{p.cta}</a>
+                </div>
+              ))}
+            </div>
           </div>
 
           <!-- simulador -->
-          <div class="sim" data-rv data-sim>
-            <div class="sim-cfg">
-              <div>
-                <h3>Monte seu site e veja o preço</h3>
-                <p class="cinza peq-p">Três escolhas. O valor muda na hora, com os preços da tabela acima.</p>
+          <div class="sv" data-sim data-pagina={PRECO.pagina} data-extra={PRECO.extra} data-pix={PRECO.pix} data-hosp={PRECO.hospedagem} data-zap={`https://wa.me/${EU.zap}`} style="border:1px solid #232a33;border-radius:14px;background:#0f1217;overflow:hidden;display:flex;flex-wrap:wrap">
+            <div style="flex:1 1 440px;min-width:0;padding:28px;display:flex;flex-direction:column;gap:26px">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;letter-spacing:-.02em;color:#fff">Monte seu site e veja o preço</h3>
+                <p style="margin:0;font-size:15px;color:#8b95a3">Três escolhas. O valor muda na hora, com os preços da tabela acima.</p>
               </div>
 
-              <fieldset class="sim-step">
-                <legend><span class="sim-n">1</span>Quantas páginas? <span class="mono mudo" data-paginas-rotulo>· 1 página</span></legend>
-                <div class="pages">
+              <div role="group" aria-label="Quantas páginas" style="display:flex;flex-direction:column;gap:12px">
+                <div class="sim-t"><span class="sim-n">1</span>Quantas páginas? <span data-rotulo style="color:#8b95a3">· 1 página</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:6px">
                   {Array.from({ length: 10 }, (_, i) => (
-                    <button type="button" class:list={['pg', { on: i === 0 }]} aria-pressed={i === 0 ? 'true' : 'false'} aria-label={i === 0 ? '1 página' : `${i + 1} páginas`} data-pg={i + 1}>
-                      <span class="pg-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="pg-n mono">{i + 1}</span>
+                    <button type="button" class={`pg${i === 0 ? ' on sel' : ''}`} data-pg={i + 1} aria-pressed={i === 0 ? 'true' : 'false'} aria-label={i === 0 ? '1 página' : `${i + 1} páginas`}>
+                      <span aria-hidden="true" style="display:flex;flex-direction:column;gap:3px;width:56%"><i style="display:block;height:3px;background:currentColor;opacity:.85"></i><i style="display:block;height:3px;width:70%;background:currentColor;opacity:.6"></i><i style="display:block;height:3px;width:45%;background:currentColor;opacity:.45"></i></span>
+                      <span>{i + 1}</span>
                     </button>
                   ))}
                 </div>
-                <p class="sim-hint">A primeira página sai por {brl(PRECO.pagina)}; cada página extra soma {brl(PRECO.extra)}.</p>
-              </fieldset>
+                <p style="margin:0;font-size:13px;color:#8b95a3">A primeira página sai por {brl(PRECO.pagina)}; cada página extra soma {brl(PRECO.extra)}.</p>
+              </div>
 
-              <fieldset class="sim-step">
-                <legend><span class="sim-n">2</span>Onde o site vai ficar?</legend>
-                <div class="opts opts-2">
-                  <button type="button" class="opt on" aria-pressed="true" data-host="me"><span class="opt-t">Eu cuido da hospedagem</span><span class="opt-s">{brl(PRECO.hospedagem)}/mês, com domínio e SSL</span></button>
-                  <button type="button" class="opt" aria-pressed="false" data-host="self"><span class="opt-t">Você hospeda onde quiser</span><span class="opt-s">o código é seu, sem mensalidade</span></button>
+              <div role="group" aria-label="Onde o site vai ficar" style="display:flex;flex-direction:column;gap:12px">
+                <div class="sim-t"><span class="sim-n">2</span>Onde o site vai ficar?</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+                  <button type="button" class="op on" data-host="me" aria-pressed="true"><b>Eu cuido da hospedagem</b><span>{brl(PRECO.hospedagem)}/mês, com domínio e SSL</span></button>
+                  <button type="button" class="op" data-host="self" aria-pressed="false"><b>Você hospeda onde quiser</b><span>o código é seu, sem mensalidade</span></button>
                 </div>
-              </fieldset>
+              </div>
 
-              <fieldset class="sim-step">
-                <legend><span class="sim-n">3</span>Como prefere pagar?</legend>
-                <div class="opts opts-3">
-                  <button type="button" class="opt on" aria-pressed="true" data-pay="pix"><span class="opt-t">Pix à vista</span><span class="opt-s">10% de desconto</span></button>
-                  <button type="button" class="opt" aria-pressed="false" data-pay="card"><span class="opt-t">Cartão</span><span class="opt-s">até 6x sem juros</span></button>
-                  <button type="button" class="opt" aria-pressed="false" data-pay="split"><span class="opt-t">40% + 60%</span><span class="opt-s">entrada e entrega</span></button>
+              <div role="group" aria-label="Como prefere pagar" style="display:flex;flex-direction:column;gap:12px">
+                <div class="sim-t"><span class="sim-n">3</span>Como prefere pagar?</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+                  <button type="button" class="op on" data-pay="pix" aria-pressed="true"><b>Pix à vista</b><span>10% de desconto</span></button>
+                  <button type="button" class="op" data-pay="card" aria-pressed="false"><b>Cartão</b><span>até 6x sem juros</span></button>
+                  <button type="button" class="op" data-pay="split" aria-pressed="false"><b>40% + 60%</b><span>entrada e entrega</span></button>
                 </div>
-              </fieldset>
+              </div>
             </div>
 
-            <div class="sim-out" aria-live="polite">
-              <div class="sim-out-cab"><span>Seu orçamento estimado</span><span class="mudo">prazo a partir de 1 a 2 semanas</span></div>
-              <ul class="receipt" data-linhas>
-                <li><span>Site com a 1ª página</span><span class="dots-fill" aria-hidden="true"></span><span class="mono">{brl(PRECO.pagina)}</span></li>
-                <li class="disc"><span>Desconto Pix (10%)</span><span class="dots-fill" aria-hidden="true"></span><span class="mono">− {brl(PRECO.pagina * PRECO.pix)}</span></li>
-              </ul>
-              <div class="sim-total-bloco">
-                <span class="mudo peq-p">Total a partir de</span>
-                <div class="sim-total mono" data-total>{brl(PRECO.pagina * (1 - PRECO.pix))}</div>
-                <div class="cinza" data-pagamento>à vista no Pix, já com 10% de desconto</div>
-                <div class="cinza" data-hospedagem>+ <span class="mono forte">{brl(PRECO.hospedagem)}</span>/mês de hospedagem</div>
+            <div aria-live="polite" style="flex:1 1 340px;min-width:0;padding:28px;background:#0b0d11;border-left:1px solid #232a33;display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px"><span style="color:#fff">Seu orçamento estimado</span><span style="color:#8b95a3">prazo a partir de 1 a 2 semanas</span></div>
+              <div data-linhas style="display:flex;flex-direction:column;gap:8px;padding-bottom:16px;border-bottom:1px dashed #2c3540;font-family:'IBM Plex Mono',monospace;font-size:14px">
+                <div class="rec"><span>Site com a 1ª página</span><span class="pt" aria-hidden="true"></span><span>{brl(PRECO.pagina)}</span></div>
+                <div class="rec desc"><span>Desconto Pix (10%)</span><span class="pt" aria-hidden="true"></span><span>− {brl(PRECO.pagina * PRECO.pix)}</span></div>
               </div>
-              <a class="btn btn-primary" href="#contato" data-enviar-sim>Enviar esta simulação</a>
-              <p class="mudo nota-sim">É uma estimativa. O valor final fica por escrito depois da conversa.</p>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;color:#8b95a3">Total a partir de</span>
+                <span data-total style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:52px;line-height:1.05;letter-spacing:-.04em;color:#fff">{brl(PRECO.pagina * (1 - PRECO.pix))}</span>
+                <span data-pagto style="font-size:15px;line-height:1.5;color:#aab3bf">à vista no Pix, já com 10% de desconto</span>
+                <span data-hospedagem style="font-size:15px;color:#aab3bf">+ <b style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#fff">{brl(PRECO.hospedagem)}</b>/mês de hospedagem</span>
+              </div>
+              <a class="bt" data-enviar href={zap('Oi, Igor. Simulação: site com 1 página, pagamento Pix à vista, com hospedagem (R$ 50/mês). Total estimado: R$ 450.')} rel="noopener" style="--sh:#d8dde5;margin-top:auto;display:flex;justify-content:center;align-items:center;min-height:52px;border-radius:8px;background:#f5a524;color:#0b0d11;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px">enviar esta simulação ↗</a>
+              <p style="margin:0;font-size:13px;line-height:1.5;color:#8b95a3;text-align:center">É uma estimativa. O valor final fica por escrito depois da conversa.</p>
             </div>
           </div>
 
-          <div class="duas-listas" data-rv>
-            <div class="card lista-card">
-              <h3>Todo site sai com</h3>
-              <ul>
-                {['Design próprio, sem template', 'Imagens leves em WebP e botões fáceis de tocar no celular', 'Prévia bonita quando o link é compartilhado', 'Animação e 3D só quando ajudam, respeitando quem prefere menos movimento'].map((t) => <li class="check"><Fragment set:html={CHECK} />{t}</li>)}
-              </ul>
-            </div>
-            <div class="card lista-card">
-              <h3>Pagamento</h3>
-              <ul>
-                {['40% na entrada, o restante na entrega', 'Até 6x sem juros no cartão', '10% de desconto no Pix à vista', 'Emito nota fiscal'].map((t) => <li class="check"><Fragment set:html={CHECK} />{t}</li>)}
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+            <div class="sv" style="padding:24px 26px;border:1px solid #232a33;border-radius:12px;background:#0f1217;display:flex;flex-direction:column;gap:14px">
+              <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:18px;color:#fff">Todo site sai com</h3>
+              <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:15px;line-height:1.5;color:#d8dde5">
+                {INCLUI.map((t) => <li style="display:flex;gap:10px"><span aria-hidden="true" style="color:#4fe3b0;font-family:'IBM Plex Mono',monospace">✓</span>{t}</li>)}
               </ul>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- COMO FUNCIONA -->
-      <section id="processo" class="secao">
-        <div class="caixa">
-          <div class="cab" data-rv>
-            <p class="eyebrow">Como funciona</p>
-            <h2>Da primeira conversa ao site no ar.</h2>
-          </div>
-          <div class="flow" data-seq>
-            <div class="flow-track" aria-hidden="true"><i class="flow-fill"></i></div>
-            <ol class="flow-steps">
-              {PROCESSO.map((p, i) => (
-                <li class="flow-step" style={`--i:${i}`}>
-                  <span class="flow-node" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={p.icone}></svg></span>
-                  <div class="flow-card"><div class="flow-box">
-                    <div class="flow-head">
-                      <span class="mono flow-n">0{i + 1}</span>
-                      <span class="flow-time">{p.vivo && <span class="live ponto-vivo"></span>}{p.tempo}</span>
-                    </div>
-                    <h3>{p.t}</h3>
-                    <p>{p.d}</p>
-                  </div></div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      <!-- SITES DE PROJETOS -->
-      <section id="projetos" class="secao shape-sec borda-t">
-        <div class="shapes" aria-hidden="true">
-          <div class="shp dotgrid" style="inset:0"></div>
-          <div class="shp glow" data-px="0.04" style="width:820px;height:820px;right:-160px;top:40px"></div>
-          <div class="shp" data-px="0.1" style="width:460px;height:460px;right:-140px;top:-40px"><div class="sq spin"></div></div>
-          <div class="shp" data-px="0.16" style="width:240px;height:240px;right:9%;top:150px"><div class="sq sq-y spin-r"></div></div>
-          <div class="shp anel" data-px="0.06" style="width:600px;height:600px;left:-260px;bottom:-260px"></div>
-          <div class="shp" data-px="0.2" style="width:56px;height:56px;left:6%;top:32%"><div class="sq sq-fill float"></div></div>
-          <span class="shp plus" data-px="0.12" style="left:30%;top:70px">+</span>
-        </div>
-        <div class="caixa">
-          <div class="cab" data-rv>
-            <p class="eyebrow">Projetos com site próprio</p>
-            <h2>Sites de projetos.</h2>
-            <p class="lead">Produto bom que ninguém entende em um minuto não é usado. Aqui ficam os projetos meus que ganharam um site de verdade: o que o produto faz, como ele funciona e uma demonstração para experimentar na hora.</p>
-          </div>
-
-          {PROJETOS.map((p, i) => (
-            <article data-pop class="proj-card">
-              <div class="proj-shot">
-                {p.previa === 'term' ? (
-                <div class="term" role="img" aria-label="Tela do DevScope no terminal, com uso de CPU e RAM e a lista de projetos">
-                  <div class="term-bar"><i></i><i></i><i></i><span>devscope</span></div>
-                  <div class="term-corpo">
-                    <div class="term-topo"><span><b class="azul">DevScope v1.6.9</b> <span class="t2">Developer Command Center</span></span><span class="verde">● ao vivo</span></div>
-                    <div class="t3">Linux x86_64 · up 1d 4h · load 3.10 · Docker 9</div>
-                    <div class="term-bars">
-                      <span>CPU <b class="verde">29%</b> <span class="bar"><i class="cpu" style="width:29%;background:#46d17e"></i></span></span>
-                      <span>RAM <b style="color:#f2b84b">44%</b> <span class="bar"><i style="width:44%;background:#f2b84b"></i></span></span>
-                      <span>DISK <b class="t2">6%</b> <span class="bar"><i style="width:6%;background:#a9b3bf"></i></span></span>
-                    </div>
-                    <div class="t2"><b class="azul">PROJETOS 4</b> · <span class="verde">1 rodando</span> · <span style="color:#f2665c">1 parado</span> · 2 sem status</div>
-                    <div class="term-table">
-                      <div class="tr th"><span>NOME</span><span>BRANCH</span><span class="col-path">CAMINHO</span></div>
-                      <div class="tr sel"><span>▸ loja-api</span><span>main</span><span class="col-path">~/projetos/loja-api</span></div>
-                      <div class="tr"><span>&nbsp; blog</span><span>main</span><span class="col-path">~/projetos/blog</span></div>
-                      <div class="tr"><span>&nbsp; frete-service</span><span style="color:#f2b84b">feat/correios</span><span class="col-path">~/projetos/frete-service</span></div>
-                      <div class="tr"><span>&nbsp; painel-web</span><span>main</span><span class="col-path">~/projetos/painel-web</span></div>
-                    </div>
-                    <div class="term-det">
-                      <div><b style="color:#e8ecf1">loja-api</b> <span class="verde">rodando</span></div>
-                      <div><span class="t3">stack&nbsp;&nbsp;&nbsp;</span> Node.js</div>
-                      <div><span class="t3">runtime&nbsp;</span> 3 containers · <span class="azul">:8080 :6379</span> · compose</div>
-                      <div><span class="t3">git&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> main<span class="caret"></span></div>
-                    </div>
-                  </div>
-                </div>
-                ) : (
-                  <div class="leque" role="img" aria-label="Cinco cartas do Spill abertas em leque, nas cores verde, azul, amarela, vermelha e preta">
-                    {['#168048', '#2A5BE8', '#F7C531', '#D7263D', '#0D0D10'].map((c, k) => (
-                      <i style={`--c:${c};--r:${(k - 2) * 15}deg`}></i>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div class="proj-info">
-                <div class="proj-meta"><span class="proj-tag mono">{p.tag}</span><span class="mono mudo peq-p">0{i + 1} / 0{PROJETOS.length}</span></div>
-                <h3><span style={`color:${p.cor}`}>/</span>{p.nome}</h3>
-                <p class="cinza">{p.desc}</p>
-                <div class="tags">{p.tags.map((t) => <span class="tag">{t}</span>)}</div>
-                <div class="proj-acoes">
-                  <a class="btn btn-primary" href={`${BASE}projetos/${p.slug}/`}>Ver o site <Fragment set:html={SETA} /></a>
-                  <a class="btn btn-ghost" href={p.codigo} rel="noopener"><Fragment set:html={GITHUB} />Código</a>
-                </div>
-              </div>
-            </article>
-          ))}
-
-          <div data-rv class="proj-next">
-            <div class="proj-next-mark" aria-hidden="true"><span></span><span></span><span></span></div>
-            <div class="proj-next-txt">
-              <strong>Mais projetos ganhando site em breve</strong>
-              <span class="cinza">Enquanto isso, tudo que eu publico fica aberto no GitHub.</span>
+            <div class="sv" style="padding:24px 26px;border:1px solid #232a33;border-radius:12px;background:#0f1217;display:flex;flex-direction:column;gap:14px">
+              <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:18px;color:#fff">Pagamento</h3>
+              <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:15px;line-height:1.5;color:#d8dde5">
+                {PAGTO.map((t) => <li style="display:flex;gap:10px"><span aria-hidden="true" style="color:#4fe3b0;font-family:'IBM Plex Mono',monospace">✓</span>{t}</li>)}
+              </ul>
             </div>
-            <a class="btn btn-ghost" href={`https://github.com/${EU.gh}?tab=repositories`} rel="noopener"><Fragment set:html={GITHUB} />Ver todos os projetos no GitHub</a>
           </div>
         </div>
       </section>
 
-      <!-- DÚVIDAS -->
-      <section id="duvidas" class="secao shape-sec borda-t">
-        <div class="shapes" aria-hidden="true">
-          <div class="shp anel" data-px="0.05" style="--d:14;width:520px;height:520px;right:-200px;top:-120px"></div>
-          <div class="shp" data-px="0.12" style="--d:26;width:180px;height:180px;left:4%;bottom:60px"><div class="sq spin-r"></div></div>
-          <div class="shp" data-px="0.18" style="--d:34;width:22px;height:22px;left:30%;top:90px"><div class="sq sq-yfill float"></div></div>
-          <span class="shp plus" data-px="0.1" style="--d:20;right:8%;bottom:120px">+</span>
-        </div>
-        <div class="caixa duas">
-          <div class="sticky-col" data-rv>
-            <p class="eyebrow">Dúvidas</p>
-            <h2>O que perguntam antes de fechar.</h2>
-            <p class="cinza">Não achou a sua? <a href={ZAP} rel="noopener">Pergunte no WhatsApp</a>.</p>
-          </div>
-          <div class="faq">
-            {DUVIDAS.map((d, i) => (
-              <details name="faq" open={i === 0}>
-                <summary class="faq-q"><span>{d.p}</span><span class="pm" aria-hidden="true"></span></summary>
-                <p class="faq-a">{d.r}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <!-- CONTATO -->
-      <section id="contato" class="secao shape-sec fundo2 borda-t">
-        <div class="shapes" aria-hidden="true">
-          <div class="shp dotgrid dot-left" style="inset:0"></div>
-          <div class="shp glow" data-px="0.04" style="--d:10;width:760px;height:760px;right:-120px;top:-80px"></div>
-          <div class="shp" data-px="0.1" style="--d:22;width:420px;height:420px;left:-170px;bottom:-150px"><div class="sq sq-y spin"></div></div>
-          <div class="shp" data-px="0.16" style="--d:32;width:48px;height:48px;left:38%;bottom:70px"><div class="sq sq-fill float-2"></div></div>
-        </div>
-        <div class="caixa duas duas-contato">
-          <div class="contato-txt" data-rv>
-            <p class="eyebrow">Contato</p>
-            <h2>Me conte o que precisa resolver.</h2>
-            <p class="lead">Pode ser uma ideia solta. Em 30 minutos de conversa a gente já sabe se faz sentido.</p>
-            <dl>
-              <div><dt>WhatsApp</dt><dd><a href={ZAP} rel="noopener">{EU.zapFmt}</a></dd></div>
-              <div><dt>E-mail</dt><dd><a href={`mailto:${EU.email}`}>{EU.email}</a></dd></div>
-              <div><dt>Onde</dt><dd class="cinza">{EU.cidade}, {EU.uf} · todo o Brasil por vídeo, presencial no Vale do Itajaí</dd></div>
-            </dl>
-          </div>
-
-          <div data-rv>
-            <form class="card form" data-form data-zap={EU.zap}>
-              <div class="form-2">
-                <div class="field"><label for="f-nome">Seu nome</label><input id="f-nome" name="nome" class="inp" type="text" required autocomplete="name" /></div>
-                <div class="field"><label for="f-contato">WhatsApp ou e-mail</label><input id="f-contato" name="contato" class="inp" type="text" required placeholder="(47) 90000-0000" /></div>
-              </div>
-              <fieldset class="need">
-                <legend class="flabel">O que você precisa</legend>
-                <input type="hidden" name="servico" value={NECESSIDADES[0]} data-servico />
-                <div class="chips">
-                  {NECESSIDADES.map((n, i) => (
-                    <button type="button" class:list={['chip', { on: i === 0 }]} aria-pressed={i === 0 ? 'true' : 'false'} data-chip={n}>{n}</button>
-                  ))}
-                </div>
-              </fieldset>
-              <div class="form-2">
-                <div class="field"><label for="f-orc">Orçamento previsto</label>
-                  {/* o padrão fica na faixa do meio de propósito: ancorar no degrau mais baixo puxa todo orçamento para baixo */}
-                  <select id="f-orc" name="verba" class="inp">
-                    <option>Até R$ 1.000</option>
-                    <option selected>R$ 1.000 a R$ 3.000</option>
-                    <option>R$ 3.000 a R$ 10.000</option>
-                    <option>Acima de R$ 10.000</option>
-                    <option>Prefiro que você me diga</option>
-                  </select></div>
-                <div class="field"><label for="f-prazo">Prazo</label>
-                  <select id="f-prazo" name="prazo" class="inp">
-                    <option>Sem pressa</option>
-                    <option selected>Nas próximas semanas</option>
-                    <option>É urgente</option>
-                  </select></div>
-              </div>
-              <div class="field"><label for="f-msg">O problema, em duas linhas</label><textarea id="f-msg" name="obs" class="inp" rows="4" required placeholder="Hoje eu perco pedido porque… / minha planilha não dá mais conta de…"></textarea></div>
-              <button type="submit" class="btn btn-primary">Enviar pelo WhatsApp</button>
-              <p class="mudo nota-form">Abre a conversa com tudo preenchido. Nada fica gravado neste site.</p>
-            </form>
-          </div>
-        </div>
-      </section>
     </main>
-
-    <footer class="rodape">
-      <div class="caixa rodape-in">
-        <span>© 2026 {EU.nome} · {EU.cidade}, {EU.uf}</span>
-        <nav aria-label="Rodapé">
-          <a href={`https://github.com/${EU.gh}`} rel="noopener">GitHub</a>
-          <a href={EU.linkedin} rel="noopener">LinkedIn</a>
-          <a href={EU.insta} rel="noopener">Instagram</a>
-          <a href={ZAP} rel="noopener">WhatsApp</a>
-        </nav>
-      </div>
-    </footer>
+      <footer style="border-top:1px solid #232a33">
+        <div style="max-width:1160px;margin:0 auto;padding:28px 32px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8b95a3">
+          <span>© Igor Fronza</span>
+          <span>exit 0</span>
+        </div>
+      </footer>
   </div>
 </Base>
 
+<style is:global>
+.tm a{color:inherit;text-decoration:none}
+.tm .nav a:hover{color:#fff}
+.lnk:hover{border-color:#8b95a3}
+.row:hover{background:#12161c}
+@keyframes type{from{width:0}to{width:var(--w)}}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes caretrun{from,to{border-right-color:var(--caret)}}
+@keyframes cyc{
+0%{width:0;border-right-color:transparent}
+1%{border-right-color:var(--caret)}
+10%{width:var(--w)}
+14%{width:var(--w);border-right-color:var(--caret)}
+16%{border-right-color:transparent}
+18%{border-right-color:var(--caret)}
+20%{border-right-color:transparent}
+22%{border-right-color:var(--caret)}
+24%{border-right-color:transparent}
+26%{width:var(--w);border-right-color:var(--caret)}
+33%{width:0;border-right-color:var(--caret)}
+33.1%,100%{width:0;border-right-color:transparent}
+}
+.h-ty{display:block;white-space:nowrap;overflow:hidden;width:0;border-right:.1em solid transparent;animation:type var(--dur) steps(var(--n),end) var(--delay) forwards,caretrun var(--dur) steps(1) var(--delay)}
+.fx{opacity:0;animation:fadeup .7s ease var(--d,0s) forwards}
+.cyc{grid-area:1/1;display:block;width:0;overflow:hidden;white-space:nowrap;border-right:.1em solid transparent;animation:cyc 12s steps(var(--n),end) infinite;animation-delay:var(--delay)}
+.cmd{display:block;white-space:nowrap;overflow:hidden;max-width:100%}
+@property --p{syntax:'<integer>';inherits:true;initial-value:100}
+@keyframes count{from{--p:0}to{--p:100}}
+.pct{animation:count var(--dur) steps(20,end) var(--delay) backwards}
+.pct::after{counter-reset:p var(--p);content:counter(p) "%"}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes wave{0%,100%{opacity:.4;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
+@keyframes cellin{from{opacity:0;transform:translateY(8px)}}
+.wv{display:inline-block;animation:wave 1.8s ease-in-out infinite;animation-delay:calc(var(--i)*90ms)}
+.bc{display:inline-block}
+@keyframes cnt{from{--p:0}}
+.lv::after{counter-reset:p var(--p);content:counter(p) "/5"}
+.ur:hover{background:#3b0f30}
+@keyframes drift{from{transform:translateY(70px)}to{transform:translateY(-70px)}}
+@keyframes blinkc{50%{opacity:0}}
+@keyframes kw{0%{background:transparent;color:#aab3bf}25%{background:var(--c);color:#0b0d11}100%{background:transparent;color:var(--c)}}
+.kw{border-radius:3px;padding:0 3px;margin:0 -3px;animation:kw 1.1s ease var(--d) both}
+.cur{display:inline-block;width:.6em;height:1.05em;vertical-align:-.15em;background:var(--c);animation:blinkc 1.1s steps(1) infinite}
+.spin{animation:spin 140s linear infinite}
+.anel{border:1px dashed #2a323d;border-radius:50%}
+.anel2{border:1px solid #1e252e;border-radius:50%}
+.sq{border:1px solid #2a323d;transform:rotate(45deg)}
+.cross{width:18px;height:18px;color:#3a4552;background:linear-gradient(currentColor,currentColor) center/1px 100% no-repeat,linear-gradient(currentColor,currentColor) center/100% 1px no-repeat}
+.dots{background-image:radial-gradient(#2c3540 1px,transparent 1.3px);background-size:22px 22px;-webkit-mask-image:radial-gradient(60% 70% at 70% 40%,#000,transparent);mask-image:radial-gradient(60% 70% at 70% 40%,#000,transparent)}
+.ruler{width:22px;background:repeating-linear-gradient(to bottom,#2c3540 0 1px,transparent 1px 8px) left/10px 100% no-repeat,repeating-linear-gradient(to bottom,#3a4552 0 1px,transparent 1px 64px) left/20px 100% no-repeat}
+.bt{transition:transform .15s,box-shadow .15s}
+.bt:hover{transform:translate(-2px,-2px);box-shadow:3px 3px 0 var(--sh)}
+.bt:active{transform:none;box-shadow:none}
+@keyframes p1{0%,33%{opacity:1}34%,100%{opacity:0}}
+@keyframes p2{0%,34%{opacity:0}35%,53%{opacity:1}54%,100%{opacity:0}}
+@keyframes p3{0%,54%{opacity:0}55%,73%{opacity:1}74%,100%{opacity:0}}
+@keyframes p4{0%,74%{opacity:0}75%,99%{opacity:1}100%{opacity:0}}
+@keyframes pa{0%,33%{opacity:1}34%,74%{opacity:0}75%,100%{opacity:1}}
+@keyframes pe{0%,34%{opacity:0}35%,73%{opacity:1}74%,100%{opacity:0}}
+@keyframes rowerr{0%,34%{transform:none;background:transparent}35%{transform:translateX(-5px);background:rgba(242,102,92,.16)}37%{transform:translateX(5px)}39%{transform:translateX(-4px)}41%{transform:translateX(3px)}43%,73%{transform:none;background:rgba(242,102,92,.1)}75%,100%{transform:none;background:transparent}}
+@keyframes pop{0%,74%{transform:scale(0)}78%{transform:scale(1.35) rotate(-8deg)}82%,100%{transform:scale(1)}}
+.stk{display:grid}
+.stk>*{grid-area:1/1;min-width:0}
+.ph{opacity:0;animation-duration:10s;animation-iteration-count:infinite;animation-timing-function:linear;animation-delay:var(--ofs,0s)}
+.p1{animation-name:p1}.p2{animation-name:p2}.p3{animation-name:p3}.p4{animation-name:p4}.pa{animation-name:pa}.pe{animation-name:pe}
+.rowerr{animation:rowerr 10s linear var(--ofs,0s) infinite}
+.pop{display:inline-block;animation:pop 10s linear var(--ofs,0s) infinite}
+@keyframes glitchin{
+0%{opacity:0;transform:translateX(-16px) skewX(8deg);clip-path:inset(0 0 88% 0);filter:hue-rotate(90deg) saturate(2)}
+10%{opacity:1;transform:translateX(12px) skewX(-4deg);clip-path:inset(22% 0 52% 0)}
+20%{transform:translateX(-9px) skewX(5deg);clip-path:inset(62% 0 8% 0);filter:hue-rotate(-70deg) saturate(2)}
+30%{opacity:.5;transform:translateX(7px);clip-path:inset(-40px)}
+42%{opacity:1;transform:translateX(-5px) skewX(-3deg);clip-path:inset(40% 0 30% 0);filter:none}
+56%{transform:translateX(3px);clip-path:inset(8% 0 70% 0);filter:hue-rotate(40deg)}
+72%{transform:translateX(-2px);clip-path:inset(-40px);filter:none}
+100%{opacity:1;transform:none;clip-path:inset(-40px);filter:none}
+}
+@keyframes tglitch{0%,34%{text-shadow:none;transform:none}35%{text-shadow:-3px 0 #f2665c,3px 0 #5fd3ff;transform:translateX(2px) skewX(-6deg)}37%{text-shadow:3px 0 #f2665c,-3px 0 #5fd3ff;transform:translateX(-2px)}39%{text-shadow:-2px 0 #f2665c,2px 0 #5fd3ff;transform:translateX(1px)}41%{text-shadow:2px 0 #f2665c,-2px 0 #5fd3ff;transform:none}43%,100%{text-shadow:none;transform:none}}
+.tg{animation:tglitch 10s linear var(--ofs,0s) infinite}
+@supports (animation-timeline: view()){
+.dr{animation:drift linear both;animation-timeline:view()}
+.gl{animation:glitchin linear both;animation-timeline:view();animation-range:entry 0% entry 32%}
+.bc{animation:cellin linear both;animation-timeline:view();animation-range:entry calc(5% + var(--i)*7%) entry calc(30% + var(--i)*7%)}
+.lv{animation:cnt linear both;animation-timeline:view();animation-range:entry 5% entry 75%}
+.sv{animation:fadeup linear both;animation-timeline:view();animation-range:entry 0% entry 45%}
+.cmd{animation:type steps(var(--n),end) both;animation-timeline:view();animation-range:entry 15% entry 65%}
+}
+@media (prefers-reduced-motion: reduce){
+.h-ty,.cyc,.cmd{width:auto!important;animation:none!important}
+.fx,.sv{opacity:1!important;animation:none!important;transform:none!important}
+.cyc:not(:first-child){display:none}
+.pct,.kw,.spin,.dr,.cur,.bc,.wv,.lv{animation:none!important}
+.ph,.rowerr,.pop,.gl,.tg{animation:none!important}
+.p4,.pa{opacity:1!important}
+.pop{transform:none!important}
+}
+.tm button{font:inherit}
+ .tm :focus-visible{outline:2px solid #fff;outline-offset:3px}
+body{background:#0b0d11}
+.tm{background:#0b0d11;color:#d8dde5;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+.tm .pular{position:absolute;left:-9999px;top:8px;z-index:50;padding:10px 16px;background:#f5a524;color:#0b0d11;font-family:'IBM Plex Mono',monospace;border-radius:6px}
+.tm .pular:focus{left:12px}
+.tm .sr{position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* terminal do topo */
+.tm .term{border:1px solid #232a33;border-radius:12px;background:#0f1217;overflow:hidden;font-family:'IBM Plex Mono',monospace;color:#d8dde5}
+.tm .term-bar{display:flex;align-items:center;gap:7px;padding:0 6px 0 16px;min-height:44px;border-bottom:1px solid #232a33;background:#12161c}
+.tm .rp{margin-left:auto;min-height:44px;padding:0 12px;background:none;border:0;color:#8b95a3;font-size:12px;cursor:pointer}
+.tm .rp:hover{color:#fff}
+.tm .term-body{padding:18px 20px 22px;display:flex;flex-direction:column;gap:16px;font-size:13px;line-height:1.5}
+.js .tb-pending{visibility:hidden}
+@keyframes spf{0%{content:'|'}25%{content:'/'}50%{content:'-'}75%{content:'\\'}}
+.tm .caret{display:inline-block;width:.6em;height:1.05em;vertical-align:-.15em;animation:blinkc 1.1s steps(1) infinite}
+.tm .sp::before{content:'|';animation:spf .6s steps(1) infinite}
+@media (prefers-reduced-motion: reduce){.tm .caret,.tm .sp::before{animation:none}}
+
+/* skills: janela de terminal do Ubuntu */
+.tm .ubu-body{background:#300a24;padding:22px 24px 26px;font-family:'Ubuntu Mono','IBM Plex Mono',monospace;font-size:16px;line-height:1.55;color:#eeeeec;display:flex;flex-direction:column;gap:4px}
+.tm .fb{min-height:44px;padding:0 14px;border-radius:4px;cursor:pointer;font-family:'Ubuntu Mono',monospace;font-size:16px;border:1px solid #5e2750;background:transparent;color:#d9cdd8}
+.tm .fb.on{border-color:#eeeeec;background:#5e2750;color:#fff}
+.tm .off{display:none!important}
+
+/* vitrine */
+.tm .pick{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:8px 14px;cursor:pointer;border-radius:8px;border:1px solid transparent;background:transparent;text-align:left}
+.tm .pick:hover{background:#0f1217}
+.tm .pick.on{border-color:#2c3540;background:#12161c}
+.tm .dv{min-height:36px;padding:0 12px;border-radius:6px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12.5px;border:1px solid transparent;background:transparent;color:#8b95a3}
+.tm .dv.on{border-color:#2c3540;background:#0b0d11;color:#fff}
+.tm .nv{min-width:44px;min-height:44px;border:1px solid #2c3540;border-radius:8px;background:transparent;color:#d8dde5;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:16px}
+.tm .nv:hover{border-color:#8b95a3}
+.tm [data-mob]{display:grid}
+.tm .fone{width:232px;border:8px solid #1b2128;border-radius:30px;overflow:hidden;background:#000;box-shadow:0 18px 40px -16px #000}
+.tm .fone-tela{position:relative;width:216px;height:468px;overflow:hidden}
+.tm .fone-tela iframe{position:absolute;left:0;top:0;width:390px;height:844px;border:0;transform:scale(.5538);transform-origin:0 0;background:#fff}
+
+/* simulador */
+.tm .sim-t{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#fff}
+.tm .sim-n{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#f5a524;color:#0b0d11;font-size:12px;font-weight:600}
+.tm .pg{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:56px;padding:8px 0;border-radius:6px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6b7683;border:1px dashed #2c3540;background:transparent}
+.tm .pg.on{color:#f5a524;border:1px solid #6b5320;background:#1c1710}
+.tm .pg.sel{border-color:#f5a524}
+.tm .op{display:flex;flex-direction:column;gap:2px;text-align:left;min-height:56px;padding:10px 14px;border-radius:8px;cursor:pointer;border:1px solid #2c3540;background:#0b0d11}
+.tm .op b{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:14px;color:#fff}
+.tm .op span{font-size:13px;color:#8b95a3}
+.tm .op.on{border-color:#f5a524;background:#1c1710}
+.tm .rec{display:flex;align-items:baseline;gap:10px;color:#d8dde5}
+.tm .rec .pt{flex:1 1 auto;border-bottom:1px dotted #2c3540;transform:translateY(-3px)}
+.tm .rec.desc{color:#4fe3b0}
+
+</style>
+
 <script>
-  const $ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
-  const $$ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => [...r.querySelectorAll<T>(s)];
-  const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const fino = matchMedia('(pointer: fine)').matches;
-  const base = import.meta.env.BASE_URL;
+const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = <T extends HTMLElement = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
+const $$ = <T extends HTMLElement = HTMLElement>(s: string, r: ParentNode = document) => [...r.querySelectorAll<T>(s)];
+const brl = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
 
-  /* ---------------- menu mobile ---------------- */
-  const burger = $('[data-menu]')!;
-  const painel = $('#menu')!;
-  const menu = (abrir: boolean) => {
-    painel.hidden = !abrir;
-    burger.setAttribute('aria-expanded', String(abrir));
-    burger.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
-    $('path', burger)!.setAttribute('d', abrir ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16');
+/* ---------- terminal do topo: tudo é função do tempo t (ms) ---------- */
+(() => {
+  const root = $('[data-terminal]');
+  if (!root) return;
+  const END = 9400;
+  const POOL = '01#$%&@/<>=+*?';
+  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+  const vis = (el: HTMLElement, on: boolean) => { el.style.visibility = on ? '' : 'hidden'; };
+
+  const body = $('[data-body]', root)!;
+  const typed = $('[data-typed]', root)!;
+  const caret = $('[data-caret]', root)!;
+  const CMD = typed.dataset.full!;
+  const logs = $$('[data-log]', root);
+  const build = $('[data-build]', root)!;
+  const fill = $('[data-fill]', root)!;
+  const pct = $('[data-pct]', root)!;
+  const rows = [...$$('[data-b]', root), ...$$('[data-info]', root)];
+  const pal = $$('[data-pal]', root);
+  const final = $('[data-final]', root)!;
+
+  /* os primeiros k caracteres já resolveram; o resto ainda embaralha */
+  const decode = (row: HTMLElement, t: number, start: number, step: number) => {
+    const full = row.dataset.full!;
+    const k = clamp(Math.floor((t - start) / step) + 1, 0, full.length);
+    const seed = Math.floor(t / 55);
+    let rest = '';
+    for (let i = k; i < full.length; i++) rest += full[i] === ' ' ? ' ' : POOL[(((i + 1) * 374761393 + seed * 668265263) >>> 0) % POOL.length];
+    $('[data-done]', row)!.textContent = full.slice(0, k);
+    $('[data-rest]', row)!.textContent = rest;
   };
-  burger.addEventListener('click', () => menu(painel.hidden));
-  painel.addEventListener('click', (e) => (e.target as HTMLElement).closest('a') && menu(false));
-  addEventListener('keydown', (e) => e.key === 'Escape' && !painel.hidden && menu(false));
 
-  /* ---------------- vitrine de demos ---------------- */
-  const demos = JSON.parse($('#demos-json')!.textContent!) as {
-    slug: string; nome: string; nicho: string; desc: string; tags: string[];
-  }[];
-  const vit = $('[data-showcase]')!;
-  const palco = $('[data-stage]', vit)!;
+  const frame = (t: number) => {
+    typed.textContent = CMD.slice(0, clamp(Math.floor((t - 400) / 38) + 1, 0, CMD.length));
+    caret.style.display = t >= 400 && t < 1450 ? '' : 'none';
+
+    for (const l of logs) {
+      const s = Number(l.dataset.s), ok = Number(l.dataset.ok);
+      const done = ok > 0 && t >= ok;
+      vis(l, t >= s);
+      $('[data-oktag]', l)!.style.display = done ? '' : 'none';
+      $('[data-sp]', l)!.style.display = done ? 'none' : '';
+      vis($('[data-val]', l)!, done || ok === 0);
+    }
+
+    const bp = clamp((t - 3300) / 1400, 0, 1), be = 1 - Math.pow(1 - bp, 3);
+    vis(build, t >= 3300);
+    fill.style.width = (be * 100).toFixed(1) + '%';
+    pct.textContent = Math.round(be * 100) + '%';
+    pct.style.color = bp >= 1 ? '#4fe3b0' : '#d8dde5';
+
+    for (const r of rows) {
+      const s = Number(r.dataset.s);
+      vis(r, t >= s);
+      decode(r, t, 'b' in r.dataset ? s : s + 100, 'b' in r.dataset ? 14 : 24);
+    }
+    pal.forEach((p, k) => vis(p, t >= 8600 + k * 70));
+    vis(final, t >= 9200);
+  };
+
+  let raf = 0;
+  const play = () => {
+    cancelAnimationFrame(raf);
+    if (reduz) { frame(END); body.classList.remove('tb-pending'); return; }
+    const t0 = performance.now();
+    let last = -99;
+    const tick = (now: number) => {
+      const t = now - t0;
+      if (t >= END) { frame(END); return; }
+      if (t - last > 28) { last = t; frame(t); }
+      raf = requestAnimationFrame(tick);
+    };
+    frame(0);
+    body.classList.remove('tb-pending');
+    raf = requestAnimationFrame(tick);
+  };
+  $('[data-replay]', root)!.addEventListener('click', play);
+  play();
+})();
+
+/* ---------- skills: filtro por área ---------- */
+(() => {
+  const barra = $('[data-filtros]');
+  if (!barra) return;
+  const linhas = $$('[data-area]');
+  const resumo = $('[data-resumo-skills]')!;
+  barra.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-f]');
+    if (!b) return;
+    const f = b.dataset.f!;
+    $$('[data-f]', barra).forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
+    let n = 0, estudo = 0;
+    for (const l of linhas) {
+      const ver = f === 'all' || l.dataset.area === f;
+      l.classList.toggle('off', !ver);
+      if (!ver) continue;
+      n++;
+      if (Number($('.lv', l)!.style.getPropertyValue('--p')) <= 2) estudo++;
+    }
+    resumo.textContent = `Habilidades carregadas: ${n} · em estudo: ${estudo} · falhas: 0`;
+  });
+})();
+
+/* ---------- vitrine de sites ---------- */
+(() => {
+  const vit = $('[data-vitrine]');
+  if (!vit) return;
+  type Demo = { nome: string; nicho: string; desc: string; tags: string[]; img: string; url: string; ask: string };
+  const demos: Demo[] = JSON.parse(vit.dataset.demos!);
+  const picks = $$('.pick', vit);
   const img = $<HTMLImageElement>('[data-img]', vit)!;
-  const celular = $('[data-phone]', vit)!;
   const frame = $<HTMLIFrameElement>('[data-frame]', vit)!;
-  let atual = 0;
-  let aparelho: 'desk' | 'phone' = 'desk';
+  const desk = $('[data-desk]', vit)!, mob = $('[data-mob]', vit)!;
+  let cur = Math.max(0, picks.findIndex((p) => p.classList.contains('on')));
+  let dev = 'desk';
 
-  /* o iframe tem 390x844 de verdade, para o CSS da demo achar que é um celular;
-     escala para caber no palco, em vez de o navegador espremer o layout */
-  const escalar = () => {
-    const s = (palco.clientHeight - 28) / 856;
-    celular.style.setProperty('--s', String(Math.min(1, s)));
-  };
-  const caminho = () => `${base}sites/${demos[atual].slug}/`;
-
-  const mostrar = () => {
-    const d = demos[atual];
-    $$('.demo-btn', vit).forEach((b, i) => {
-      b.classList.toggle('on', i === atual);
-      b.setAttribute('aria-pressed', String(i === atual));
-    });
-    $('[data-url]', vit)!.textContent = `${location.host}${base.replace(/\/$/, '')}/sites/${d.slug}`;
+  const render = () => {
+    const d = demos[cur];
+    img.src = d.img;
+    img.alt = `Captura da página inicial do site ${d.nome}`;
+    $('[data-url]', vit)!.textContent = 'igorfronza.dev' + d.url;
     $('[data-nome]', vit)!.textContent = d.nome;
     $('[data-nicho]', vit)!.textContent = d.nicho;
-    $('[data-num]', vit)!.textContent = `0${atual + 1} / 0${demos.length}`;
     $('[data-desc]', vit)!.textContent = d.desc;
-    $('[data-tags]', vit)!.replaceChildren(
-      ...d.tags.map((t) => Object.assign(document.createElement('span'), { className: 'tag', textContent: t })),
-    );
-    $<HTMLAnchorElement>('[data-abrir]', vit)!.href = caminho();
-    img.src = `${base}demos/${d.slug}.webp`;
-    img.alt = `Primeira tela do site ${d.nome}`;
-    if (aparelho === 'phone') frame.src = caminho();
-  };
-  const aparelhoPara = (a: 'desk' | 'phone') => {
-    aparelho = a;
-    $$('[data-device]', vit).forEach((b) => {
-      const on = b.dataset.device === a;
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-pressed', String(on));
+    $('[data-n]', vit)!.textContent = `${String(cur + 1).padStart(2, '0')} / ${String(demos.length).padStart(2, '0')}`;
+    $<HTMLAnchorElement>('[data-abrir]', vit)!.href = d.url;
+    $<HTMLAnchorElement>('[data-quero]', vit)!.href = d.ask;
+    $('[data-tags]', vit)!.replaceChildren(...d.tags.map((t) => {
+      const s = document.createElement('span');
+      s.textContent = t;
+      s.style.cssText = 'padding:4px 10px;border:1px solid #2c3540;border-radius:999px;color:#aab3bf';
+      return s;
+    }));
+    picks.forEach((p, i) => {
+      p.classList.toggle('on', i === cur);
+      p.setAttribute('aria-pressed', String(i === cur));
+      $('.seta', p)!.textContent = i === cur ? '›' : '';
     });
-    img.hidden = a === 'phone';
-    celular.hidden = a === 'desk';
-    /* a demo só é carregada quando alguém pede o celular */
-    if (a === 'phone') { escalar(); frame.src = caminho(); }
+    /* o iframe só carrega quando alguém pede o celular */
+    if (dev === 'mob' && frame.getAttribute('src') !== d.url) frame.src = d.url;
   };
-  $$('[data-demo]', vit).forEach((b) => b.addEventListener('click', () => { atual = Number(b.dataset.demo); mostrar(); }));
+  const setDev = (d: string) => {
+    dev = d;
+    $$('[data-dev]', vit).forEach((b) => { const on = b.dataset.dev === d; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    desk.hidden = d !== 'desk';
+    mob.hidden = d !== 'mob';
+    render();
+  };
+  picks.forEach((p, i) => p.addEventListener('click', () => { cur = i; render(); }));
   $$('[data-nav]', vit).forEach((b) => b.addEventListener('click', () => {
-    atual = (atual + Number(b.dataset.nav) + demos.length) % demos.length;
-    mostrar();
+    cur = (cur + Number(b.dataset.nav) + demos.length) % demos.length;
+    render();
   }));
-  $$('[data-device]', vit).forEach((b) => b.addEventListener('click', () => aparelhoPara(b.dataset.device as 'desk' | 'phone')));
-  addEventListener('resize', escalar, { passive: true });
+  $$('[data-dev]', vit).forEach((b) => b.addEventListener('click', () => setDev(b.dataset.dev!)));
+})();
 
-  /* ---------------- formulário e simulador ---------------- */
-  const form = $<HTMLFormElement>('[data-form]')!;
-  const servico = $<HTMLInputElement>('[data-servico]')!;
-  const msg = $<HTMLTextAreaElement>('#f-msg')!;
-  const escolher = (nome: string) => {
-    servico.value = nome;
-    $$('[data-chip]', form).forEach((c) => {
-      const on = c.dataset.chip === nome;
-      c.classList.toggle('on', on);
-      c.setAttribute('aria-pressed', String(on));
-    });
-  };
-  $$('[data-chip]', form).forEach((c) => c.addEventListener('click', () => escolher(c.dataset.chip!)));
-  $$('[data-need]').forEach((a) => a.addEventListener('click', () => escolher(a.dataset.need!)));
-
-  /* site estático não tem para onde postar; o pedido vai pelo zap */
-  form.addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    const d = new FormData(form);
-    const v = (k: string) => String(d.get(k) ?? '').trim();
-    const linhas = [
-      'Olá, Igor! Vim pelo site.', '',
-      `Preciso de: ${v('servico')}`, `Orçamento previsto: ${v('verba')}`, `Prazo: ${v('prazo')}`, '',
-      `O problema: ${v('obs')}`, '',
-      `Nome: ${v('nome')}`, `Contato: ${v('contato')}`,
-    ];
-    open(`https://wa.me/${form.dataset.zap}?text=${encodeURIComponent(linhas.join('\n'))}`, '_blank', 'noopener');
-  });
-
-  /* mesmos números de PRECO no frontmatter */
-  const PAGINA = 500, EXTRA = 250, PIX = 0.1, HOSPEDAGEM = 50;
-  const brl = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
-  const sim = $('[data-sim]')!;
+/* ---------- simulador de preço (mesmos números dos cards) ---------- */
+(() => {
+  const sim = $('[data-sim]');
+  if (!sim) return;
+  const PAGINA = Number(sim.dataset.pagina), EXTRA = Number(sim.dataset.extra), PIX = Number(sim.dataset.pix), HOSP = Number(sim.dataset.hosp);
   const st = { pages: 1, pay: 'pix', host: 'me' };
   let exibido = PAGINA * (1 - PIX);
   let raf = 0;
 
   const marcar = (sel: string, ok: (b: HTMLElement) => boolean) =>
-    $$(sel, sim).forEach((b) => {
-      const on = ok(b);
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-pressed', String(on));
-    });
-
+    $$(sel, sim).forEach((b) => { const on = ok(b); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
   const linha = (cls: string, rotulo: string, valor: string) => {
-    const el = Object.assign(document.createElement('li'), {
-      className: cls,
-      innerHTML: '<span></span><span class="dots-fill" aria-hidden="true"></span><span class="mono"></span>',
-    });
+    const el = document.createElement('div');
+    el.className = 'rec' + (cls ? ' ' + cls : '');
+    el.innerHTML = '<span></span><span class="pt" aria-hidden="true"></span><span></span>';
     el.children[0].textContent = rotulo;
     el.children[2].textContent = valor;
     return el;
@@ -816,18 +1163,28 @@ const brl = (v: number) => 'R$ ' + v.toLocaleString('pt-BR');
     const extra = st.pages - 1;
     const linhas = [linha('', 'Site com a 1ª página', brl(PAGINA))];
     if (extra) linhas.push(linha('', `${extra} ${extra === 1 ? 'página extra' : 'páginas extras'} × ${brl(EXTRA)}`, brl(EXTRA * extra)));
-    if (desc) linhas.push(linha('disc', 'Desconto Pix (10%)', '− ' + brl(desc)));
+    if (desc) linhas.push(linha('desc', 'Desconto Pix (10%)', '− ' + brl(desc)));
     $('[data-linhas]', sim)!.replaceChildren(...linhas);
-    $('[data-paginas-rotulo]', sim)!.textContent = st.pages === 1 ? '· 1 página' : `· ${st.pages} páginas`;
-    $('[data-pagamento]', sim)!.textContent =
+    $('[data-rotulo]', sim)!.textContent = st.pages === 1 ? '· 1 página' : `· ${st.pages} páginas`;
+    $('[data-pagto]', sim)!.textContent =
       st.pay === 'pix' ? 'à vista no Pix, já com 10% de desconto'
       : st.pay === 'card' ? `ou 6x de ${brl(bruto / 6)} sem juros no cartão`
       : `${brl(bruto * 0.4)} na entrada + ${brl(bruto * 0.6)} na entrega`;
     $('[data-hospedagem]', sim)!.hidden = st.host !== 'me';
-    marcar('[data-pg]', (b) => Number(b.dataset.pg) <= st.pages);
-    $$('[data-pg]', sim).forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pg) === st.pages)));
+    $$('[data-pg]', sim).forEach((b) => {
+      const n = Number(b.dataset.pg);
+      b.classList.toggle('on', n <= st.pages);
+      b.classList.toggle('sel', n === st.pages);
+      b.setAttribute('aria-pressed', String(n === st.pages));
+    });
     marcar('[data-pay]', (b) => b.dataset.pay === st.pay);
     marcar('[data-host]', (b) => b.dataset.host === st.host);
+
+    const nomes: Record<string, string> = { pix: 'Pix à vista', card: 'cartão em até 6x', split: '40% na entrada e 60% na entrega' };
+    $<HTMLAnchorElement>('[data-enviar]', sim)!.href = `${sim.dataset.zap}?text=${encodeURIComponent(
+      `Oi, Igor. Simulação: site com ${st.pages} ${st.pages === 1 ? 'página' : 'páginas'}, pagamento ${nomes[st.pay]}, ` +
+      `${st.host === 'me' ? `com hospedagem (${brl(HOSP)}/mês)` : 'sem hospedagem'}. Total estimado: ${brl(total)}.`,
+    )}`;
 
     /* o total conta até o novo valor; com movimento reduzido, troca direto */
     const alvo = $('[data-total]', sim)!;
@@ -847,480 +1204,25 @@ const brl = (v: number) => 'R$ ' + v.toLocaleString('pt-BR');
   $$('[data-pg]', sim).forEach((b) => b.addEventListener('click', () => { st.pages = Number(b.dataset.pg); pinta(); }));
   $$('[data-pay]', sim).forEach((b) => b.addEventListener('click', () => { st.pay = b.dataset.pay!; pinta(); }));
   $$('[data-host]', sim).forEach((b) => b.addEventListener('click', () => { st.host = b.dataset.host!; pinta(); }));
+})();
 
-  $('[data-enviar-sim]', sim)!.addEventListener('click', () => {
-    const nomes: Record<string, string> = { pix: 'Pix à vista', card: 'cartão em até 6x', split: '40% na entrada e 60% na entrega' };
-    const bruto = PAGINA + EXTRA * (st.pages - 1);
-    const total = st.pay === 'pix' ? bruto * (1 - PIX) : bruto;
-    escolher('Criação de site');
-    msg.value =
-      `Simulação: site com ${st.pages} ${st.pages === 1 ? 'página' : 'páginas'}, pagamento ${nomes[st.pay]}, ` +
-      `${st.host === 'me' ? `com hospedagem (${brl(HOSPEDAGEM)}/mês)` : 'sem hospedagem'}. Total estimado: ${brl(total)}.`;
-  });
-
-  /* ---------------- parallax das formas ---------------- */
-  const formas = $$('[data-px]');
-  if (!reduz) {
-    let agendado = false;
-    const rolar = () => {
-      agendado = false;
-      const vh = innerHeight;
-      formas.forEach((el) => {
-        const r = el.closest('section')!.getBoundingClientRect();
-        if (r.bottom < -200 || r.top > vh + 200) return;
-        const c = r.top + r.height / 2 - vh / 2;
-        el.style.setProperty('--py', (-c * (parseFloat(el.dataset.px!) || 0.1)).toFixed(1) + 'px');
-      });
+/* ---------- copiar e-mail ---------- */
+(() => {
+  const b = $('[data-copiar]');
+  if (!b) return;
+  const aviso = $('[data-copiado]');
+  let t = 0;
+  b.addEventListener('click', () => {
+    const ok = () => {
+      b.textContent = 'copiado :]';
+      b.style.color = '#4fe3b0';
+      if (aviso) aviso.textContent = 'E-mail copiado.';
+      clearTimeout(t);
+      t = window.setTimeout(() => { b.textContent = 'copiar'; b.style.color = ''; if (aviso) aviso.textContent = ''; }, 2000);
     };
-    addEventListener('scroll', () => { if (!agendado) { agendado = true; requestAnimationFrame(rolar); } }, { passive: true });
-    rolar();
+    /* sem permissão de área de transferência, o link de e-mail ao lado continua valendo */
+    navigator.clipboard?.writeText(b.dataset.copiar!).then(ok, () => { if (aviso) aviso.textContent = 'Não consegui copiar. Use o link de e-mail.'; });
+  });
+})();
 
-    if (fino) {
-      $$('.shape-sec').forEach((s) => {
-        s.addEventListener('mousemove', (e) => {
-          const r = s.getBoundingClientRect();
-          s.style.setProperty('--mx', (((e.clientX - r.left) / r.width - 0.5) * 2).toFixed(3));
-          s.style.setProperty('--my', (((e.clientY - r.top) / r.height - 0.5) * 2).toFixed(3));
-        });
-        s.addEventListener('mouseleave', () => { s.style.setProperty('--mx', '0'); s.style.setProperty('--my', '0'); });
-      });
-      /* luz que segue o ponteiro nos cards de preço */
-      $$('.price-card').forEach((c) => {
-        c.addEventListener('mousemove', (e) => {
-          const r = c.getBoundingClientRect();
-          c.style.setProperty('--mx', e.clientX - r.left + 'px');
-          c.style.setProperty('--my', e.clientY - r.top + 'px');
-        });
-        c.addEventListener('mouseleave', () => { c.style.removeProperty('--mx'); c.style.removeProperty('--my'); });
-      });
-    }
-  }
-
-  /* ---------------- revelação ao rolar ---------------- */
-  if (!reduz && 'IntersectionObserver' in window) {
-    document.documentElement.classList.add('anim');
-    const io = new IntersectionObserver((es) => es.forEach((e) => {
-      if (!e.isIntersecting) return;
-      e.target.classList.add('in');
-      io.unobserve(e.target);
-    }), { threshold: 0.18 });
-    $$('[data-rv], [data-pop], [data-seq]').forEach((el) => io.observe(el));
-  }
 </script>
-
-<style is:global>
-  .pf {
-    --bg: #07080f; --bg-2: #0a0c14; --surface: #0e1018; --surface-2: #151823;
-    --line: #1e2230; --line-2: #2a2f3e;
-    --text: #eef0f5; --text-2: #a8aebd; --text-3: #7d8496;
-    --primary: #ffd23f; --on-primary: #141005; --ok: #4fd18b;
-    --sans: 'Geist', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
-    --ease: cubic-bezier(.2, .7, .2, 1); --mola: cubic-bezier(.34, 1.56, .64, 1);
-    --sec-y: 120px; --gut: 24px;
-    background: var(--bg); color: var(--text); font-family: var(--sans);
-    font-size: 17px; line-height: 1.6; min-height: 100vh;
-  }
-  html { scroll-behavior: smooth; }
-  .pf a { color: var(--primary); }
-  .pf a:hover { color: color-mix(in srgb, var(--primary) 75%, #fff); }
-  .pf ::selection { background: color-mix(in srgb, var(--primary) 30%, transparent); }
-  .pf :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 6px; }
-  .pf h1, .pf h2, .pf h3, .pf p, .pf ul, .pf ol, .pf dl, .pf dd, .pf figure { margin: 0; padding: 0; }
-  .pf ul, .pf ol { list-style: none; }
-  .pf button, .pf input, .pf select, .pf textarea { font: inherit; }
-  .pf .mono { font-family: var(--mono); }
-  .pf i, .pf em { font-style: normal; }
-  .pf .mudo { color: var(--text-3); }
-  .pf .cinza { color: var(--text-2); }
-  .pf .forte { color: var(--text); font-weight: 500; }
-  .pf .amarelo { color: var(--primary); }
-  .pf .caixa { max-width: 1160px; margin: 0 auto; padding-inline: var(--gut); position: relative; }
-  .pf .secao { padding-block: var(--sec-y); }
-  .pf .fundo2 { background: var(--bg-2); }
-  .pf .borda-t { border-top: 1px solid var(--line); }
-  .pf .borda-b { border-bottom: 1px solid var(--line); }
-  .pf .borda-tb { border-block: 1px solid var(--line); }
-  .pf .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-  .pf .pular { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--primary); color: var(--on-primary); padding: 10px 16px; border-radius: 8px; }
-  .pf .pular:focus { left: 8px; }
-
-  .pf .eyebrow { font-size: 14px; font-weight: 500; color: var(--text-3); }
-  .pf h1, .pf h2 { text-wrap: balance; }
-  .pf h2 { font-weight: 600; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -0.03em; }
-  .pf .lead { font-size: 18px; line-height: 1.6; color: var(--text-2); max-width: 34em; }
-  .pf .hl { text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: .08em; text-underline-offset: .14em; }
-  .pf .peq-p { font-size: 14px; }
-  .pf .cab { display: flex; flex-direction: column; gap: 14px; max-width: 680px; margin-bottom: 48px; }
-  .pf .cab-linha { max-width: none; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px 48px; margin-bottom: 40px; }
-  .pf .cab-linha > div { display: flex; flex-direction: column; gap: 14px; max-width: 620px; }
-  .pf .cab-nota { max-width: 26em; color: var(--text-2); }
-
-  /* botões e cartões */
-  .pf .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px; box-sizing: border-box; border-radius: 10px; font-weight: 600; font-size: 16px; text-decoration: none; cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
-  .pf .btn-sm { min-height: 44px; padding: 0 16px; font-size: 14px; }
-  .pf .btn-primary { background: var(--primary); color: var(--on-primary); border: 0; }
-  .pf .btn-primary:hover { background: color-mix(in srgb, var(--primary) 85%, #fff); color: var(--on-primary); }
-  .pf .btn-ghost { border: 1px solid var(--line-2); color: var(--text); font-weight: 500; background: transparent; }
-  .pf .btn-ghost:hover { border-color: var(--text-3); color: var(--text); }
-  .pf .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
-  .pf .card { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-  .pf .check { display: flex; gap: 10px; align-items: flex-start; }
-  .pf .check svg { flex: none; margin-top: 4px; }
-  .pf .tags { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pf .tag { font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--text-2); }
-
-  /* topo */
-  .pf .topo { position: sticky; top: 0; z-index: 30; background: rgba(7, 8, 15, .9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-  .pf .nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 8px; }
-  .pf .marca { display: inline-flex; align-items: center; min-height: 44px; color: var(--text); text-decoration: none; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
-  .pf .marca:hover { color: var(--text); }
-  .pf .nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; }
-  .pf .nav-links a, .pf .nav-panel a { color: var(--text-2); text-decoration: none; transition: color .2s; }
-  .pf .nav-links a { padding: 10px 0; }
-  .pf .nav-links a:hover { color: var(--text); }
-  .pf .nav-acoes { display: flex; align-items: center; gap: 10px; }
-  .pf .nav-burger { display: none; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line-2); border-radius: 10px; background: transparent; color: var(--text); cursor: pointer; }
-  .pf .nav-panel { display: none; flex-direction: column; padding: 4px var(--gut) 16px; border-top: 1px solid var(--line); background: var(--bg); }
-  .pf .nav-panel a { padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 18px; color: var(--text); }
-
-  /* formas de fundo */
-  .pf .shape-sec { position: relative; overflow: clip; }
-  .pf .shape-sec > :not(.shapes) { position: relative; z-index: 1; }
-  .pf .shapes { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: clip; }
-  .pf .shp { position: absolute; }
-  .pf .shp[data-px] { transform: translate3d(calc(var(--mx, 0) * var(--d, 16) * 1px), calc(var(--py, 0px) + var(--my, 0) * var(--d, 16) * 1px), 0); transition: transform .45s var(--ease); will-change: transform; }
-  .pf .dotgrid { background-image: radial-gradient(#242a3a 1.1px, transparent 1.5px); background-size: 24px 24px; -webkit-mask-image: radial-gradient(ellipse at 65% 45%, #000 10%, transparent 70%); mask-image: radial-gradient(ellipse at 65% 45%, #000 10%, transparent 70%); }
-  .pf .dot-left { -webkit-mask-image: radial-gradient(ellipse at 20% 70%, #000 10%, transparent 65%); mask-image: radial-gradient(ellipse at 20% 70%, #000 10%, transparent 65%); }
-  .pf .glow { border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--primary) 11%, transparent), transparent 62%); }
-  .pf .sq { width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--line-2); border-radius: 18px; transform: rotate(45deg); }
-  .pf .sq-y { border-color: color-mix(in srgb, var(--primary) 40%, transparent); }
-  .pf .sq-fill { background: var(--surface-2); border-radius: 12px; }
-  .pf .sq-yfill { background: var(--primary); border: 0; border-radius: 6px; }
-  .pf .anel { box-sizing: border-box; border: 1px dashed #283044; border-radius: 50%; }
-  .pf .plus { font-family: var(--mono); font-size: 22px; line-height: 1; color: #3a4256; }
-  .pf .spin { animation: pf-spin 90s linear infinite; }
-  .pf .spin-r { animation: pf-spin 120s linear infinite reverse; }
-  .pf .float { animation: pf-float 6s ease-in-out infinite; }
-  .pf .float-2 { animation: pf-float 7.5s ease-in-out infinite -2s; }
-  @keyframes pf-spin { from { transform: rotate(45deg); } to { transform: rotate(405deg); } }
-  @keyframes pf-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -14px; } }
-
-  /* hero */
-  .pf .hero-in { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 72px; align-items: center; padding-block: 104px 112px; }
-  .pf .hero-txt { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
-  .pf h1 { font-weight: 600; font-size: clamp(38px, 5vw, 62px); line-height: 1.05; letter-spacing: -0.04em; }
-  .pf .garantias { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 8px; font-size: 15px; color: var(--text-2); }
-  .pf .hero-fig { min-width: 0; }
-  .pf .hero-fig figcaption { margin-top: 14px; font-size: 14px; color: var(--text-3); }
-  .pf .painel { overflow: hidden; }
-  .pf .painel-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 500; color: var(--text-2); }
-  .pf .pilula { font-size: 12px; font-weight: 400; color: var(--text-3); border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 10px; }
-  .pf .painel-corpo { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-  .pf .painel-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .pf .painel-linha b { font-weight: 600; font-size: 18px; }
-  .pf .painel-linha span { font-size: 13px; color: var(--text-2); }
-  .pf .barra { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
-  .pf .barra-cheia { width: 62%; height: 100%; border-radius: 3px; background: var(--primary); transform-origin: 0 50%; animation: pf-barra 1.4s .4s var(--ease) both; }
-  @keyframes pf-barra { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-  .pf .etapas { margin-top: 4px; display: flex; flex-direction: column; font-size: 15px; }
-  .pf .etapas li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-  .pf .etapas li:last-child { border-bottom: 0; }
-  .pf .etapas li > span:not(.ponto) { flex: 1; }
-  .pf .etapas em { font-size: 13px; color: var(--text-3); }
-  .pf .etapas .amarelo { color: var(--primary); }
-  .pf .etapas .apagado { color: var(--text-3); }
-  .pf .ponto { width: 18px; display: flex; justify-content: center; }
-  .pf .ponto i { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
-  .pf .ponto i.vazio { background: none; border: 1.5px solid var(--line-2); box-sizing: border-box; }
-  .pf .live { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent); animation: pf-ping 2s ease-out infinite; }
-  .pf .ponto-vivo { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-right: 6px; vertical-align: 1px; }
-  @keyframes pf-ping { 80%, 100% { box-shadow: 0 0 0 8px transparent; } }
-
-  /* faixa: fita métrica */
-  .pf .tape { overflow: hidden; padding: 20px 0 12px; background-color: var(--primary); color: var(--on-primary); background-image: repeating-linear-gradient(90deg, rgba(20, 16, 5, .45) 0 1px, transparent 1px 10px), repeating-linear-gradient(90deg, rgba(20, 16, 5, .85) 0 1.5px, transparent 1.5px 50px); background-size: 100% 7px, 100% 13px; background-repeat: repeat-x; }
-  .pf .marquee { display: flex; width: max-content; animation: pf-marquee 46s linear infinite; }
-  .pf .tape:hover .marquee { animation-play-state: paused; }
-  .pf .stack-item { flex: none; display: inline-flex; align-items: baseline; gap: 10px; padding: 0 24px; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
-  .pf .stack-item small { font-size: 11px; font-weight: 500; opacity: .65; }
-  @keyframes pf-marquee { to { transform: translateX(-50%); } }
-
-  /* vitrine */
-  .pf .showcase { display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.65fr); gap: 32px; align-items: start; }
-  .pf .showcase-lista { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-  .pf .demo-list { display: flex; flex-direction: column; gap: 4px; }
-  .pf .demo-btn { display: grid; grid-template-columns: 30px minmax(0, 1fr) 16px; column-gap: 12px; align-items: center; width: 100%; min-height: 64px; text-align: left; padding: 12px 16px; box-sizing: border-box; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--text); cursor: pointer; transition: background .2s, border-color .2s; }
-  .pf .demo-btn:hover { background: var(--surface); }
-  .pf .demo-btn.on { background: var(--surface); border-color: var(--line-2); }
-  .pf .demo-btn .n { grid-row: 1 / span 2; font-family: var(--mono); font-size: 12px; color: var(--text-3); }
-  .pf .demo-btn.on .n { color: var(--primary); }
-  .pf .demo-btn .nm { font-weight: 600; font-size: 17px; line-height: 1.3; }
-  .pf .demo-btn .ni { grid-column: 2; font-size: 14px; line-height: 1.4; color: var(--text-3); }
-  .pf .demo-btn .ch { grid-row: 1 / span 2; grid-column: 3; color: var(--primary); opacity: 0; transform: translateX(-4px); transition: opacity .2s, transform .2s; }
-  .pf .demo-btn.on .ch { opacity: 1; transform: none; }
-  .pf .list-cta { padding: 0 16px; font-weight: 500; text-decoration: none; }
-  .pf .janela { overflow: hidden; min-width: 0; }
-  .pf .janela-barra { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--line); background: var(--bg-2); }
-  .pf .semaforo { display: flex; gap: 6px; flex: none; }
-  .pf .semaforo i { width: 9px; height: 9px; border-radius: 50%; }
-  .pf .tb-url { flex: 1; min-width: 0; margin-left: 6px; padding: 7px 12px; border-radius: 8px; background: var(--surface); font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pf .seg { display: inline-flex; flex: none; border: 1px solid var(--line-2); border-radius: 10px; padding: 2px; }
-  .pf .seg button { min-height: 40px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--text-3); font-size: 14px; cursor: pointer; transition: background .2s, color .2s; }
-  .pf .seg button:hover { color: var(--text); }
-  .pf .seg button.on { background: var(--surface-2); color: var(--text); }
-  .pf .stage { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg-2); border-bottom: 1px solid var(--line); }
-  .pf .stage-img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-  .pf .stage-img[hidden], .pf .phone[hidden] { display: none; }
-  .pf .phone { position: absolute; left: 50%; top: 50%; width: 402px; height: 856px; box-sizing: border-box; border: 6px solid var(--surface-2); border-radius: 36px; box-shadow: 0 0 0 1px var(--line-2); overflow: hidden; background: #fff; transform: translate(-50%, -50%) scale(var(--s, .5)); }
-  .pf .phone iframe { display: block; width: 390px; height: 844px; border: 0; background: #fff; }
-  .pf .demo-info { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
-  .pf .demo-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-  .pf .demo-topo h3 { font-weight: 600; font-size: 24px; letter-spacing: -0.02em; }
-  .pf .demo-topo p { margin-top: 2px; font-size: 15px; }
-  .pf .setas { display: flex; gap: 8px; align-items: center; }
-  .pf .setas .mono { font-size: 13px; min-width: 7ch; text-align: center; }
-  .pf .nav-arrow { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line-2); background: transparent; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: border-color .2s; }
-  .pf .nav-arrow:hover { border-color: var(--text-3); }
-  .pf .demo-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-
-  /* preços */
-  .pf .price-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
-  .pf .price-grid > div { display: flex; }
-  .pf .price-card { position: relative; flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 24px 24px; border: 1px solid var(--line); border-radius: 16px; background: radial-gradient(380px circle at var(--mx, 50%) var(--my, -30%), rgba(255, 255, 255, .05), transparent 60%), var(--surface); transition: transform .5s var(--mola), border-color .2s, box-shadow .3s; }
-  .pf .price-card:hover { transform: translateY(-8px); border-color: var(--line-2); box-shadow: 0 22px 50px -28px rgba(0, 0, 0, .9); }
-  .pf .pc-head { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
-  .pf .pc-icon { flex: none; width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text-2); transition: transform .5s var(--mola); }
-  .pf .price-card:hover .pc-icon { transform: rotate(-8deg) scale(1.08); }
-  .pf .featured .pc-icon { background: color-mix(in srgb, var(--primary) 14%, transparent); border-color: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); }
-  .pf .price-card.featured { border-color: color-mix(in srgb, var(--primary) 55%, transparent); background: radial-gradient(380px circle at var(--mx, 50%) var(--my, -30%), color-mix(in srgb, var(--primary) 10%, transparent), transparent 62%), var(--surface); box-shadow: 0 30px 70px -40px color-mix(in srgb, var(--primary) 45%, transparent); }
-  .pf .price-card.featured:hover { border-color: var(--primary); }
-  .pf .pc-name { font-weight: 600; font-size: 18px; letter-spacing: -0.01em; }
-  .pf .pc-badge { position: absolute; top: -12px; right: 20px; font-size: 12px; font-weight: 600; color: var(--on-primary); background: var(--primary); border-radius: 999px; padding: 2px 10px; }
-  .pf .pc-from { font-size: 13px; color: var(--text-3); }
-  .pf .pc-price { font-family: var(--mono); font-size: 38px; font-weight: 500; letter-spacing: -0.03em; line-height: 1.15; }
-  .pf .pc-price small { font-size: 15px; color: var(--text-3); letter-spacing: 0; }
-  .pf .pc-time { display: inline-block; margin-top: 10px; font-size: 13px; color: var(--text-2); padding: 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
-  .pf .pc-desc { font-size: 15px; color: var(--text-2); padding-bottom: 18px; border-bottom: 1px solid var(--line); }
-  .pf .pc-list { display: grid; gap: 9px; font-size: 15px; color: var(--text-2); flex: 1; align-content: start; }
-  .pf .pc-list svg { width: 20px; height: 20px; padding: 3px; box-sizing: border-box; border-radius: 50%; background: color-mix(in srgb, var(--ok) 14%, transparent); margin-top: 2px; }
-  .pf .price-card .btn { width: 100%; }
-  .pf .price-card .btn-ghost:hover { background: var(--surface-2); }
-
-  /* simulador */
-  .pf .sim { margin-top: 56px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .95fr); border: 1px solid var(--line-2); border-radius: 18px; overflow: hidden; background: var(--surface); }
-  .pf .sim-cfg { padding: 32px; display: flex; flex-direction: column; gap: 28px; min-width: 0; }
-  .pf .sim-cfg h3 { font-weight: 600; font-size: 22px; letter-spacing: -0.02em; }
-  .pf .sim-cfg > div > p { margin-top: 4px; }
-  .pf .sim-step { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-  .pf .sim-step legend { display: flex; align-items: center; gap: 10px; padding: 0; margin-bottom: 12px; font-weight: 600; font-size: 16px; }
-  .pf .sim-n { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
-  .pf .sim-hint { font-size: 13px; color: var(--text-3); }
-  .pf .pages { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
-  .pf .pg { height: 60px; box-sizing: border-box; border-radius: 8px; border: 1px dashed var(--line-2); background: transparent; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; padding: 9px 6px 5px; transition: transform .45s cubic-bezier(.34, 1.8, .5, 1), background .2s, border-color .2s; }
-  .pf .pg:hover { border-color: var(--text-3); transform: translateY(-3px); }
-  .pf .pg-lines { display: flex; flex-direction: column; gap: 3px; }
-  .pf .pg-lines i { display: block; height: 3px; border-radius: 2px; background: var(--line-2); transition: background .2s; }
-  .pf .pg-lines i:nth-child(1) { width: 70%; } .pf .pg-lines i:nth-child(2) { width: 100%; } .pf .pg-lines i:nth-child(3) { width: 50%; }
-  .pf .pg-n { font-size: 10px; color: var(--text-3); text-align: right; }
-  .pf .pg.on { border-style: solid; border-color: color-mix(in srgb, var(--primary) 60%, transparent); background: color-mix(in srgb, var(--primary) 10%, var(--surface)); animation: pf-pop .5s cubic-bezier(.34, 1.8, .5, 1); }
-  .pf .pg.on .pg-lines i { background: color-mix(in srgb, var(--primary) 75%, transparent); }
-  .pf .pg.on .pg-n { color: var(--primary); }
-  @keyframes pf-pop { 0% { transform: scale(.8); } 100% { transform: scale(1); } }
-  .pf .opts { display: grid; gap: 8px; }
-  .pf .opts-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .pf .opts-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .pf .opt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 64px; padding: 12px 14px; box-sizing: border-box; text-align: left; border: 1px solid var(--line-2); border-radius: 10px; background: transparent; color: var(--text); cursor: pointer; transition: border-color .2s, background .2s, transform .45s cubic-bezier(.34, 1.8, .5, 1); }
-  .pf .opt:hover { border-color: var(--text-3); }
-  .pf .opt:active { transform: scale(.96); }
-  .pf .opt.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); }
-  .pf .opt-t { font-weight: 600; font-size: 15px; line-height: 1.3; }
-  .pf .opt-s { font-size: 13px; line-height: 1.35; color: var(--text-3); }
-  .pf .opt.on .opt-s { color: var(--text-2); }
-  .pf .sim-out { padding: 32px; background: var(--bg-2); border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-  .pf .sim-out-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; font-weight: 500; color: var(--text-2); }
-  .pf .sim-out-cab .mudo { font-size: 13px; font-weight: 400; }
-  .pf .receipt { display: grid; gap: 10px; font-size: 15px; color: var(--text-2); }
-  .pf .receipt li { display: flex; align-items: baseline; gap: 8px; }
-  .pf .dots-fill { flex: 1; min-width: 12px; border-bottom: 1px dotted var(--line-2); transform: translateY(-4px); }
-  .pf .receipt li .mono { color: var(--text); white-space: nowrap; }
-  .pf .receipt li.disc .mono { color: var(--ok); }
-  .pf .sim-total-bloco { border-top: 1px dashed var(--line-2); padding-top: 18px; }
-  .pf .sim-total { font-size: clamp(40px, 4.4vw, 56px); font-weight: 500; letter-spacing: -0.04em; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .pf .sim-total-bloco .cinza { font-size: 15px; }
-  .pf [data-hospedagem] { margin-top: 6px; }
-  .pf [data-hospedagem][hidden] { display: none; }
-  .pf .sim-out .btn { margin-top: auto; }
-  .pf .nota-sim { font-size: 13px; text-align: center; }
-  .pf .duas-listas { margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-  .pf .lista-card { padding: 26px; }
-  .pf .lista-card h3 { margin-bottom: 16px; font-weight: 600; font-size: 17px; }
-  .pf .lista-card ul { display: grid; gap: 10px; font-size: 15px; color: var(--text-2); }
-
-  /* processo */
-  .pf .flow { position: relative; }
-  .pf .flow-track { position: absolute; left: calc((100% - 80px) / 10); right: calc((100% - 80px) / 10); top: 22px; height: 2px; border-radius: 2px; background: var(--line-2); overflow: hidden; }
-  .pf .flow-fill { display: block; width: 100%; height: 100%; background: var(--primary); transform-origin: 0 50%; }
-  .pf .flow-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; }
-  .pf .flow-step { display: flex; flex-direction: column; align-items: center; gap: 18px; min-width: 0; }
-  .pf .flow-node { position: relative; z-index: 1; flex: none; width: 46px; height: 46px; box-sizing: border-box; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--primary); color: var(--primary); display: flex; align-items: center; justify-content: center; }
-  .pf .flow-step:last-child .flow-node { background: var(--primary); color: var(--on-primary); }
-  .pf .flow-card { align-self: stretch; flex: 1; display: flex; }
-  .pf .flow-box { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 20px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); transition: transform .5s var(--mola), border-color .2s, box-shadow .3s; }
-  .pf .flow-box:hover { transform: translateY(-6px); border-color: var(--line-2); box-shadow: 0 20px 40px -26px rgba(0, 0, 0, .9); }
-  .pf .flow-box h3 { font-weight: 600; font-size: 18px; letter-spacing: -0.01em; }
-  .pf .flow-box p { font-size: 15px; color: var(--text-2); }
-  .pf .flow-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .pf .flow-n { font-size: 12px; color: var(--primary); }
-  .pf .flow-time { font-size: 12px; color: var(--text-2); padding: 2px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
-
-  /* projetos */
-  .pf .proj-card { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); border: 1px solid var(--line-2); border-radius: 18px; overflow: hidden; background: rgba(14, 16, 24, .82); backdrop-filter: blur(6px); }
-  .pf .proj-shot { padding: 28px; background: #0b0e13; border-right: 1px solid var(--line); display: flex; align-items: center; min-width: 0; }
-  .pf .proj-info { padding: 36px 32px; display: flex; flex-direction: column; gap: 18px; justify-content: center; min-width: 0; }
-  .pf .proj-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .pf .proj-tag { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 12px; }
-  .pf .proj-info h3 { font-weight: 600; font-size: 34px; letter-spacing: -0.03em; }
-  .pf .proj-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-  .pf .proj-next { margin-top: 24px; display: flex; align-items: center; flex-wrap: wrap; gap: 20px; padding: 22px 24px; border: 1.5px dashed var(--line-2); border-radius: 16px; background: rgba(10, 12, 20, .7); transition: border-color .3s; }
-  .pf .proj-next:hover { border-color: color-mix(in srgb, var(--primary) 55%, transparent); }
-  .pf .proj-next-txt { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
-  .pf .proj-next-txt strong { font-weight: 600; font-size: 18px; }
-  .pf .proj-next-txt span { font-size: 15px; }
-  .pf .proj-next-mark { display: flex; align-items: flex-end; gap: 4px; height: 28px; flex: none; }
-  .pf .proj-next-mark span { display: block; width: 6px; border-radius: 2px; background: var(--primary); animation: pf-build 1.4s ease-in-out infinite; }
-  .pf .proj-next-mark span:nth-child(1) { height: 40%; } .pf .proj-next-mark span:nth-child(2) { height: 70%; animation-delay: -.3s; } .pf .proj-next-mark span:nth-child(3) { height: 100%; animation-delay: -.6s; }
-  @keyframes pf-build { 0%, 100% { transform: scaleY(.5); transform-origin: 50% 100%; } 50% { transform: scaleY(1); transform-origin: 50% 100%; } }
-  .pf .term { width: 100%; font-family: var(--mono); font-size: 12px; line-height: 1.55; color: #a9b3bf; border: 1px solid #232a35; border-radius: 10px; overflow: hidden; background: #0b0e13; transition: transform .6s var(--mola); }
-  .pf .proj-card:hover .term { transform: translateY(-4px) rotate(-.5deg); }
-  .pf .term-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: #141920; border-bottom: 1px solid #232a35; }
-  .pf .term-bar i { width: 9px; height: 9px; border-radius: 50%; background: #2c3440; }
-  .pf .term-bar span { margin-left: 8px; color: #808b98; }
-  .pf .term-corpo { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
-  .pf .term-topo { display: flex; justify-content: space-between; gap: 12px; }
-  .pf .term .azul { color: #5aa9ff; } .pf .term .verde { color: #46d17e; } .pf .term .t2 { color: #a9b3bf; } .pf .term .t3 { color: #808b98; }
-  .pf .term-bars { display: flex; gap: 18px; flex-wrap: wrap; }
-  .pf .term .bar { display: inline-block; width: 56px; height: 5px; margin-left: 4px; border-radius: 3px; background: #1b212b; vertical-align: middle; overflow: hidden; }
-  .pf .term .bar i { display: block; height: 100%; border-radius: 3px; }
-  .pf .term .cpu { animation: pf-cpu 3.2s ease-in-out infinite; }
-  @keyframes pf-cpu { 0%, 100% { width: 29%; } 50% { width: 43%; } }
-  .pf .term-table { display: grid; gap: 2px; }
-  .pf .tr { display: grid; grid-template-columns: 1.2fr 1fr 1.6fr; gap: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; overflow: hidden; }
-  .pf .tr.th { color: #808b98; }
-  .pf .tr.sel { background: #16243a; color: #e8ecf1; }
-  .pf .leque { position: relative; width: 100%; aspect-ratio: 16 / 10; min-height: 220px; display: grid; place-items: end center; overflow: hidden; border-radius: 10px; background: radial-gradient(60% 70% at 50% 100%, rgba(247, 197, 49, .18), transparent 70%), #16151b; }
-  .pf .leque i { position: absolute; bottom: 12%; left: 50%; width: 21%; aspect-ratio: .7; margin-left: -10.5%; border-radius: 10px; background: var(--c); border: 1px solid rgba(255, 255, 255, .22); box-shadow: inset 0 0 0 4px var(--c), inset 0 0 0 5.5px rgba(255, 255, 255, .55), 0 14px 30px -12px #000; transform-origin: 50% 120%; transform: rotate(var(--r)); transition: transform .6s var(--mola); }
-  .pf .proj-card:hover .leque i { transform: rotate(calc(var(--r) * 1.25)); }
-  .pf .term-det { border-top: 1px solid #232a35; padding-top: 10px; display: grid; gap: 3px; color: #a9b3bf; }
-  .pf .caret { display: inline-block; width: 7px; height: 13px; background: #46d17e; vertical-align: -2px; margin-left: 4px; animation: pf-blink 1.1s steps(1) infinite; }
-  @keyframes pf-blink { 50% { opacity: 0; } }
-
-  /* dúvidas */
-  .pf .duas { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 72px; align-items: start; }
-  .pf .sticky-col { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 14px; }
-  .pf .faq { border-top: 1px solid var(--line-2); }
-  .pf .faq details { border-bottom: 1px solid var(--line); }
-  .pf .faq-q { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 20px; min-height: 60px; padding: 18px 0; box-sizing: border-box; color: var(--text); font-size: 18px; font-weight: 500; text-align: left; cursor: pointer; list-style: none; }
-  .pf .faq-q::-webkit-details-marker { display: none; }
-  .pf .faq-q:hover { color: var(--primary); }
-  .pf .pm { position: relative; flex: none; width: 16px; height: 16px; color: var(--text-3); }
-  .pf .pm::before, .pf .pm::after { content: ""; position: absolute; left: 0; top: 50%; width: 16px; height: 1.5px; margin-top: -.75px; background: currentColor; transition: transform .25s var(--ease); }
-  .pf .pm::after { transform: rotate(90deg); }
-  .pf details[open] .pm::after { transform: rotate(0); }
-  .pf .faq-a { padding: 0 40px 22px 0; color: var(--text-2); font-size: 16px; max-width: 40em; }
-
-  /* contato */
-  .pf .duas-contato { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
-  .pf .contato-txt { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-  .pf .contato-txt dl { margin-top: 12px; display: grid; gap: 14px; font-size: 16px; }
-  .pf .contato-txt dt { font-size: 13px; color: var(--text-3); }
-  .pf .contato-txt dd a { text-decoration: none; overflow-wrap: anywhere; }
-  .pf .form { padding: 32px; display: flex; flex-direction: column; gap: 22px; }
-  .pf .form-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  .pf .field { display: flex; flex-direction: column; gap: 8px; }
-  .pf .field label, .pf .flabel { font-size: 14px; font-weight: 500; color: var(--text-2); }
-  .pf .inp { min-height: 48px; box-sizing: border-box; width: 100%; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text); font-size: 16px; transition: border-color .2s; }
-  .pf .inp::placeholder { color: #6f7689; }
-  .pf .inp:focus { outline: none; border-color: var(--primary); }
-  .pf textarea.inp { resize: vertical; line-height: 1.5; }
-  .pf .need { border: 0; margin: 0; padding: 0; min-width: 0; }
-  .pf .need legend { padding: 0; margin-bottom: 10px; }
-  .pf .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pf .chip { min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--text-2); font-size: 15px; cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
-  .pf .chip:hover { border-color: var(--text-3); color: var(--text); }
-  .pf .chip.on { background: var(--surface-2); border-color: var(--primary); color: var(--text); }
-  .pf .nota-form { font-size: 13px; text-align: center; }
-  .pf .rodape { border-top: 1px solid var(--line); }
-  .pf .rodape-in { padding-block: 28px; display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; font-size: 14px; color: var(--text-3); }
-  .pf .rodape-in nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
-  .pf .rodape-in a { display: inline-flex; align-items: center; min-height: 44px; color: var(--text-2); text-decoration: none; }
-  .pf .rodape-in a:hover { color: var(--text); }
-
-  /* revelação: só com html.anim */
-  .anim .pf [data-rv] { opacity: 0; transform: translateY(12px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
-  .anim .pf [data-rv].in { opacity: 1; transform: none; }
-  .anim .pf [data-pop] { opacity: 0; transform: translateY(70px) scale(.86); transition-property: opacity, transform; transition-duration: .4s, .95s; transition-timing-function: ease-out, cubic-bezier(.3, 1.9, .5, 1); }
-  .anim .pf [data-pop].in { opacity: 1; transform: none; transition-delay: calc(var(--i, 0) * 160ms); }
-  .anim .pf .flow .flow-fill { transform: scaleX(0); transition: transform 2s cubic-bezier(.45, 0, .55, 1); }
-  .anim .pf .flow.in .flow-fill { transform: scaleX(1); transition-delay: .15s; }
-  .anim .pf .flow .flow-node { opacity: 0; transform: scale(.2); border-color: var(--line-2); color: var(--text-3); transition: opacity .25s ease-out, transform .65s cubic-bezier(.3, 1.9, .5, 1), border-color .3s, color .3s, background .3s; }
-  .anim .pf .flow.in .flow-node { opacity: 1; transform: none; border-color: var(--primary); color: var(--primary); transition-delay: calc(var(--i) * .45s); }
-  .anim .pf .flow.in .flow-step:last-child .flow-node { color: var(--on-primary); }
-  .anim .pf .flow .flow-card { opacity: 0; transform: translateY(34px) scale(.92); transition: opacity .4s ease-out, transform .85s cubic-bezier(.3, 1.9, .5, 1); }
-  .anim .pf .flow.in .flow-card { opacity: 1; transform: none; transition-delay: calc(var(--i) * .45s + .12s); }
-
-  /* responsivo */
-  @media (max-width: 1024px) {
-    .pf .price-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (min-width: 861px) and (max-width: 1024px) {
-    .pf .flow-box { padding: 16px 14px; }
-  }
-  @media (max-width: 860px) {
-    .pf { --sec-y: 80px; --gut: 20px; }
-    .pf .nav-links, .pf .nav-wa { display: none; }
-    .pf .nav-burger { display: inline-flex; }
-    .pf .nav-panel:not([hidden]) { display: flex; }
-    .pf .hero-in { grid-template-columns: minmax(0, 1fr); padding-block: 48px 72px; gap: 48px; }
-    .pf .duas, .pf .duas-contato { grid-template-columns: minmax(0, 1fr); gap: 36px; }
-    .pf .sticky-col { position: static; }
-    .pf .lead { font-size: 17px; }
-    .pf .cta-row .btn { flex: 1 1 auto; }
-    .pf .form { padding: 22px; }
-    .pf .showcase { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-    .pf .demo-list { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
-    .pf .demo-list > li { flex: 0 0 auto; scroll-snap-align: start; }
-    .pf .demo-btn { width: auto; min-width: 190px; border-color: var(--line); }
-    .pf .demo-btn .ch, .pf .list-cta { display: none; }
-    .pf .tb-url { display: none; }
-    .pf .sim { grid-template-columns: minmax(0, 1fr); }
-    .pf .sim-cfg, .pf .sim-out { padding: 22px; }
-    .pf .sim-out { border-left: 0; border-top: 1px solid var(--line); }
-    .pf .pages { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .pf .opts-2, .pf .opts-3 { grid-template-columns: minmax(0, 1fr); }
-    .pf .duas-listas { grid-template-columns: minmax(0, 1fr); }
-    .pf .proj-card { grid-template-columns: minmax(0, 1fr); }
-    .pf .proj-shot { border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
-    .pf .term { font-size: 10px; }
-    .pf .col-path { display: none; }
-    .pf .tr { grid-template-columns: 1.3fr 1fr; }
-    .pf .shp[data-px] { scale: .6; }
-    .pf .stack-item { font-size: 19px; padding: 0 18px; }
-    .pf .form-2 { grid-template-columns: minmax(0, 1fr); }
-    .pf .flow-track { left: 22px; right: auto; top: 23px; bottom: 23px; width: 2px; height: auto; }
-    .pf .flow-fill { transform-origin: 50% 0; }
-    .anim .pf .flow .flow-fill { transform: scaleY(0); }
-    .anim .pf .flow.in .flow-fill { transform: scaleY(1); }
-    .pf .flow-steps { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-    .pf .flow-step { flex-direction: row; align-items: flex-start; gap: 16px; }
-  }
-  @media (max-width: 600px) {
-    .pf .price-grid { grid-template-columns: minmax(0, 1fr); }
-  }
-  @media (hover: none) {
-    .pf .price-card:hover, .pf .flow-box:hover { transform: none; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .pf .marquee, .pf .barra-cheia, .pf .live, .pf .spin, .pf .spin-r, .pf .float, .pf .float-2,
-    .pf .proj-next-mark span, .pf .term .cpu, .pf .caret, .pf .pg.on { animation: none; }
-  }
-</style>
