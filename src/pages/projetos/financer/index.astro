@@ -1,0 +1,487 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  FINANCER — site do projeto (SaaS multi-empresa de CRM + financeiro).
+
+  Identidade própria, de propósito diferente das páginas do DevScope e do Spill: fundo claro,
+  cartões brancos e formas verdes tiradas dos gráficos do próprio sistema (barras, anel,
+  barra dividida, pílula). Fonte Outfit, a mesma do app; verde #047857, o da demonstração.
+  A prova vem de gravações reais do app, com dados fictícios da "Agência Aurora".
+*/
+
+const BASE = import.meta.env.BASE_URL;
+const MIDIA = `${BASE}projetos/financer`;
+const titulo = 'Financer SaaS';
+const descricao = 'SaaS multi-empresa de CRM e gestão financeira: dashboard, projetos com portal do cliente, importação em massa, Mercado Pago e bot no Telegram.';
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:image" content={`${MIDIA}/tela-dashboard.webp`} />
+    <meta name="theme-color" content="#f5f9f6" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" />
+  </Fragment>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="fx-mark" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="currentColor"/><rect x="17" y="16" width="9" height="32" rx="4.5" fill="#fff"/><rect x="17" y="16" width="30" height="9" rx="4.5" fill="#fff"/><rect x="17" y="29.5" width="21" height="9" rx="4.5" fill="#fff"/><circle cx="45" cy="45" r="5" fill="#6ee7b7"/></symbol></svg>
+<div class="fx">
+  <header class="topo">
+    <nav class="caixa nav" aria-label="Principal">
+      <a class="marca" href="#topo"><svg aria-hidden="true"><use href="#fx-mark"/></svg>financer</a>
+      <div class="nav-links"><a href="#telas">Telas</a><a href="#portal">Portal</a><a href="#identidade">Identidade</a><a href="#base">Base técnica</a></div>
+      <div class="nav-acoes"><a class="btn btn-primary btn-sm" href="https://github.com/PirataZang/financer-saas" target="_blank" rel="noopener">Código</a></div>
+    </nav>
+  </header>
+
+  <main>
+    <section id="topo" class="hero sec">
+      <div class="forma anel" style="width:560px;height:560px;right:-230px;top:-210px;opacity:.38" aria-hidden="true"></div>
+      <div class="forma pilula" style="width:200px;height:50px;left:-70px;bottom:150px;transform:rotate(-24deg);opacity:.5" aria-hidden="true"></div>
+      <div class="caixa">
+        <div class="hero-in">
+          <div class="hero-txt">
+            <p class="rotulo">SaaS multi-empresa · projeto próprio</p>
+            <h1>Clientes, projetos e <em>dinheiro</em> no mesmo painel.</h1>
+            <p class="lead">Dashboard, portal do cliente, importação em massa, Mercado Pago e bot no Telegram. API em Laravel 13, front em Vue 3, tudo em Docker.</p>
+            <div class="acoes">
+              <a class="btn btn-primary" href="#telas">Ver as telas</a>
+              <a class="btn btn-ghost" href="https://github.com/PirataZang/financer-saas" target="_blank" rel="noopener">Ver o código ↗</a>
+            </div>
+          </div>
+
+          <div class="stage" role="group" aria-label="Dashboard do sistema com dados fictícios">
+            <div class="stage-fundo" aria-hidden="true"></div>
+            <div class="shot"><img src={`${MIDIA}/dashboard.webp`} alt="Dashboard com clientes e projetos em dia e atrasados" width="1280" height="720"></div>
+            <div class="flut chip"><i aria-hidden="true">✓</i><div><b>Importação concluída</b><span>7 criados · 1 atualizado</span></div></div>
+            <div class="flut kpi">
+              <small>Clientes</small>
+              <div class="kpi-linha"><div><b class="ok">23</b><span>em dia</span></div><div><b class="atraso">7</b><span>atrasados</span></div></div>
+              <div class="split" aria-hidden="true"><i class="a"></i><i class="b"></i></div>
+            </div>
+            <div class="flut dn">
+              <small>Clientes por tipo</small>
+              <svg viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="15.9155" pathLength="100" stroke="#2563eb" stroke-dasharray="33.3 66.7" stroke-dashoffset="-0.0"/><circle cx="21" cy="21" r="15.9155" pathLength="100" stroke="#d97706" stroke-dasharray="15.2 84.8" stroke-dashoffset="-33.3"/><circle cx="21" cy="21" r="15.9155" pathLength="100" stroke="#059669" stroke-dasharray="45.5 54.5" stroke-dashoffset="-48.5"/><circle cx="21" cy="21" r="15.9155" pathLength="100" stroke="#94a3b8" stroke-dasharray="6.1 93.9" stroke-dashoffset="-93.9"/></svg>
+              <div class="dn-leg"><span style="--c:#2563eb">Lead</span><span style="--c:#059669">Cliente</span></div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="nums">
+          <li><b>7</b><span>serviços no Docker Compose</span><i class="bar"><i style="width:70%"></i></i></li>
+          <li><b>170+</b><span>testes automatizados no backend</span><i class="bar"><i style="width:92%"></i></i></li>
+          <li><b>10</b><span>módulos de produto</span><i class="bar"><i style="width:100%"></i></i></li>
+          <li><b>2</b><span>importações em massa</span><i class="bar"><i style="width:40%"></i></i></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="sec" style="padding-block:0 96px">
+      <div class="caixa">
+        <div class="nicho-in">
+          <p class="tag">sem nicho definido</p>
+          <p><b>É um modelo, não um produto de mercado específico.</b> O Financer nasceu como base genérica de SaaS para ser verticalizada depois: agência, clínica, prestador de serviços. Por isso as telas são gerais e os dados das demonstrações são fictícios. O que está em jogo aqui é a arquitetura e a qualidade da base.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="telas" class="sec sec-mint">
+      <div class="caixa">
+        <header class="sec-cab">
+          <p class="rotulo">Telas</p>
+          <h2>O sistema por dentro, com dados de uma agência fictícia.</h2>
+          <p class="suave">Gravações e capturas reais do app rodando. Nada aqui é mockup desenhado.</p>
+        </header>
+        <div class="bento">
+
+        <figure class="tile t7">
+          <div class="tile-media"><video class="midia" data-vid controls muted loop playsinline preload="metadata" poster={`${MIDIA}/importacao.webp`} aria-label="Gravação do assistente de importação de clientes"><source src={`${MIDIA}/importacao.mp4`} type="video/mp4"></video></div>
+          <figcaption><b>Importação em cinco passos</b><span>Planilha, colunas, revisão no grid, confirmação e fila. O que falha volta como CSV com a coluna Erro.</span></figcaption>
+        </figure>
+
+        <figure class="tile t5">
+          <div class="tile-media"><video class="midia" data-vid controls muted loop playsinline preload="none" poster={`${MIDIA}/financeiro.webp`} aria-label="Gravação do dashboard financeiro"><source src={`${MIDIA}/financeiro.mp4`} type="video/mp4"></video></div>
+          <figcaption><b>Financeiro que responde aos filtros</b><span>Período, categoria e origem mudam cards e gráficos juntos.</span></figcaption>
+        </figure>
+
+        <figure class="tile t5">
+          <div class="tile-media"><video class="midia" data-vid controls muted loop playsinline preload="none" poster={`${MIDIA}/grid.webp`} aria-label="Gravação do grid de clientes"><source src={`${MIDIA}/grid.mp4`} type="video/mp4"></video></div>
+          <figcaption><b>Um grid para o sistema todo</b><span>Busca, filtros, colunas visíveis e exportação para Excel ou CSV.</span></figcaption>
+        </figure>
+
+        <figure class="tile t7">
+          <div class="tile-media"><div class="rolagem"><img class="midia" src={`${MIDIA}/tela-dashboard.webp`} alt="Dashboard completo" loading="lazy" width="1400" height="1320"></div></div>
+          <figcaption><b>Dashboard do início</b><span>Atrasos, listas do que pede ação e gráficos dos últimos 12 meses.</span></figcaption>
+        </figure>
+
+        <figure class="tile t4">
+          <div class="tile-media"><img class="midia" src={`${MIDIA}/tela-metas.webp`} alt="Tela de metas financeiras" loading="lazy" width="1280" height="720"></div>
+          <figcaption><b>Metas</b><span>Guardar dinheiro ou limitar gastos, com previsão de prazo.</span></figcaption>
+        </figure>
+
+        <figure class="tile t4">
+          <div class="tile-media"><img class="midia" src={`${MIDIA}/tela-projeto.webp`} alt="Edição de projeto com etapas" loading="lazy" width="1280" height="720"></div>
+          <figcaption><b>Projetos e etapas</b><span>O progresso que o cliente acompanha no portal.</span></figcaption>
+        </figure>
+
+        <figure class="tile t4">
+          <div class="tile-media"><img class="midia" src={`${MIDIA}/tela-documento.webp`} alt="Editor de documentos com variáveis" loading="lazy" width="1280" height="720"></div>
+          <figcaption><b>Documentos em PDF</b><span>Contratos com variáveis do cliente e do projeto.</span></figcaption>
+        </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="portal" class="sec">
+      <div class="forma barras" style="width:240px;height:280px;right:3%;top:36px;opacity:.2" aria-hidden="true"><i style="height:40%"></i><i style="height:75%"></i><i style="height:55%"></i><i style="height:100%"></i><i style="height:68%"></i></div>
+      <div class="caixa portal">
+        <div class="portal-txt">
+          <p class="rotulo">Portal do cliente</p>
+          <h2>O cliente final acompanha tudo pelo celular.</h2>
+          <p class="suave">Ele entra com o e-mail do cadastro e um código de 6 dígitos. Vê os projetos com etapas e progresso, as contas em aberto com a chave Pix da empresa e os avisos. É só leitura, com sessão separada da do painel.</p>
+          <ul class="pontos">
+            <li>Sessão própria, que só abre as rotas do portal</li>
+            <li>Link do portal por empresa, gerado nas configurações</li>
+            <li>Conta vira cobrança no portal quando a receita tem cliente</li>
+          </ul>
+        </div>
+        <img class="portal-img" src={`${MIDIA}/portal-mobile.webp`} alt="Portal do cliente no celular: início, projeto com etapas e contas" loading="lazy" width="1100" height="705">
+      </div>
+    </section>
+
+    <section id="identidade" class="sec sec-mint">
+      <div class="caixa">
+        <header class="sec-cab">
+          <p class="rotulo">Identidade visual</p>
+          <h2>Um verde que vem do próprio sistema.</h2>
+          <p class="suave">A fonte é a do app (Outfit) e a forma vem dos gráficos que ele já desenha: barras, anel, barra dividida e pílula. O verde é o da demonstração. No sistema, cada empresa escolhe a sua cor principal nas configurações.</p>
+        </header>
+        <div class="ident">
+          <div class="id-card id-logo">
+            <div class="big"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="currentColor"/><rect x="17" y="16" width="9" height="32" rx="4.5" fill="#fff"/><rect x="17" y="16" width="30" height="9" rx="4.5" fill="#fff"/><rect x="17" y="29.5" width="21" height="9" rx="4.5" fill="#fff"/><circle cx="45" cy="45" r="5" fill="#6ee7b7"/></svg><span class="word">financer</span></div>
+            <p class="nota">Marca: um F montado com barras de gráfico. O ponto menta é a moeda do canto.</p>
+            <div class="forma anel" aria-hidden="true"></div>
+          </div>
+          <div class="id-card id-pal">
+            <h3>Paleta</h3>
+            <div class="sw"><div><i style="--c:#064e3b"></i><b>Floresta</b><span>texto sobre claro</span><code>#064e3b</code></div><div><i style="--c:#047857"></i><b>Marca</b><span>cor da demonstração</span><code>#047857</code></div><div><i style="--c:#10b981"></i><b>Folha</b><span>gráficos</span><code>#10b981</code></div><div><i style="--c:#6ee7b7"></i><b>Menta</b><span>destaques</span><code>#6ee7b7</code></div><div><i style="--c:#d1fae5"></i><b>Névoa</b><span>fundos de área</span><code>#d1fae5</code></div><div><i style="--c:#f5f9f6"></i><b>Papel</b><span>fundo da página</span><code>#f5f9f6</code></div></div>
+            <div class="sem" aria-label="Cores de estado do sistema"><span style="--c:#dc2626">Atraso</span><span style="--c:#d97706">Atenção</span><span style="--c:#2563eb">Info</span></div>
+            <p class="nota">Atraso, atenção e informação seguem as cores de estado que o sistema já usa nos dados.</p>
+          </div>
+          <div class="id-card id-tipo">
+            <h3>Tipografia</h3>
+            <p class="tipo-big">Aa</p>
+            <p class="tipo-amostra">R$ 38.415,92 · 23 em dia</p>
+            <p class="tipo-corpo"><b>Outfit</b> nos títulos e números, com algarismos tabulares. <b>Instrument Sans</b> no texto corrido.</p>
+          </div>
+          <div class="id-card id-formas">
+            <h3>Vocabulário de formas</h3>
+            <div class="formas-lista">
+              <div><span class="ex"><span class="barras ex-barras"><i style="height:45%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:100%"></i></span></span><small>Barras de cantos redondos</small></div>
+              <div><span class="ex"><span class="anel ex-anel"></span></span><small>Anel de proporções</small></div>
+              <div><span class="ex"><span class="split ex-split"><i class="a"></i><i class="b"></i></span></span><small>Barra dividida em dia e atraso</small></div>
+              <div><span class="ex"><span class="ex-pill">Concluído</span></span><small>Pílula de estado</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="base" class="sec">
+      <div class="caixa">
+        <header class="sec-cab">
+          <p class="rotulo">Módulos</p>
+          <h2>Dez módulos num só sistema.</h2>
+        </header>
+        <ul class="modulos"><li><div><b>Multi-empresa</b><span>Dados isolados por empresa, licença com validade e troca de empresa para o administrador.</span></div></li><li><div><b>Clientes e funil</b><span>Lead, em aquecimento, cliente e cancelado, com formulário público de captação.</span></div></li><li><div><b>Projetos</b><span>Etapas, prazo e progresso calculado pelas etapas concluídas.</span></div></li><li><div><b>Portal do cliente</b><span>Acesso do cliente final por código no e-mail, pensado para o celular.</span></div></li><li><div><b>Financeiro</b><span>Transações, categorias, metas e dashboard com filtros.</span></div></li><li><div><b>Importação</b><span>Clientes e usuários por planilha, com modelo com listas suspensas.</span></div></li><li><div><b>Documentos</b><span>Contratos e propostas com variáveis, emitidos em PDF.</span></div></li><li><div><b>Mercado Pago</b><span>Sincroniza vendas, tarifas e estornos a cada 30 minutos.</span></div></li><li><div><b>Bot do Telegram</b><span>Novo lançamento e balancete direto no chat.</span></div></li><li><div><b>Permissões e auditoria</b><span>Permissão por ação e histórico de quem alterou o quê.</span></div></li></ul>
+      </div>
+    </section>
+
+    <section class="sec sec-mint">
+      <div class="caixa">
+        <header class="sec-cab">
+          <p class="rotulo">Arquitetura</p>
+          <h2>Simples de subir, difícil de misturar dados.</h2>
+        </header>
+        <div class="arq">
+          <div class="arq-col"><p class="arq-t">quem usa</p>
+            <div class="no">Equipe<small>Vue 3 SPA</small></div>
+            <div class="no">Cliente final<small>Portal (celular)</small></div>
+            <div class="no">Telegram<small>Bot grammY</small></div></div>
+          <span class="seta" aria-hidden="true">→</span>
+          <div class="arq-col"><p class="arq-t">núcleo</p>
+            <div class="no no-forte">API Laravel 13<small>auth, permissões, tenancy, auditoria</small></div></div>
+          <span class="seta" aria-hidden="true">↔</span>
+          <div class="arq-col"><p class="arq-t">dados e fila</p>
+            <div class="no">PostgreSQL<small>dados por empresa</small></div>
+            <div class="no">Redis<small>cache, sessão, fila</small></div>
+            <div class="no">Worker + scheduler<small>importações e sincronização</small></div></div>
+          <span class="seta" aria-hidden="true">→</span>
+          <div class="arq-col"><p class="arq-t">externo</p>
+            <div class="no">Mercado Pago<small>vendas, tarifas, estornos</small></div></div>
+        </div>
+        <dl class="decisoes"><div><dt>Isolamento por padrão</dt><dd>Um global scope filtra toda consulta pela empresa atual, e um teste falha se uma tabela nascer sem company_id.</dd></div><div><dt>Permissões como código</dt><dd>Cada ação declara a permissão no controller; um arquivo único é a fonte e sincroniza com o banco.</dd></div><div><dt>Importação genérica</dt><dd>Um serviço serve qualquer tipo. Clientes e usuários são só definições: campos, regras, como achar e como salvar.</dd></div><div><dt>Segredos fora dos dados</dt><dd>Senhas de importação ficam criptografadas à parte, nunca voltam na API e são apagadas depois de usadas.</dd></div><div><dt>Colunas protegidas</dt><dd>Um atributo no model esconde o token das respostas, ignora no fill e tira do log de auditoria.</dd></div></dl>
+        <ul class="stack" aria-label="Tecnologias"><li>Laravel 13</li><li>PHP 8.3</li><li>Vue 3</li><li>Vite</li><li>Pinia</li><li>AG Grid</li><li>ECharts</li><li>PostgreSQL</li><li>Redis</li><li>Docker Compose</li><li>Node + TypeScript</li><li>grammY</li><li>Mercado Pago</li></ul>
+      </div>
+    </section>
+
+    <section class="sec fecho">
+      <div class="caixa">
+        <div class="fecho-in">
+          <div class="forma anel" style="width:340px;height:340px;right:-90px;top:-90px;opacity:.5" aria-hidden="true"></div>
+          <h2>Quer ver por dentro?</h2>
+          <p>O código está aberto no GitHub, com o README, o guia de padrões e os testes.</p>
+          <div class="acoes"><a class="btn btn-primary" href="https://github.com/PirataZang/financer-saas" target="_blank" rel="noopener">Abrir no GitHub ↗</a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape"><div class="caixa"><span>Financer · por Igor Fronza</span><span>Dados das demonstrações são fictícios</span></div></footer>
+</div>
+
+  <script is:inline>
+(function () {
+  var calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (calmo || !('IntersectionObserver' in window)) return;
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (en) {
+      var v = en.target;
+      if (en.isIntersecting) { v.removeAttribute('controls'); v.preload = 'auto'; v.play().catch(function () { v.setAttribute('controls', ''); }); }
+      else v.pause();
+    });
+  }, { threshold: 0.4 });
+  document.querySelectorAll('video[data-vid]').forEach(function (v) { io.observe(v); });
+})();
+</script>
+</Base>
+
+<style is:global>
+
+  :root, .fx {
+    --paper: #f5f9f6;
+    --paper-2: #eaf3ed;
+    --card: #ffffff;
+    --ink: #0c2a21;
+    --ink-2: #3d5a4e;
+    --ink-3: #5f7b6e;
+    --line: #d7e6dc;
+    --g900: #064e3b;
+    --g700: #047857;
+    --g500: #10b981;
+    --g300: #6ee7b7;
+    --g100: #d1fae5;
+    --g50: #ecfdf5;
+    --danger: #dc2626;
+    --warn: #d97706;
+    --info: #2563eb;
+    --f-display: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --f-body: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --raio: 20px;
+    color-scheme: light;
+  }
+  .fx { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; min-height: 100dvh; overflow-x: clip; }
+  .fx *, .fx *::before, .fx *::after { box-sizing: border-box; }
+  .fx h1, .fx h2, .fx h3, .fx p, .fx ul, .fx ol, .fx dl, .fx dd, .fx figure { margin: 0; padding: 0; }
+  .fx ul, .fx ol { list-style: none; }
+  .fx a { color: inherit; text-decoration: none; }
+  .fx :focus-visible { outline: 3px solid var(--g500); outline-offset: 3px; border-radius: 6px; }
+  .fx .caixa { width: 100%; max-width: 1200px; margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+  .fx .num { font-family: var(--f-display); font-variant-numeric: tabular-nums; }
+
+  .fx .topo { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: rgba(245, 249, 246, .9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .fx .nav { display: flex; align-items: center; gap: 28px; padding-block: 12px; }
+  .fx .marca { display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 600; font-size: 22px; letter-spacing: -.03em; color: var(--g900); }
+  .fx .marca svg { width: 32px; height: 32px; color: var(--g700); flex: none; }
+  .fx .nav-links { display: flex; gap: 24px; margin-left: 12px; font-size: 15px; font-weight: 500; color: var(--ink-2); }
+  .fx .nav-links a:hover { color: var(--g700); }
+  .fx .nav-acoes { margin-left: auto; display: flex; gap: 8px; }
+
+  .fx .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 24px; border-radius: 999px; font-family: var(--f-display); font-weight: 500; font-size: 16px; border: 1.5px solid transparent; transition: transform .15s ease, background .15s ease, border-color .15s ease; }
+  .fx .btn-sm { min-height: 40px; padding: 0 18px; font-size: 15px; }
+  .fx .btn-primary { background: var(--g700); color: #fff; }
+  .fx .btn-primary:hover { background: var(--g900); transform: translateY(-1px); }
+  .fx .btn-ghost { border-color: var(--line); background: var(--card); color: var(--g900); }
+  .fx .btn-ghost:hover { border-color: var(--g500); transform: translateY(-1px); }
+  .fx .acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .fx .sec { padding-block: 96px; position: relative; }
+  .fx .sec-mint { background: var(--g50); border-block: 1px solid var(--line); }
+  .fx .sec-cab { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin-bottom: 48px; max-width: 760px; }
+  .fx .rotulo { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px 5px 10px; border-radius: 999px; background: var(--g100); color: var(--g900); font-family: var(--f-display); font-weight: 500; font-size: 13px; }
+  .fx .rotulo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--g700); }
+  .fx h1, .fx h2, .fx h3 { font-family: var(--f-display); letter-spacing: -.035em; text-wrap: balance; color: var(--g900); }
+  .fx h1 { font-size: clamp(38px, 5.2vw, 64px); line-height: 1; font-weight: 600; }
+  .fx h2 { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.05; font-weight: 600; }
+  .fx h3 { font-size: clamp(22px, 2.6vw, 28px); line-height: 1.15; font-weight: 600; }
+  .fx .lead { font-size: 19px; color: var(--ink-2); max-width: 46ch; }
+  .fx .suave { color: var(--ink-2); font-size: 17px; }
+
+  /* formas decorativas: o vocabulário dos gráficos do próprio sistema */
+  .fx .forma { position: absolute; pointer-events: none; z-index: 0; }
+  .fx .anel { border-radius: 50%; background: conic-gradient(var(--g700) 0 56%, var(--g500) 56% 78%, var(--g300) 78% 92%, var(--g100) 92% 100%); -webkit-mask: radial-gradient(circle, transparent 57%, #000 58%); mask: radial-gradient(circle, transparent 57%, #000 58%); }
+  .fx .barras { display: flex; align-items: flex-end; gap: 8%; }
+  .fx .barras i { flex: 1; border-radius: 999px 999px 6px 6px; background: var(--g700); }
+  .fx .barras i:nth-child(2n) { background: var(--g500); }
+  .fx .barras i:nth-child(3n) { background: var(--g300); }
+  .fx .pilula { border-radius: 999px; background: var(--g300); }
+  .fx .quarto { background: var(--g100); border-radius: 100% 0 0 0; }
+
+  .fx .hero { padding-top: 56px; padding-bottom: 72px; overflow: hidden; }
+  .fx .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 5.4fr) minmax(0, 6.6fr); gap: 48px; align-items: center; }
+  .fx .hero-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 24px; min-width: 0; }
+  .fx .hero h1 em { font-style: normal; color: var(--g700); }
+
+  .fx .stage { position: relative; min-width: 0; aspect-ratio: 1.12 / 1; font-size: clamp(11px, 1.15vw, 14px); }
+  .fx .stage-fundo { position: absolute; inset: 14% 0 0 12%; border-radius: 32px; background: var(--g700); }
+  .fx .stage-fundo::after { content: ""; position: absolute; right: 0; top: 0; width: 38%; aspect-ratio: 1; border-radius: 0 32px 0 100%; background: var(--g500); }
+  .fx .shot { position: absolute; left: 0; top: 4%; width: 92%; border-radius: 16px; background: var(--card); box-shadow: 0 30px 60px -24px rgba(6, 78, 59, .45), 0 0 0 1px var(--line); overflow: hidden; }
+  .fx .shot img { display: block; width: 100%; height: auto; }
+  .fx .flut { position: absolute; background: var(--card); border-radius: 16px; box-shadow: 0 18px 40px -16px rgba(6, 78, 59, .5), 0 0 0 1px var(--line); padding: 1.1em 1.25em; }
+  .fx .kpi { left: -3%; bottom: 2%; width: 50%; }
+  .fx .kpi small, .fx .dn small { display: block; font-size: .82em; color: var(--ink-3); }
+  .fx .kpi-linha { display: flex; gap: 1.4em; margin: .35em 0 .7em; }
+  .fx .kpi-linha b { display: block; font-family: var(--f-display); font-size: 2.3em; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .fx .kpi-linha b.ok { color: var(--g700); }
+  .fx .kpi-linha b.atraso { color: var(--danger); }
+  .fx .kpi-linha span { font-size: .82em; color: var(--ink-3); }
+  .fx .split { display: flex; gap: 3px; height: .6em; border-radius: 99px; overflow: hidden; }
+  .fx .split i { display: block; }
+  .fx .split .a { flex: 23; background: var(--g700); }
+  .fx .split .b { flex: 7; background: var(--danger); }
+  .fx .chip { right: 0; top: -1%; display: flex; align-items: center; gap: .8em; padding: .8em 1.1em; border-radius: 999px; }
+  .fx .chip i { width: 2em; height: 2em; border-radius: 50%; background: var(--g100); color: var(--g700); display: grid; place-items: center; font-style: normal; font-weight: 700; flex: none; }
+  .fx .chip b { display: block; font-family: var(--f-display); font-weight: 600; font-size: 1em; line-height: 1.2; }
+  .fx .chip span { font-size: .82em; color: var(--ink-3); }
+  .fx .dn { right: -2%; bottom: -3%; width: 34%; display: flex; flex-direction: column; gap: .4em; }
+  .fx .dn svg { width: 100%; height: auto; display: block; transform: rotate(-90deg); }
+  .fx .dn svg circle { fill: none; stroke-width: 6; }
+  .fx .dn-leg { display: flex; flex-wrap: wrap; gap: .3em .9em; font-size: .78em; color: var(--ink-2); }
+  .fx .dn-leg span::before { content: ""; display: inline-block; width: .7em; height: .7em; border-radius: 50%; margin-right: .35em; background: var(--c); }
+
+  .fx .nums { position: relative; z-index: 1; margin-top: 72px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .fx .nums li { background: var(--card); border: 1px solid var(--line); border-radius: var(--raio); padding: 22px 24px; display: flex; flex-direction: column; gap: 6px; }
+  .fx .nums b { font-family: var(--f-display); font-size: clamp(34px, 4vw, 46px); font-weight: 600; line-height: 1; color: var(--g700); letter-spacing: -.03em; }
+  .fx .nums span { font-size: 15px; color: var(--ink-2); }
+  .fx .nums .bar { display: block; height: 6px; border-radius: 99px; background: var(--g100); overflow: hidden; margin-top: 8px; }
+  .fx .nums .bar i { display: block; height: 100%; background: var(--g500); border-radius: 99px; }
+
+  .fx .nicho-in { position: relative; z-index: 1; display: flex; gap: 20px; align-items: center; padding: 26px 32px; border-radius: var(--raio); background: var(--g900); color: #d9f5e8; }
+  .fx .nicho-in .tag { flex: none; padding: 6px 14px; border-radius: 999px; background: var(--g300); color: var(--g900); font-family: var(--f-display); font-weight: 600; font-size: 13px; }
+  .fx .nicho-in p { font-size: 16px; }
+  .fx .nicho-in b { color: #fff; font-weight: 600; }
+
+  .fx .bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
+  .fx .tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--raio); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+  .fx .tile-media { background: var(--paper-2); }
+  .fx .tile .midia { display: block; width: 100%; height: auto; }
+  .fx .rolagem { max-height: 292px; overflow: auto; }
+  .fx .tile figcaption { padding: 18px 22px 22px; display: flex; flex-direction: column; gap: 4px; }
+  .fx .tile figcaption b { font-family: var(--f-display); font-weight: 600; font-size: 19px; letter-spacing: -.02em; color: var(--g900); }
+  .fx .tile figcaption span { font-size: 15px; color: var(--ink-2); }
+  .fx .t7 { grid-column: span 7; } .fx .t5 { grid-column: span 5; } .fx .t4 { grid-column: span 4; } .fx .t6 { grid-column: span 6; }
+
+  .fx .portal { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
+  .fx .portal-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+  .fx .pontos { display: flex; flex-direction: column; gap: 12px; }
+  .fx .pontos li { position: relative; padding-left: 30px; color: var(--ink); }
+  .fx .pontos li::before { content: ""; position: absolute; left: 0; top: .3em; width: 18px; height: 18px; border-radius: 50%; background: var(--g100) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 9.4l2.6 2.6L13 6.6' fill='none' stroke='%23047857' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 18px no-repeat; }
+  .fx .portal-img { width: 100%; height: auto; }
+
+  .fx .ident { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
+  .fx .id-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--raio); padding: 28px; display: flex; flex-direction: column; gap: 18px; min-width: 0; position: relative; overflow: hidden; }
+  .fx .id-card h3 { font-size: 20px; }
+  .fx .id-card .nota { font-size: 14px; color: var(--ink-3); }
+  .fx .id-logo { grid-column: span 5; background: var(--g700); border-color: var(--g700); color: #fff; justify-content: space-between; min-height: 320px; }
+  .fx .id-logo .big { display: flex; align-items: center; gap: 18px; position: relative; z-index: 1; }
+  .fx .id-logo .big svg { width: 84px; height: 84px; color: var(--g900); background: #fff; border-radius: 24px; flex: none; }
+  .fx .id-logo .big svg rect:first-child { fill: #fff; }
+  .fx .id-logo .big svg rect:not(:first-child) { fill: var(--g700); }
+  .fx .id-logo .word { font-family: var(--f-display); font-weight: 600; font-size: clamp(40px, 5vw, 60px); letter-spacing: -.04em; line-height: 1; }
+  .fx .id-logo .nota { color: #bdebd6; position: relative; z-index: 1; max-width: 62%; }
+  .fx .id-logo .forma { right: -36px; bottom: -36px; width: 150px; height: 150px; opacity: .75; }
+  .fx .id-pal { grid-column: span 7; }
+  .fx .sw { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  .fx .sw div { display: flex; flex-direction: column; gap: 8px; }
+  .fx .sw i { display: block; aspect-ratio: 1 / 1.1; border-radius: 14px; background: var(--c); box-shadow: inset 0 0 0 1px rgba(12, 42, 33, .1); }
+  .fx .sw b { font-family: var(--f-display); font-size: 14px; font-weight: 600; line-height: 1.1; }
+  .fx .sw span { font-size: 12px; color: var(--ink-3); line-height: 1.25; }
+  .fx .sw code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11px; color: var(--ink-2); }
+  .fx .sem { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fx .sem span { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); font-size: 13px; }
+  .fx .sem span::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .fx .id-tipo { grid-column: span 5; }
+  .fx .tipo-big { font-family: var(--f-display); font-weight: 600; font-size: 88px; line-height: .9; letter-spacing: -.05em; color: var(--g700); }
+  .fx .tipo-amostra { font-family: var(--f-display); font-size: 22px; font-weight: 500; letter-spacing: -.02em; color: var(--g900); }
+  .fx .tipo-corpo { font-size: 15px; color: var(--ink-2); }
+  .fx .id-formas { grid-column: span 7; }
+  .fx .formas-lista { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: end; }
+  .fx .formas-lista div { display: flex; flex-direction: column; gap: 10px; }
+  .fx .formas-lista .ex { height: 110px; display: flex; align-items: flex-end; }
+  .fx .formas-lista small { font-size: 13px; color: var(--ink-2); line-height: 1.3; }
+  .fx .ex-barras { gap: 10%; width: 100%; height: 100%; }
+  .fx .ex-anel { width: 100px; height: 100px; position: static; }
+  .fx .ex-split { width: 100%; align-self: center; height: 12px; }
+  .fx .ex-pill { align-self: center; width: 100%; padding: 8px 12px; border-radius: 999px; background: var(--g100); color: var(--g900); font-size: 13px; font-weight: 600; text-align: center; font-family: var(--f-display); }
+
+  .fx .modulos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
+  .fx .modulos li { display: flex; gap: 16px; padding: 20px 0; border-top: 1px solid var(--line); }
+  .fx .modulos li::before { content: ""; flex: none; width: 14px; height: 14px; margin-top: 6px; border-radius: 4px 50% 50% 50%; background: var(--g500); }
+  .fx .modulos li:nth-child(3n+2)::before { background: var(--g700); }
+  .fx .modulos li:nth-child(3n)::before { background: var(--g300); }
+  .fx .modulos div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .fx .modulos b { font-family: var(--f-display); font-size: 18px; font-weight: 600; letter-spacing: -.01em; color: var(--g900); }
+  .fx .modulos span { color: var(--ink-2); font-size: 15px; }
+
+  .fx .arq { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 14px; align-items: center; margin-bottom: 56px; }
+  .fx .arq-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .fx .arq-t { font-family: var(--f-display); font-size: 13px; font-weight: 500; color: var(--ink-3); }
+  .fx .no { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); font-family: var(--f-display); font-weight: 600; font-size: 15px; display: flex; flex-direction: column; gap: 2px; color: var(--g900); }
+  .fx .no small { font-family: var(--f-body); font-weight: 400; font-size: 13px; color: var(--ink-3); }
+  .fx .no-forte { background: var(--g700); border-color: var(--g700); color: #fff; }
+  .fx .no-forte small { color: #bdebd6; }
+  .fx .seta { color: var(--g500); font-size: 22px; font-family: var(--f-display); }
+  .fx .decisoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; margin-bottom: 40px; }
+  .fx .decisoes div { padding: 18px 0; border-top: 1px solid var(--line); }
+  .fx .decisoes dt { font-family: var(--f-display); font-weight: 600; font-size: 18px; color: var(--g900); margin-bottom: 4px; }
+  .fx .decisoes dd { color: var(--ink-2); font-size: 15px; }
+  .fx .stack { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fx .stack li { padding: 7px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-family: var(--f-display); font-size: 14px; font-weight: 500; color: var(--g900); }
+
+  .fx .fecho { overflow: hidden; }
+  .fx .fecho-in { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 56px; border-radius: 32px; background: var(--g700); color: #fff; overflow: hidden; }
+  .fx .fecho-in h2 { color: #fff; max-width: 14ch; }
+  .fx .fecho-in p { color: #cdeee0; font-size: 18px; max-width: 46ch; }
+  .fx .fecho-in .btn-primary { background: #fff; color: var(--g900); }
+  .fx .fecho-in .btn-primary:hover { background: var(--g100); }
+  .fx .fecho-in .btn-ghost { background: transparent; border-color: rgba(255, 255, 255, .45); color: #fff; }
+  .fx .fecho-in .forma { z-index: 0; }
+  .fx .fecho-in > :not(.forma) { position: relative; z-index: 1; }
+  .fx .rodape { padding-block: 28px; font-size: 14px; color: var(--ink-3); }
+  .fx .rodape .caixa { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+
+  @media (max-width: 1000px) {
+    .fx .nav-links { display: none; }
+    .fx .hero-in, .fx .portal { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+    .fx .sec { padding-block: 64px; }
+    .fx .nums { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fx .t7, .fx .t5, .fx .t6, .fx .t4 { grid-column: span 12; }
+    .fx .id-logo, .fx .id-pal, .fx .id-tipo, .fx .id-formas { grid-column: span 12; }
+    .fx .modulos, .fx .decisoes { grid-template-columns: minmax(0, 1fr); }
+    .fx .nicho-in { flex-direction: column; align-items: flex-start; gap: 14px; padding: 24px; }
+    .fx .arq { grid-template-columns: minmax(0, 1fr); }
+    .fx .seta { transform: rotate(90deg); justify-self: center; }
+    .fx .fecho-in { padding: 32px 24px; }
+    .fx .sw { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .fx .formas-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fx .stage { font-size: 11px; }
+    .fx .dn { display: none; }
+    .fx .hero > .anel { opacity: .14 !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { .fx * { transition: none !important; } }
+
+</style>
