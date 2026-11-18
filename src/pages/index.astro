@@ -195,9 +195,18 @@ const HOST = `${BASE}projetos`;
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content={EU.nome} />
+    <meta property="og:url" content={EU.site} />
     <meta property="og:title" content={titulo} />
     <meta property="og:description" content={descricao} />
+    <meta property="og:image" content={`${EU.site}${BASE}img/og/home.jpg`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`Portfólio de ${EU.nome}: hero em terminal com skills, projetos e contato`} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={titulo} />
+    <meta name="twitter:description" content={descricao} />
+    <meta name="twitter:image" content={`${EU.site}${BASE}img/og/home.jpg`} />
     <meta name="theme-color" content="#0b0d11" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
