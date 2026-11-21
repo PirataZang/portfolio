@@ -12,7 +12,7 @@ import Base from '../../../layouts/Base.astro';
   respondem às teclas 1 a 6, seleção em vídeo reverso e barra "Comando final".
 
   Textos de opções e perfis vêm do catálogo do nscope (src/nmap/catalog.rs e
-  profiles.rs). As gravações são do programa real contra scanme.nmap.org.
+  profiles.rs). As capturas de tela são do programa real contra scanme.nmap.org.
   O scan do topo é uma simulação no navegador e está rotulado assim.
 */
 
@@ -42,17 +42,19 @@ const MARCA = (() => {
 
 const ABAS = [
   ['1', 'scan', 'topo'],
-  ['2', 'gravações', 'gravacoes'],
+  ['2', 'telas', 'telas'],
   ['3', 'comando', 'comando'],
   ['4', 'perfis', 'perfis'],
   ['5', 'segurança', 'seguranca'],
   ['6', 'instalar', 'instalar'],
 ];
 
-const VIDEOS = [
-  { id: 'fluxo', aba: 'Do alvo ao resultado', t: 'Do alvo ao resultado em menos de um minuto', d: 'Alvo, perfil, comando explicado, execução e resultados. A espera do scan foi acelerada 3× no vídeo.' },
-  { id: 'configurar', aba: '110 opções', t: 'Mais de 110 opções, todas explicadas', d: 'Cada opção diz o que faz, quando usar e o cuidado. O comando muda na hora, e a busca (/) acha qualquer opção por nome, flag ou descrição.' },
-  { id: 'seguranca', aba: 'Segurança', t: 'Segurança antes de executar', d: 'O 8.8.8.8 só é digitado: a confirmação de autorização abre com Não selecionado, é cancelada e nada vai para a rede.' },
+/* capturas reais do programa (docs/media do repositório), em tela cheia e sem zoom */
+const TELAS = [
+  { id: 'alvo', aba: 'Alvo', t: 'Alvo', d: 'Um IP, um nome ou uma rede inteira. Ao lado, os formatos aceitos e o que fazer em cada caso.' },
+  { id: 'perfis', aba: 'Perfis', t: '16 perfis prontos', d: 'Cada perfil mostra quando usar, a visibilidade estimada e o comando equivalente antes de você aplicar.' },
+  { id: 'configurar', aba: 'Configurar', t: 'Mais de 110 opções explicadas', d: 'As opções ficam em sub-abas. Cada uma diz o que faz, quando usar e o cuidado.' },
+  { id: 'comando', aba: 'Comando', t: 'O comando final, explicado', d: 'O comando em palavras simples, cada pedaço com sua explicação e os avisos ao lado, prontos para copiar (y) ou executar (r).' },
 ];
 
 /* comando de exemplo, na ordem em que o nscope emite as opções */
@@ -165,8 +167,8 @@ const FICHA = [
           <h1 id="h-topo">nscope</h1>
           <p class="lead">O nmap sem decorar flags.</p>
           <p class="sub">Monta o comando do nmap, explica cada pedaço, avisa dos riscos antes de rodar e mostra o resultado de um jeito que dá para navegar. Tudo no terminal, em português.</p>
-          <p class="instala"><code><span class="ok">$</span> cargo install --git<br />{REPO} --locked</code><button type="button" class="tbtn" data-copiar={UMA_LINHA} aria-label="Copiar o comando de instalação">copiar</button></p>
-          <p class="instala-nota">Precisa do nmap e do Rust 1.88+. <a class="lnk" href="#instalar">Passo a passo</a> · <a class="lnk" href="#gravacoes">ver gravações</a></p>
+          <p class="instala"><code><span class="ok">$</span> <span style="white-space:nowrap">cargo install --git</span><br />{REPO} <span style="white-space:nowrap">--locked</span></code><button type="button" class="tbtn" data-copiar={UMA_LINHA} aria-label="Copiar o comando de instalação">copiar</button></p>
+          <p class="instala-nota">Precisa do nmap e do Rust 1.88+. <a class="lnk" href="#instalar">Passo a passo</a> · <a class="lnk" href="#telas">ver as telas</a></p>
         </div>
 
         <p class="dica" aria-hidden="true"><svg viewBox="0 0 7 5" shape-rendering="crispEdges"><path d="M0 0h1v1h1v1h1v1h1V2h1V1h1V0h1v1H6v1H5v1H4v1H3V3H2V2H1V1H0z" fill="currentColor"/></svg>role para rodar o scan</p>
@@ -241,25 +243,25 @@ const FICHA = [
     </section>
 
     <!-- GRAVAÇÕES -->
-    <section id="gravacoes" class="sec" aria-labelledby="h-grav">
+    <section id="telas" class="sec" aria-labelledby="h-telas">
       <div class="caixa">
-        <h2 id="h-grav" class="px">O programa rodando contra scanme.nmap.org.</h2>
-        <p class="intro">Gravações reais, com mouse, teclado e zoom nos pontos importantes. O scanme é o alvo de testes que o próprio projeto Nmap libera.</p>
+        <h2 id="h-telas" class="px">As telas do programa, rodando de verdade.</h2>
+        <p class="intro">Capturas do nscope contra scanme.nmap.org, o alvo de testes que o próprio projeto Nmap libera. As abas seguem a ordem do programa.</p>
 
         <div class="player px">
-          <div class="abas-tui grande" role="tablist" aria-label="Gravações">
-            {VIDEOS.map((v, i) => (
-              <button type="button" role="tab" id={`tab-${v.id}`} aria-controls="vid-painel" aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-vid={v.id} data-t={v.t} data-d={v.d}>{i + 1} {v.aba}</button>
+          <div class="abas-tui grande" role="tablist" aria-label="Telas do nscope">
+            {TELAS.map((v, i) => (
+              <button type="button" role="tab" id={`tab-${v.id}`} aria-controls="tela-painel" aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-tela={v.id} data-t={v.t} data-d={v.d}>{i + 1} {v.aba}</button>
             ))}
           </div>
-          <div id="vid-painel" class="box tela" role="tabpanel" aria-labelledby="tab-fluxo">
-            <video data-player muted loop playsinline controls preload="metadata" poster={`${MIDIA}/fluxo.webp`} width="1280" height="720">
-              <source src={`${MIDIA}/fluxo.mp4`} type="video/mp4" />
-            </video>
+          <div id="tela-painel" class="box tela" role="tabpanel" aria-labelledby="tab-alvo">
+            {TELAS.map((v, i) => (
+              <img src={`${MIDIA}/tela-${v.id}.webp`} alt={`Tela ${v.aba} do nscope: ${v.d}`} width="1280" height="720" loading={i ? 'lazy' : 'eager'} data-img={v.id} class={i === 0 ? 'on' : ''} />
+            ))}
           </div>
           <div class="legenda" aria-live="polite">
-            <b data-leg-t>{VIDEOS[0].t}</b>
-            <span data-leg-d>{VIDEOS[0].d}</span>
+            <b data-leg-t>{TELAS[0].t}</b>
+            <span data-leg-d>{TELAS[0].d}</span>
           </div>
         </div>
       </div>
@@ -512,7 +514,7 @@ const FICHA = [
   .hero:not([data-fase="0"]) .hero-copy { opacity: 0; visibility: hidden; transform: translate(-32px, -58%); }
 
   .dica { position: absolute; z-index: 2; left: max(24px, calc((100vw - 1192px) / 2)); bottom: 104px; margin: 0; display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--tx3); transition: opacity .3s; }
-  .dica svg { width: 14px; height: 10px; color: var(--sky); animation: desce 1.2s steps(3) infinite; }
+  .dica svg { width: 14px; height: 10px; color: var(--sky); animation: desce 1.4s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
   @keyframes desce { from { transform: translateY(-3px); } to { transform: translateY(6px); } }
   .hero:not([data-fase="0"]) .dica { opacity: 0; }
 
@@ -528,7 +530,7 @@ const FICHA = [
   .painel-col .abas-tui li { padding: 2px 5px; white-space: nowrap; }
   .painel-col .box { background: var(--bg); }
   .fase { display: none; }
-  .fase.on { display: block; animation: wipe .36s steps(6) both; }
+  .fase.on { display: block; }
   @keyframes wipe { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(-2em -1em -1em -1em); } }
   .campo { font-family: var(--mono); }
   .mini-lista { margin: 0 0 14px; padding: 0; list-style: none; font-family: var(--mono); font-size: 14px; }
@@ -574,8 +576,9 @@ const FICHA = [
   .abas-tui.grande button { padding: 6px 12px; border: 0; background: none; color: var(--tx2); font: inherit; cursor: pointer; }
   .abas-tui.grande button:hover { color: var(--ice); }
   .abas-tui.grande button[aria-selected="true"] { background: var(--sky2); color: var(--bg); font-weight: 700; }
-  .tela { padding: 0; background: #0a1628; }
-  .tela video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+  .tela { padding: 0; background: #0a1628; display: grid; }
+  .tela img { grid-area: 1 / 1; display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; opacity: 0; transition: opacity .5s cubic-bezier(.16, 1, .3, 1); }
+  .tela img.on { opacity: 1; }
   .legenda { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 18px; max-width: 900px; }
   .legenda b { font-weight: 600; color: var(--ice); }
   .legenda span { color: var(--tx2); }
@@ -659,11 +662,23 @@ const FICHA = [
   .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
   /* revelação em blocos, guiada pelo scroll, só onde o navegador suporta */
-  @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .px { animation: wipe linear both; animation-timing-function: steps(8); animation-timeline: view(); animation-range: entry 0% entry 55%; }
-    }
-  }
+  /* revelação ao rolar: o script liga .anim; fora da tela o bloco some, ao entrar volta com o véu de pixels */
+  .anim .px:not(.in) { opacity: 0; }
+
+  /* véu de pixels: quadrados acendem em ordem aleatória, o conteúdo aparece embaixo e eles se apagam */
+  .pxv { position: fixed; left: 0; top: 0; z-index: 15; display: grid; pointer-events: none; }
+  .pxv i { background: var(--sky2); opacity: 0; }
+  .pxv i.b { background: var(--ice); }
+  .pxv i.c { background: var(--sky3); }
+
+  /* entrada do topo: barras deslizam, o texto entra pelo véu de pixels (script).
+     Se o script não rodar, ns-mostra revela tudo depois de 2 s. */
+  @keyframes px-desce { from { transform: translateY(-100%); } to { transform: none; } }
+  @keyframes px-ergue { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes ns-mostra { to { opacity: 1; } }
+  .barra { animation: px-desce .8s cubic-bezier(.16, 1, .3, 1) .1s backwards; }
+  .cmdbar { animation: px-ergue .9s cubic-bezier(.16, 1, .3, 1) .3s backwards; }
+  .js:not(.pronto) .hero-copy > *, .js:not(.pronto) .dica { opacity: 0; animation: ns-mostra .01s 2s forwards; }
 
   @media (max-width: 900px) {
     .barra-acoes .lnk { display: none; }
@@ -759,10 +774,12 @@ const FICHA = [
   }
 
   const put = (x: number, y: number, c: number) => { x |= 0; y |= 0; if (x >= 0 && y >= 0 && x < W && y < H) buf[y * W + x] = c; };
-  const anel = (cx: number, cy: number, r: number, c: number, passo = 1) => {
+  /* frac < 1 desenha só parte do anel, no sentido horário a partir do topo (usado ao ligar o radar) */
+  const anel = (cx: number, cy: number, r: number, c: number, passo = 1, frac = 1) => {
     const n = Math.max(24, Math.ceil(r * 7));
-    for (let i = 0; i < n; i += passo) { const a = (i / n) * Math.PI * 2; put(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), c); }
+    for (let i = 0; i < n * frac; i += passo) { const a = -Math.PI / 2 + (i / n) * Math.PI * 2; put(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), c); }
   };
+  const LIGA = performance.now() / 1000 + 0.2;
   const bloco = (x: number, y: number, s: number, c: number) => { for (let j = 0; j < s; j++) for (let i = 0; i < s; i++) put(x + i, y + j, c); };
 
   function geometria() {
@@ -775,7 +792,9 @@ const FICHA = [
   function desenhaRadar(t: number) {
     buf.set(base);
     const { cx, cy, R } = geometria();
-    const R2 = R * R, TR = 1.25;
+    /* b: o radar ligando, de 0 a 1 em 1,8 s; com movimento reduzido já nasce ligado */
+    const b = RM ? 1 : clamp((t - LIGA) / 1.8);
+    const R2 = R * R, TR = 1.25 * faixa(b, 0.62, 1);
     const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(W - 1, Math.ceil(cx + R));
     const y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.min(H - 1, Math.ceil(cy + R));
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -788,15 +807,17 @@ const FICHA = [
         if (i) buf[y * W + x] = TRILHA[i];
       }
     }
-    anel(cx, cy, R, SKY); anel(cx, cy, R - 1, SKY);
-    anel(cx, cy, R * 0.62, SKY2); anel(cx, cy, R * 0.3, SKY3, 3);
-    const t0 = R * 0.86, t1 = R * 1.3;
-    for (let k = t0; k <= t1; k++) for (let w = -1; w <= 0; w++) {
+    const fo = faixa(b, 0, 0.4);
+    anel(cx, cy, R, SKY, 1, fo); anel(cx, cy, R - 1, SKY, 1, fo);
+    anel(cx, cy, R * 0.62, SKY2, 1, faixa(b, 0.12, 0.5)); anel(cx, cy, R * 0.3, SKY3, 3, faixa(b, 0.25, 0.6));
+    const t0 = R * 0.86, t1 = t0 + (R * 1.3 - t0) * faixa(b, 0.35, 0.62);
+    if (b > 0.35) for (let k = t0; k <= t1; k++) for (let w = -1; w <= 0; w++) {
       put(cx + w, cy - k, ICE2); put(cx + w, cy + k, ICE2); put(cx - k, cy + w, ICE2); put(cx + k, cy + w, ICE2);
     }
-    for (let r = 0; r < R; r++) put(Math.round(cx + Math.cos(ang) * r), Math.round(cy + Math.sin(ang) * r), ICE);
-    const cr = Math.max(2, R * 0.09);
-    for (let y = -cr; y <= cr; y++) for (let x = -cr; x <= cr; x++) if (x * x + y * y <= cr * cr) put(cx + x, cy + y, ICE);
+    const feixe = R * faixa(b, 0.58, 0.8);
+    for (let r = 0; r < feixe; r++) put(Math.round(cx + Math.cos(ang) * r), Math.round(cy + Math.sin(ang) * r), ICE);
+    const cr = Math.max(2, R * 0.09) * faixa(b, 0.42, 0.58);
+    if (cr > 0.5) for (let y = -cr; y <= cr; y++) for (let x = -cr; x <= cr; x++) if (x * x + y * y <= cr * cr) put(cx + x, cy + y, ICE);
 
     /* hosts: acendem quando o feixe passa e apagam devagar */
     const toca = (h: { a: number; hit: number }) => {
@@ -804,6 +825,7 @@ const FICHA = [
       if (d < 0.12 && t - h.hit > 1) h.hit = t;
     };
     for (const h of HOSTS) {
+      if (b < 0.8) break;
       toca(h);
       const vida = 1 - (t - h.hit) / 2.4;
       if (vida <= 0) continue;
@@ -846,6 +868,58 @@ const FICHA = [
     } else delete hero.dataset.alvo;
   }
 
+  /* ---------- véu de pixels (efeito "pixelate" do Motion, feito com Web Animations) ----------
+     Uma grade fixa por cima do elemento: cada quadrado acende num momento aleatório da
+     primeira metade, o conteúdo aparece quando a grade fecha e os quadrados se apagam
+     em outra ordem aleatória. O véu acompanha o elemento se a página rolar no meio. */
+  const veus = new WeakMap<HTMLElement, HTMLElement>();
+  const tiraVeu = (el: HTMLElement) => { veus.get(el)?.remove(); veus.delete(el); };
+  function pixela(el: HTMLElement, atraso = 0) {
+    if (RM) return;
+    tiraVeu(el);
+    const r0 = el.getBoundingClientRect();
+    if (!r0.width || !r0.height) return;
+    /* bloco grande (vídeo, painéis) só aparece com fade: pixel demais vira ruído */
+    if (r0.width * r0.height > 260000) {
+      el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, delay: atraso, easing: 'cubic-bezier(.16, 1, .3, 1)', fill: 'backwards' });
+      return;
+    }
+    const T = 750, lado = Math.max(12, Math.ceil(Math.sqrt((r0.width * r0.height) / 380)));
+    const cols = Math.ceil(r0.width / lado), rows = Math.ceil(r0.height / lado);
+    const veu = document.createElement('div');
+    veu.className = 'pxv'; veu.setAttribute('aria-hidden', 'true');
+    veu.style.gridTemplateColumns = `repeat(${cols}, ${lado}px)`;
+    veu.style.gridAutoRows = `${lado}px`;
+    const anims: Animation[] = [];
+    for (let i = 0; i < cols * rows; i++) {
+      const q = document.createElement('i');
+      veu.appendChild(q);
+      /* só ~60% da grade acende, e nenhum quadrado chega a ficar sólido */
+      if (Math.random() > 0.6) continue;
+      const sorte = Math.random();
+      if (sorte < 0.08) q.className = 'b'; else if (sorte < 0.35) q.className = 'c';
+      const a = Math.random() * 0.3, b = Math.max(a + 0.14, 0.4 + Math.random() * 0.25), pico = 0.3 + Math.random() * 0.45;
+      anims.push(q.animate([
+        { opacity: 0, offset: 0 }, { opacity: 0, offset: a }, { opacity: pico, offset: a + 0.12 },
+        { opacity: pico, offset: b }, { opacity: 0, offset: Math.min(1, b + 0.22) },
+      ], { duration: T, delay: atraso, fill: 'both', easing: 'ease-out' }));
+    }
+    /* dentro de .ns: fica no mesmo contexto de empilhamento da barra, que continua por cima */
+    ($('.ns') || document.body).appendChild(veu);
+    veus.set(el, veu);
+    el.animate([{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1, offset: 0.6 }, { opacity: 1 }], { duration: T, delay: atraso, fill: 'backwards', easing: 'ease-out' });
+    const segue = () => {
+      if (!veu.isConnected) return;
+      const r = el.getBoundingClientRect();
+      /* elemento escondido no meio do efeito (ex.: painel trocado pelo scroll): o véu sai junto */
+      if (!r.width && !r.height) { tiraVeu(el); return; }
+      veu.style.transform = `translate(${r.left}px, ${r.top}px)`;
+      requestAnimationFrame(segue);
+    };
+    segue();
+    Promise.all(anims.map((a) => a.finished)).then(() => veu.remove(), () => veu.remove());
+  }
+
   /* ---------- fases do scan, guiadas pelo scroll ---------- */
   const fases = $$('.fase'), abasT = $$('.painel-col .abas-tui li'), cells = $('[data-cells]'), pct = $('[data-pct]');
   cells.innerHTML = '<i></i>'.repeat(20);
@@ -857,7 +931,8 @@ const FICHA = [
     const f = LIM.filter((l) => p >= l).length;
     if (f !== fase) {
       fase = f; hero.dataset.fase = String(f);
-      fases.forEach((el) => el.classList.toggle('on', el.dataset.f === String(f)));
+      fases.forEach((el) => { const on = el.dataset.f === String(f); el.classList.toggle('on', on); if (on) pixela(el); else tiraVeu(el); });
+      if (f !== 0) $$('.hero-copy > *, .dica').forEach(tiraVeu);
       abasT.forEach((el) => el.classList.toggle('on', el.dataset.f === String(f)));
     }
     const n = Math.round(faixa(p, 0.17, 0.3) * ALVO.length);
@@ -916,7 +991,9 @@ const FICHA = [
   addEventListener('pointerdown', (e) => { if (!RM && !(e.target as HTMLElement).closest('a,button,video,input,kbd')) pings.push({ x: e.clientX / FS, y: e.clientY / FS, t: performance.now() / 1000 }); });
 
   /* ---------- laço: 12 passos por segundo, como sprite ---------- */
-  let ultimoPasso = -1, sujo = true;
+  let sujo = true;
+  /* laço em 12 passos por segundo, como sprite de pixel art: o radar anda em quadros, não desliza */
+  let ultimoPasso = -1;
   function quadro(ms: number) {
     const t = ms / 1000, passo = Math.floor(t * 12);
     if (passo !== ultimoPasso || sujo) {
@@ -935,7 +1012,31 @@ const FICHA = [
   addEventListener('resize', () => { tamanho(); tamanhoFundo(); lerScroll(); sujo = true; if (RM) { desenhaRadar(5); desenhaFundo(0); } });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !RM) requestAnimationFrame(quadro); });
 
+  /* revelação das seções: irmãos em escada, até 0,32 s */
+  if (!RM && 'IntersectionObserver' in window) {
+    const pxs = $$('.px');
+    pxs.forEach((el) => {
+      const irmaos = [...(el.parentElement?.children ?? [])].filter((c) => c.classList.contains('px'));
+      const k = irmaos.indexOf(el);
+      if (k > 0) el.style.setProperty('--rd', Math.min(k * 0.08, 0.32) + 's');
+    });
+    document.documentElement.classList.add('anim');
+    const ioPx = new IntersectionObserver((es) => es.forEach((e) => {
+      const el = e.target as HTMLElement, entra = e.isIntersecting && !el.classList.contains('in');
+      el.classList.toggle('in', e.isIntersecting);
+      if (!e.isIntersecting) tiraVeu(el);
+      if (entra) pixela(el, (parseFloat(el.style.getPropertyValue('--rd')) || 0) * 1000);
+    }), { rootMargin: '0px 0px -6% 0px' });
+    pxs.forEach((el) => ioPx.observe(el));
+  }
+
   tamanho(); tamanhoFundo(); lerScroll(); atualizaFase();
+  /* texto do topo entra pelo véu, em sequência */
+  if (!RM && hero.dataset.fase === '0') {
+    const seq: [string, number][] = [['.hero h1', 450], ['.hero .lead', 800], ['.hero .sub', 1100], ['.hero .instala', 1400], ['.hero .instala-nota', 1650], ['.hero .dica', 1850]];
+    seq.forEach(([sel, ms]) => { const el = $(sel); if (el) pixela(el, ms); });
+  }
+  document.documentElement.classList.add('pronto');
   if (RM) { HOSTS.forEach((h) => (h.hit = 4.4)); desenhaRadar(5); desenhaFundo(0); }
   else requestAnimationFrame(quadro);
 
@@ -950,27 +1051,31 @@ const FICHA = [
   }), { rootMargin: '-45% 0px -50% 0px' });
   secoes.forEach((s) => obsAbas.observe(s));
 
-  /* ---------- gravações ---------- */
-  const video = $('[data-player]') as HTMLVideoElement, tabs = $$('[data-vid]'), painel = $('#vid-painel');
+  /* ---------- telas: abas com troca suave; avançam sozinhas enquanto ninguém mexe ---------- */
+  const tabs = $$('[data-tela]'), painel = $('#tela-painel'), imgs = $$('[data-img]');
   const legT = $('[data-leg-t]'), legD = $('[data-leg-d]');
-  const MID = video.poster.replace(/fluxo\.webp$/, '');
-  function escolheVideo(b: HTMLElement, foco = false) {
+  let atual = 0, auto = !RM, timer = 0;
+  function escolheTela(i: number, foco = false) {
+    atual = (i + tabs.length) % tabs.length;
+    const b = tabs[atual];
     tabs.forEach((x) => { const on = x === b; x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1; });
+    imgs.forEach((im) => im.classList.toggle('on', im.dataset.img === b.dataset.tela));
     painel.setAttribute('aria-labelledby', b.id);
-    video.poster = `${MID}${b.dataset.vid}.webp`;
-    video.src = `${MID}${b.dataset.vid}.mp4`;
     legT.textContent = b.dataset.t!; legD.textContent = b.dataset.d!;
-    if (!RM) video.play().catch(() => {});
     if (foco) b.focus();
   }
+  const para = () => { auto = false; clearInterval(timer); };
   tabs.forEach((b, i) => {
-    b.addEventListener('click', () => escolheVideo(b));
+    b.addEventListener('click', () => { para(); escolheTela(i); });
     b.addEventListener('keydown', (e) => {
       const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-      if (d) { e.preventDefault(); escolheVideo(tabs[(i + d + tabs.length) % tabs.length], true); }
+      if (d) { e.preventDefault(); para(); escolheTela(atual + d, true); }
     });
   });
-  if (!RM) new IntersectionObserver(([e]) => { if (e.isIntersecting) video.play().catch(() => {}); else video.pause(); }, { threshold: 0.4 }).observe(video);
+  if (!RM) new IntersectionObserver(([e]) => {
+    clearInterval(timer);
+    if (e.isIntersecting && auto) timer = window.setInterval(() => escolheTela(atual + 1), 6000);
+  }, { threshold: 0.5 }).observe(painel);
 
   /* ---------- seleção única (pedaços do comando e perfis) ---------- */
   function seletor(btnSel: string, attr: string, infoSel: string, infoAttr: string) {
