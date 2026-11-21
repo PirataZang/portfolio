@@ -6,7 +6,7 @@ import Base from '../../../layouts/Base.astro';
 
   Mesa de jogo à noite: fundo escuro, uma luz ambiente que toma a cor da seção
   em vista e as cartas como objeto principal. Tudo que se vê é demonstração
-  funcional: o baralho do topo se arrasta, os sete baralhos de conversa e os
+  funcional: o baralho do topo se arrasta, os seis baralhos de conversa e os
   seis jogos de shot trocam de carta. O Modo Drink fica atrás de uma
   confirmação de +18 (guardada só na sessão do navegador).
 */
@@ -14,7 +14,7 @@ import Base from '../../../layouts/Base.astro';
 const BASE = import.meta.env.BASE_URL;
 const titulo = 'Spill — cartas para a roda de amigos';
 const descricao =
-  'App de cartas para Android, grátis e offline: 140 cartas de conversa em sete baralhos e um Modo Drink +18 com seis jogos de shot.';
+  'App de cartas para Android, grátis e offline: 300 cartas de conversa em seis baralhos e um Modo Drink +18 com seis jogos de shot.';
 ---
 
 <Base title={titulo} description={descricao}>
@@ -74,7 +74,7 @@ const descricao =
         <p class="eyebrow">App Android · grátis · sem internet</p>
         <h1 id="h1">Cartas para a roda de amigos.</h1>
         <p class="lede">Puxe uma carta, puxe assunto. Ou puxe um shot.</p>
-        <p class="sub">140 cartas de conversa em sete baralhos e um Modo Drink +18 com seis jogos de shot. Sem cadastro, sem anúncio. Abriu, escolheu, jogou.</p>
+        <p class="sub">300 cartas de conversa em seis baralhos e um Modo Drink +18 com seis jogos de shot. Sem cadastro, sem anúncio. Abriu, escolheu, jogou.</p>
         <div class="cta">
           <a class="btn btn-main" href="https://github.com/PirataZang/Spill/releases/latest/download/Spill.apk" target="_blank" rel="noopener">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
@@ -100,7 +100,7 @@ const descricao =
   <section class="facts" aria-label="O Spill em números">
     <div class="wrap">
       <ul>
-        <li><b>140</b><span>cartas de conversa, em 7 baralhos</span></li>
+        <li><b>300</b><span>cartas de conversa, em 6 baralhos</span></li>
         <li><b>1.200</b><span>cartas de shot, em 6 jogos</span></li>
         <li><b>PT · EN</b><span>troque o idioma no topo da tela</span></li>
         <li><b>0</b><span>permissões pedidas pelo app</span></li>
@@ -122,9 +122,9 @@ const descricao =
           <span class="side-tag">Spill, a conversa</span>
           <dl>
             <div><dt>Pra quê</dt><dd>Quebrar o gelo e puxar assunto de verdade.</dd></div>
-            <div><dt>Como</dt><dd>Cartas de filmes, séries, músicas, temas e cantadas, em 7 baralhos coloridos.</dd></div>
+            <div><dt>Como</dt><dd>Cartas de filmes, séries, músicas e temas, em 6 baralhos coloridos.</dd></div>
             <div><dt>Clima</dt><dd>Leve, pra qualquer idade.</dd></div>
-            <div><dt>Cartas</dt><dd>140, em português e inglês.</dd></div>
+            <div><dt>Cartas</dt><dd>300, em português e inglês.</dd></div>
           </dl>
           <span class="side-go">Ver a conversa →</span>
         </a>
@@ -149,7 +149,7 @@ const descricao =
       <div class="sec-head">
         <p class="eyebrow">Spill, a conversa</p>
         <h2 class="h2" id="h-conv">Uma boa pergunta começa a conversa.</h2>
-        <p class="lede">Cada carta traz uma, puxada de um filme, uma série, uma música ou da vida. São <b>sete baralhos</b>, cada um com seu clima, de perguntas para um encontro a cantadas para testar na roda. Toque num deles.</p>
+        <p class="lede">Cada carta traz uma, puxada de um filme, uma série, uma música ou da vida. São seis baralhos, cada um com seu clima, de micos a perguntas para um encontro. Toque num deles.</p>
       </div>
       <div class="rail" id="decks" role="group" aria-label="Baralhos"></div>
       <div class="deck-show">
@@ -585,7 +585,6 @@ const DECKS = {
   red:    { c: '#D7263D', ink: '#FFF3F4', name: 'Vermelho', label: 'Romance', blurb: 'Amor, primeiros encontros, crushes e histórias de casal.' },
   black:  { c: '#0D0D10', ink: '#F1EFF6', name: 'Preto', label: 'Cringe', blurb: 'Momentos vergonhosos, micos e comédia pura.', glow: '#5d5873' },
   orange: { c: '#F06A24', ink: '#1F0E04', name: 'Laranja', label: 'Dates', blurb: 'Perguntas para um encontro. Para sair do papo de elevador e conhecer a pessoa de verdade.' },
-  pink:   { c: '#C72A73', ink: '#FFF0F6', name: 'Rosa', label: 'Cantadas', blurb: 'Cantadas e elogios melhores que um “linda” ou “lindo”. Leia para alguém da roda e deixe a pessoa dar nota.' },
 };
 const CARDS = [
   ['green', 1, 'Filme', 'O Diabo Veste Prada', 'Quem foi o chefe ou professor mais difícil que você já teve? O que ele fazia?'],
@@ -594,7 +593,6 @@ const CARDS = [
   ['red', 1, 'Filme', 'Titanic', 'Qual foi a coisa mais romântica que alguém já fez por você?'],
   ['black', 1, 'Tema', 'Conversa Errada', 'Você já mandou mensagem para a pessoa errada? O que aconteceu depois?'],
   ['orange', 2, 'Filme', 'Antes do Amanhecer', 'Se a gente só tivesse esta noite, o que você ia querer fazer?'],
-  ['pink', 6, 'Cantada', 'Previsão do Tempo', '“A previsão dizia céu limpo. Ninguém avisou que ia ter você.”'],
 ];
 
 const SKULL = 'M12 2C17 2 20.5 5.4 20.5 10C20.5 12.6 19.3 14.6 17.5 15.8V19A1 1 0 0 1 16.5 20H15V18H13.5V20H10.5V18H9V20H7.5A1 1 0 0 1 6.5 19V15.8C4.7 14.6 3.5 12.6 3.5 10C3.5 5.4 7 2 12 2ZM6.6 10.8a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0ZM13 10.8a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0ZM12 13.4L13.1 15.4H10.9Z';

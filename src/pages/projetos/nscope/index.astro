@@ -1,0 +1,1015 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+/*
+  NSCOPE — site do projeto (TUI em Rust que monta, explica e executa o nmap).
+
+  Mundo: o radar do logo, desenhado em pixel de verdade. Os dois canvas renderizam
+  em baixa resolução e são ampliados sem suavização (image-rendering: pixelated),
+  com dithering Bayer 4x4 no lugar de gradiente e movimento em passos de 12 fps.
+  O topo é um scan rodando com o scroll: alvo, perfil, confirmação, execução e
+  resultados. A navegação usa a gramática do próprio TUI: abas numeradas que
+  respondem às teclas 1 a 6, seleção em vídeo reverso e barra "Comando final".
+
+  Textos de opções e perfis vêm do catálogo do nscope (src/nmap/catalog.rs e
+  profiles.rs). As gravações são do programa real contra scanme.nmap.org.
+  O scan do topo é uma simulação no navegador e está rotulado assim.
+*/
+
+const BASE = import.meta.env.BASE_URL;
+const MIDIA = `${BASE}projetos/nscope`;
+const REPO = 'https://github.com/PirataZang/nscope';
+const titulo = 'nscope · o nmap sem decorar flags';
+const descricao =
+  'Interface de terminal em português que monta o comando do nmap, explica cada pedaço, avisa dos riscos antes de rodar e mostra o resultado de um jeito navegável. Feito em Rust.';
+
+/* marca em pixel: o retículo do logo rasterizado numa grade 23x23 */
+const MARCA = (() => {
+  const N = 23, c = 11, out: string[] = [];
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const d = Math.hypot(x - c, y - c);
+      let cor = '';
+      if ((x === c || y === c) && d >= 7 && d <= 10.6) cor = '#bae6fd';
+      else if (Math.abs(d - 8) < 0.55) cor = '#7dd3fc';
+      else if (Math.abs(d - 4.6) < 0.5) cor = '#38bdf8';
+      else if (d <= 1.3) cor = '#e0f2fe';
+      else if (Math.hypot(x - 16, y - 6) <= 1) cor = '#bae6fd';
+      if (cor) out.push(`<rect x="${x}" y="${y}" width="1" height="1" fill="${cor}"/>`);
+    }
+  return out.join('');
+})();
+
+const ABAS = [
+  ['1', 'scan', 'topo'],
+  ['2', 'gravações', 'gravacoes'],
+  ['3', 'comando', 'comando'],
+  ['4', 'perfis', 'perfis'],
+  ['5', 'segurança', 'seguranca'],
+  ['6', 'instalar', 'instalar'],
+];
+
+const VIDEOS = [
+  { id: 'fluxo', aba: 'Do alvo ao resultado', t: 'Do alvo ao resultado em menos de um minuto', d: 'Alvo, perfil, comando explicado, execução e resultados. A espera do scan foi acelerada 3× no vídeo.' },
+  { id: 'configurar', aba: '110 opções', t: 'Mais de 110 opções, todas explicadas', d: 'Cada opção diz o que faz, quando usar e o cuidado. O comando muda na hora, e a busca (/) acha qualquer opção por nome, flag ou descrição.' },
+  { id: 'seguranca', aba: 'Segurança', t: 'Segurança antes de executar', d: 'O 8.8.8.8 só é digitado: a confirmação de autorização abre com Não selecionado, é cancelada e nada vai para a rede.' },
+];
+
+/* comando de exemplo, na ordem em que o nscope emite as opções */
+const PEDACOS = [
+  { id: 'nmap', txt: 'nmap', tipo: 'prog', titulo: 'O programa', faz: 'O nmap instalado no seu sistema. O nscope chama ele com uma lista de argumentos, nunca por um shell, e lê o XML que o próprio nmap gera.' },
+  { id: 'sV', txt: '-sV', tipo: 'flag', titulo: 'Detectar serviço e versão', faz: 'Além de saber que a porta está aberta, pergunta ao serviço quem ele é: "nginx 1.18" em vez de só "http". Essencial para achar software desatualizado.', quando: 'Quase sempre. É a opção que mais enriquece o resultado.', cuidado: 'Aumenta o tempo e o tráfego, porque conversa de verdade com cada porta aberta.' },
+  { id: 'O', txt: '-O', tipo: 'flag', titulo: 'Detectar sistema operacional', faz: 'Analisa detalhes do tráfego TCP/IP (a "impressão digital") para adivinhar se o alvo é Linux, Windows, roteador etc.', quando: 'Para inventariar uma rede.', cuidado: 'É uma estimativa e pode errar. Funciona melhor quando há ao menos uma porta aberta e uma fechada.' },
+  { id: 'reason', txt: '--reason', tipo: 'flag', titulo: 'Mostrar o motivo de cada estado', faz: 'Explica por que cada porta está aberta, fechada ou filtrada (ex.: "syn-ack", "reset", "no-response").', quando: 'Ótimo para aprender e para depurar resultados estranhos.' },
+  { id: 'oA', txt: '-oA relatorio', tipo: 'flag', titulo: 'Salvar nos 3 formatos', faz: 'Salva em texto, XML e grepável de uma vez, usando o nome-base informado (cria .nmap, .xml e .gnmap).', quando: 'É a opção mais prática: guarde sempre o resultado.' },
+  { id: 'alvo', txt: 'scanme.nmap.org', tipo: 'val', titulo: 'Alvo', faz: 'O endereço, nome ou rede que será examinado. O scanme é o alvo de testes que o projeto Nmap libera, com moderação.', cuidado: 'Escaneie apenas o que você possui ou tem autorização por escrito para testar.' },
+];
+
+/* os 16 perfis prontos; ruido = visibilidade estimada declarada no código (0 a 5) */
+const PERFIS = [
+  { n: 'Restaurar padrão', s: 'Volta todas as opções ao padrão (mantém os alvos).', w: 'Para começar de novo.', r: 2, o: [] },
+  { n: 'Descobrir hosts na rede', s: 'Lista as máquinas ligadas, sem olhar portas.', w: 'Primeiro passo ao mapear uma rede nova.', r: 0, o: ['-sn'] },
+  { n: 'Padrão com serviços', s: 'As 1000 portas mais comuns, identificando serviço e versão.', w: 'O melhor ponto de partida para a maioria dos casos.', r: 3, o: ['-sV'], rec: true },
+  { n: 'Scan rápido', s: 'Só as 100 portas mais comuns, em velocidade agressiva.', w: 'Rede local confiável, quando você quer uma visão geral em segundos.', r: 2, o: ['-F', '-T4'] },
+  { n: 'Todas as portas', s: 'As 65535 portas, com versão dos serviços.', w: 'Quando precisa achar serviços escondidos em portas incomuns.', r: 5, o: ['-p-', '-sV', '-T4'] },
+  { n: 'Auditoria com scripts', s: 'Serviços e versão + scripts padrão (banners, certificados, títulos).', w: 'Para entender melhor cada serviço encontrado.', r: 4, o: ['-sV', '-sC'] },
+  { n: 'Reconhecimento completo', s: 'Modo agressivo (-A): SO, versão, scripts e rota.', w: 'Inventário detalhado de um alvo autorizado.', r: 5, o: ['-A', '-T4'] },
+  { n: 'Caça a vulnerabilidades', s: 'Versão dos serviços + scripts da categoria vuln.', w: 'Auditoria de segurança com autorização. Pode gerar alertas.', r: 5, o: ['-sV', '--script=vuln'] },
+  { n: 'Discreto para teste autorizado', s: 'SYN lento, sem ping, sem DNS e com pacotes fragmentados.', w: 'Testes de intrusão em que reduzir a chance de detecção faz parte do escopo.', r: 0, o: ['-sS', '-Pn', '-n', '-T2', '-f'] },
+  { n: 'UDP: portas comuns', s: 'As 50 portas UDP mais comuns (DNS, SNMP, NTP...).', w: 'Para achar serviços que não usam TCP. Demora.', r: 2, o: ['-sU', '--top-ports 50'] },
+  { n: 'Mapear regras de firewall', s: 'ACK scan: mostra portas filtradas x não filtradas.', w: 'Para entender o que o firewall deixa passar.', r: 1, o: ['-sA', '-F'] },
+  { n: 'Sites e HTTPS', s: 'Portas web com título, cabeçalhos, métodos HTTP e certificado.', w: 'Inventário de servidores web.', r: 3, o: ['-p 80,443,8080,8443', '-sV', '--script=http-title,…'] },
+  { n: 'Windows e SMB', s: 'Compartilhamento de arquivos, área de trabalho remota e dados do SO.', w: 'Redes Windows.', r: 3, o: ['-p 139,445,3389', '-sV', '--script=smb-os-discovery,…'] },
+  { n: 'Só listar alvos', s: 'Resolve e lista os alvos sem enviar pacotes.', w: 'Conferir o escopo antes de escanear.', r: 0, o: ['-sL'] },
+  { n: 'IPv6', s: 'Scan padrão com serviços, em IPv6.', w: 'Alvos IPv6 (-6).', r: 3, o: ['-sV', '-6'] },
+  { n: 'Padrão + relatórios salvos', s: 'Scan padrão com motivo de cada estado e arquivos nos 3 formatos.', w: 'Quando o resultado precisa ser guardado ou entregue.', r: 3, o: ['-sV', '--reason', '-v', '-oA relatorio'] },
+];
+
+const GARANTIAS = [
+  ['Sem shell', 'Executa o nmap instalado com uma lista de argumentos. Nada do que você digita vira comando de shell.'],
+  ['Sem telemetria', 'O nscope não abre nenhuma conexão de rede própria. O único tráfego é o do nmap que você mandou rodar.'],
+  ['Nunca se eleva sozinho', 'SYN, UDP e detecção de SO pedem administrador. O nscope detecta, mostra na barra de título e bloqueia a execução com uma mensagem clara.'],
+  ['Avisos antes de rodar', 'Privilégio, conflito entre opções, escopo e risco aparecem na tela do comando. Enter salta até a opção responsável.'],
+  ['Honesto sem o nmap', 'Sem o nmap instalado, a interface monta comandos e diz como instalar. Nunca inventa resultado.'],
+  ['Relatório que não apaga nada', 's salva o resultado em Markdown, sem sobrescrever um arquivo que já existe.'],
+];
+
+const TECLAS = [
+  ['Tab', 'trocar aba'], ['1', 'aba Alvo'], ['/', 'busca global'], ['j', 'descer'], ['k', 'subir'], ['y', 'copiar comando'],
+  ['r', 'executar'], ['c', 'cancelar'], ['o', 'só abertas'], ['s', 'salvar relatório'], ['?', 'ajuda'], ['q', 'sair'],
+];
+
+const NMAP = [
+  ['Debian, Ubuntu, Mint', 'sudo apt install nmap'],
+  ['Fedora, RHEL', 'sudo dnf install nmap'],
+  ['Arch, Manjaro', 'sudo pacman -S nmap'],
+  ['macOS (Homebrew)', 'brew install nmap'],
+  ['Windows (PowerShell)', 'winget install Insecure.Nmap'],
+];
+const UMA_LINHA = `cargo install --git ${REPO} --locked`;
+const INSTALAR = `git clone ${REPO}.git\ncd nscope\ncargo install --path . --locked\nnscope`;
+
+const FICHA = [
+  ['linguagem', 'Rust 1.88+, unsafe proibido'],
+  ['interface', 'TUI em português, estilo lazygit, mouse opcional'],
+  ['cobertura', '~110 opções do nmap, 16 perfis, campo livre para flags raras'],
+  ['testes', 'snapshots de cada tela em 80×24 e 120×40, runner do nmap simulado'],
+  ['release', 'Linux (musl), macOS e Windows, com SHA256SUMS, SBOM CycloneDX e atestado de build'],
+  ['terminal', 'funciona com NO_COLOR e em terminais de 16 cores'],
+  ['licença', 'MIT'],
+];
+---
+
+<Base title={titulo} description={descricao}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:image" content={`${MIDIA}/og.jpg`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#071225" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600&family=Atkinson+Hyperlegible+Mono:wght@400;500;700&display=swap" />
+    <script is:inline>document.documentElement.classList.add('js')</script>
+  </Fragment>
+
+<div class="ns">
+  <canvas id="fundo" aria-hidden="true"></canvas>
+
+  <header class="barra">
+    <nav class="barra-in" aria-label="Seções">
+      <a class="marca" href="#topo"><svg viewBox="0 0 23 23" shape-rendering="crispEdges" aria-hidden="true" set:html={MARCA}></svg><span>nscope</span></a>
+      <ol class="abas-nav">
+        {ABAS.map(([k, nome, id]) => (
+          <li><a href={`#${id}`} data-aba={id}><b>{k}</b> {nome}</a></li>
+        ))}
+      </ol>
+      <div class="barra-acoes">
+        <a class="lnk" href={BASE}>portfólio</a>
+        <a class="btn btn-sm" href={REPO} target="_blank" rel="noopener">código ↗</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TOPO: scan de demonstração que roda com o scroll -->
+    <section id="topo" class="hero" data-fase="0" aria-labelledby="h-topo">
+      <div class="pin">
+        <canvas id="radar" aria-hidden="true"></canvas>
+        <span class="alvo-tag" aria-hidden="true">scanme.nmap.org</span>
+
+        <div class="hero-copy">
+          <h1 id="h-topo">nscope</h1>
+          <p class="lead">O nmap sem decorar flags.</p>
+          <p class="sub">Monta o comando do nmap, explica cada pedaço, avisa dos riscos antes de rodar e mostra o resultado de um jeito que dá para navegar. Tudo no terminal, em português.</p>
+          <p class="instala"><code><span class="ok">$</span> cargo install --git<br />{REPO} --locked</code><button type="button" class="tbtn" data-copiar={UMA_LINHA} aria-label="Copiar o comando de instalação">copiar</button></p>
+          <p class="instala-nota">Precisa do nmap e do Rust 1.88+. <a class="lnk" href="#instalar">Passo a passo</a> · <a class="lnk" href="#gravacoes">ver gravações</a></p>
+        </div>
+
+        <p class="dica" aria-hidden="true"><svg viewBox="0 0 7 5" shape-rendering="crispEdges"><path d="M0 0h1v1h1v1h1v1h1V2h1V1h1V0h1v1H6v1H5v1H4v1H3V3H2V2H1V1H0z" fill="currentColor"/></svg>role para rodar o scan</p>
+
+        <div class="painel-col" aria-hidden="true">
+          <ol class="abas-tui">
+            <li data-f="1">1 Alvo</li><li data-f="2">2 Perfis</li><li>3 Configurar</li><li data-f="3">4 Comando</li><li data-f="4">5 Execução</li><li data-f="5">6 Resultados</li>
+          </ol>
+
+          <div class="box fase" data-f="1">
+            <span class="box-t">Alvo</span>
+            <p class="campo"><span class="dim">alvo ›</span> <span class="val" data-digita>scanme.nmap.org</span><i class="cur"></i></p>
+            <p>Um IP, um nome ou uma rede inteira, como <code>192.168.0.0/24</code>. A validação roda enquanto você digita.</p>
+            <p class="ok">✔ alvo válido</p>
+          </div>
+
+          <div class="box fase" data-f="2">
+            <span class="box-t">Perfis prontos</span>
+            <ul class="mini-lista">
+              <li class="dim">Descobrir hosts na rede</li>
+              <li class="sel">★ Padrão com serviços</li>
+              <li class="dim">Scan rápido</li>
+              <li class="dim">Todas as portas</li>
+            </ul>
+            <p><code class="flag">-sV</code> Além de saber que a porta está aberta, pergunta ao serviço quem ele é: "nginx 1.18" em vez de só "http".</p>
+          </div>
+
+          <div class="box fase" data-f="3">
+            <span class="box-t">Confirmação</span>
+            <p><span class="val">scanme.nmap.org</span> fica fora da sua rede privada. Você tem autorização por escrito para escanear este alvo?</p>
+            <p class="escolha"><span class="opt" data-opt="nao">[ Não ]</span><span class="opt" data-opt="sim">[ Sim ]</span></p>
+            <p class="dim">O padrão é Não. O projeto Nmap libera o scanme para testes, com moderação.</p>
+          </div>
+
+          <div class="box fase" data-f="4">
+            <span class="box-t">Execução</span>
+            <p class="progresso"><span class="cells" data-cells></span> <b data-pct>0%</b></p>
+            <ul class="log">
+              <li data-q="0.05">host ligado</li>
+              <li data-q="0.35">testando as 1000 portas mais comuns</li>
+              <li data-q="0.7">conversando com os serviços abertos</li>
+            </ul>
+            <p class="dim"><kbd>c</kbd> cancela a qualquer momento.</p>
+          </div>
+
+          <div class="box fase" data-f="5">
+            <span class="box-t">Resultados</span>
+            <p class="dim">1 host ligado · 4 portas abertas</p>
+            <table class="portas">
+              <thead><tr><th>PORTA</th><th>ESTADO</th><th>SERVIÇO</th></tr></thead>
+              <tbody>
+                <tr><td>22/tcp</td><td class="ok">open</td><td>ssh</td></tr>
+                <tr><td>80/tcp</td><td class="ok">open</td><td>http</td></tr>
+                <tr><td>9929/tcp</td><td class="ok">open</td><td>nping-echo</td></tr>
+                <tr><td>31337/tcp</td><td class="ok">open</td><td>tcpwrapped</td></tr>
+              </tbody>
+            </table>
+            <p class="dim"><kbd>o</kbd> só abertas · <kbd>s</kbd> salva relatório Markdown</p>
+          </div>
+        </div>
+
+        <div class="cmdbar">
+          <div class="cmd-cab">
+            <span class="cmd-t">Comando final <span class="dim">· simulação no navegador</span></span>
+            <span class="linha" aria-hidden="true"></span>
+            <button type="button" class="tbtn" data-copiar-cmd>Copiar (y)</button>
+            <button type="button" class="tbtn" data-executar>▶ Executar (r)</button>
+          </div>
+          <p class="cmd" aria-label="Comando atual"><span class="ok">$</span> <span class="prog">nmap</span><span class="flag tok" data-tok="sV"> -sV</span> <span class="val" data-alvo></span><i class="cur"></i></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRAVAÇÕES -->
+    <section id="gravacoes" class="sec" aria-labelledby="h-grav">
+      <div class="caixa">
+        <h2 id="h-grav" class="px">O programa rodando contra scanme.nmap.org.</h2>
+        <p class="intro">Gravações reais, com mouse, teclado e zoom nos pontos importantes. O scanme é o alvo de testes que o próprio projeto Nmap libera.</p>
+
+        <div class="player px">
+          <div class="abas-tui grande" role="tablist" aria-label="Gravações">
+            {VIDEOS.map((v, i) => (
+              <button type="button" role="tab" id={`tab-${v.id}`} aria-controls="vid-painel" aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-vid={v.id} data-t={v.t} data-d={v.d}>{i + 1} {v.aba}</button>
+            ))}
+          </div>
+          <div id="vid-painel" class="box tela" role="tabpanel" aria-labelledby="tab-fluxo">
+            <video data-player muted loop playsinline controls preload="metadata" poster={`${MIDIA}/fluxo.webp`} width="1280" height="720">
+              <source src={`${MIDIA}/fluxo.mp4`} type="video/mp4" />
+            </video>
+          </div>
+          <div class="legenda" aria-live="polite">
+            <b data-leg-t>{VIDEOS[0].t}</b>
+            <span data-leg-d>{VIDEOS[0].d}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMANDO EXPLICADO -->
+    <section id="comando" class="sec" aria-labelledby="h-cmd">
+      <div class="caixa">
+        <h2 id="h-cmd" class="px">Cada pedaço do comando vem explicado.</h2>
+        <p class="intro">É assim na tela Comando do nscope. Escolha um pedaço para ler o que ele faz, quando usar e o cuidado.</p>
+
+        <div class="box cmd-grande px">
+          <span class="box-t">Comando final</span>
+          <p class="pedacos" role="group" aria-label="Pedaços do comando">
+            <span class="ok" aria-hidden="true">$</span>
+            {PEDACOS.map((p, i) => (
+              <button type="button" class={`pedaco ${p.tipo}`} aria-pressed={i === 1 ? 'true' : 'false'} data-ped={p.id}>{p.txt}</button>
+            ))}
+          </p>
+        </div>
+
+        <div class="cmd-detalhe">
+          <div class="box">
+            <span class="box-t">O que isso faz</span>
+            {PEDACOS.map((p, i) => (
+              <div class="ped-info" data-info={p.id} hidden={i !== 1}>
+                <h3>{p.titulo}</h3>
+                <p class={p.tipo}>{p.txt}</p>
+                <h4>O que faz</h4>
+                <p>{p.faz}</p>
+                {p.quando && <><h4>Quando usar</h4><p>{p.quando}</p></>}
+                {p.cuidado && <><h4 class="warn">Cuidado</h4><p>{p.cuidado}</p></>}
+              </div>
+            ))}
+          </div>
+          <div class="box">
+            <span class="box-t">Avisos e problemas (1)</span>
+            <p class="warn">⚠ -O precisa de administrador.</p>
+            <p>O nscope detecta isso antes de rodar e bloqueia a execução até você abrir o terminal como administrador. Ele nunca pede a senha nem se eleva por conta própria.</p>
+            <p class="dim">No Linux e no macOS: <code>sudo "$(command -v nscope)"</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PERFIS -->
+    <section id="perfis" class="sec" aria-labelledby="h-perfis">
+      <div class="caixa">
+        <h2 id="h-perfis" class="px">16 perfis prontos, do discreto ao barulhento.</h2>
+        <p class="intro">Um perfil aplica um conjunto de opções e mantém os alvos. A barra mostra a visibilidade estimada, um número didático declarado no código e conferido por teste.</p>
+
+        <div class="perfis px">
+          <div class="box">
+            <span class="box-t">Perfis prontos</span>
+            <ul class="lista-perfis" aria-label="Perfis">
+              {PERFIS.map((p, i) => (
+                <li>
+                  <button type="button" aria-pressed={i === 2 ? 'true' : 'false'} data-perfil={i}>
+                    <span class="pnome">{p.rec ? '★ ' : ''}{p.n}</span>
+                    <span class="ruido" aria-label={`visibilidade ${p.r} de 5`}>{[0, 1, 2, 3, 4].map((k) => <i class={k < p.r ? 'on' : ''}></i>)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div class="box">
+            <span class="box-t">Detalhes</span>
+            {PERFIS.map((p, i) => (
+              <div class="perfil-info" data-pinfo={i} hidden={i !== 2}>
+                <h3>{p.rec ? '★ ' : ''}{p.n}</h3>
+                <p>{p.s}</p>
+                <h4>Quando usar</h4>
+                <p>{p.w}</p>
+                <h4>Visibilidade estimada (didática)</h4>
+                <p class="ruido grande" aria-label={`${p.r} de 5`}>{[0, 1, 2, 3, 4].map((k) => <i class={k < p.r ? 'on' : ''}></i>)} <span class="dim">{p.r}/5</span></p>
+                <h4>Opções</h4>
+                <p class="chips">{p.o.length ? p.o.map((o) => <code class="flag">{o}</code>) : <span class="dim">nenhuma: o nmap usa tudo no padrão</span>}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEGURANÇA -->
+    <section id="seguranca" class="sec" aria-labelledby="h-seg">
+      <div class="caixa seg">
+        <div>
+          <h2 id="h-seg" class="px">Nada sai para a rede sem você ver antes.</h2>
+          <p class="intro">Alvo fora da rede privada abre uma confirmação, e o botão que vem marcado é Não. Teste aqui:</p>
+
+          <div class="box dialogo px" role="group" aria-labelledby="dlg-t">
+            <span class="box-t" id="dlg-t">Confirmar alvo</span>
+            <p><span class="val">8.8.8.8</span> fica fora da sua rede privada. Você tem autorização por escrito para escanear este alvo?</p>
+            <p class="escolha">
+              <button type="button" class="opt sel" data-dlg="nao">[ Não ]</button>
+              <button type="button" class="opt" data-dlg="sim">[ Sim ]</button>
+            </p>
+            <p class="dlg-res dim" aria-live="polite" data-dlg-res>Enter confirma a opção marcada.</p>
+          </div>
+        </div>
+
+        <dl class="garantias">
+          {GARANTIAS.map(([t, d]) => (
+            <div class="px"><dt>{t}</dt><dd>{d}</dd></div>
+          ))}
+        </dl>
+      </div>
+      <div class="caixa">
+        <div class="aviso-legal" role="note" aria-labelledby="aviso-t">
+          <p class="aviso-t" id="aviso-t"><svg viewBox="0 0 9 9" shape-rendering="crispEdges" aria-hidden="true"><path d="M4 0h1v1h1v2h1v2h1v2h1v2H0V7h1V5h1V3h1V1h1zM4 3v3h1V3zM4 7v1h1V7z" fill="currentColor"/></svg>Aviso legal</p>
+          <p>Use o nscope (e o nmap) só em sistemas que você possui ou para os quais tem <b>autorização por escrito</b>. Escanear sem permissão pode ser crime.</p>
+          <p class="dim">Para praticar, use scanme.nmap.org, com moderação, ou um laboratório seu.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTALAR -->
+    <section id="instalar" class="sec" aria-labelledby="h-inst">
+      <div class="caixa">
+        <h2 id="h-inst" class="px">Instale o nmap, depois o nscope.</h2>
+        <p class="intro">Precisa de um terminal com pelo menos 80×24. Funciona no Linux, no macOS e no Windows.</p>
+
+        <div class="inst">
+          <div class="box px">
+            <span class="box-t">1 · nmap</span>
+            <ul class="nmap-os">
+              {NMAP.map(([so, cmd]) => (
+                <li><span class="dim">{so}</span><code>{cmd}</code><button type="button" class="tbtn" data-copiar={cmd} aria-label={`Copiar: ${cmd}`}>copiar</button></li>
+              ))}
+            </ul>
+            <p class="dim">Confira com <code>nmap --version</code>. No Windows o winget instala também o Npcap.</p>
+          </div>
+          <div class="box px">
+            <span class="box-t">2 · nscope, do código-fonte</span>
+            <pre class="bloco"><code>{INSTALAR}</code></pre>
+            <p class="linha-acao"><button type="button" class="tbtn" data-copiar={INSTALAR}>copiar os 4 comandos</button> <span class="dim">Requer Rust 1.88 ou mais novo. O binário fica em ~/.cargo/bin/nscope.</span></p>
+          </div>
+        </div>
+
+        <div class="teclado px">
+          <h3>Teclado primeiro</h3>
+          <p class="dim">Os atalhos do nscope. Aperte as teclas: aqui na página também funcionam.</p>
+          <ul class="keys">
+            {TECLAS.map(([k, d]) => (
+              <li><kbd data-k={k}>{k}</kbd><span>{d}</span></li>
+            ))}
+          </ul>
+        </div>
+
+        <dl class="ficha px">
+          {FICHA.map(([k, v]) => (
+            <div><dt>{k}</dt><dd>{v}</dd></div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <div class="caixa rodape-in">
+      <p><svg viewBox="0 0 23 23" shape-rendering="crispEdges" aria-hidden="true" set:html={MARCA}></svg> nscope, um projeto de Igor Fronza.</p>
+      <p><a class="lnk" href={BASE}>← voltar ao portfólio</a> <a class="lnk" href={REPO} target="_blank" rel="noopener">código no GitHub ↗</a></p>
+    </div>
+  </footer>
+  <p class="toast" role="status" aria-live="polite" data-toast></p>
+</div>
+</Base>
+
+<style is:global>
+  :root {
+    --bg: #071225; --bg2: #0a1a33; --bg3: #0e2442; --navy: #12345c;
+    --line: #1f4069; --line2: #2b5684;
+    --sky: #7dd3fc; --sky2: #38bdf8; --sky3: #0ea5e9; --ice: #e0f2fe; --ice2: #bae6fd;
+    --tx: #e4f1fb; --tx2: #bcd5ea; --tx3: #98b6d0;
+    --flag: #e879f9; --prog: #4ade80; --warn: #facc15; --err: #f87171;
+    --pixel: 'Pixelify Sans', sans-serif;
+    --sans: 'Atkinson Hyperlegible Next', ui-sans-serif, system-ui, sans-serif;
+    --mono: 'Atkinson Hyperlegible Mono', ui-monospace, monospace;
+    color-scheme: dark;
+    scrollbar-color: var(--line2) var(--bg);
+  }
+  html { scroll-padding-top: 64px; }
+  body { background: var(--bg); color: var(--tx); font-family: var(--sans); }
+  ::selection { background: var(--sky2); color: var(--bg); }
+  .ns { position: relative; isolation: isolate; font-size: 17px; line-height: 1.6; caret-color: var(--sky); }
+  .ns :focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
+  .ns a { color: inherit; text-decoration: none; }
+  .ns code, .ns kbd, .ns pre { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .ns h1, .ns h2, .ns h3, .marca, .hero .lead, .garantias dt { font-variant-ligatures: none; }
+  .ns h1, .ns h2, .ns h3 { font-family: var(--pixel); font-weight: 500; color: var(--ice); text-wrap: balance; }
+
+  #fundo { position: fixed; top: 0; left: 0; z-index: -1; image-rendering: pixelated; pointer-events: none; }
+
+  /* cores do TUI */
+  .ns .ok { color: var(--prog); }
+  .ns .warn { color: var(--warn); }
+  .ns .dim { color: var(--tx3); }
+  .ns .flag { color: var(--flag); }
+  .ns .prog { color: var(--prog); font-weight: 700; }
+  .ns .val { color: var(--sky); }
+
+  /* barra de navegação, gramática das abas do TUI */
+  .barra { position: fixed; inset: 0 0 auto; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .barra-in { max-width: 1240px; margin: 0 auto; height: 56px; padding: 0 24px; display: flex; align-items: center; gap: 20px; }
+  .marca { display: inline-flex; align-items: center; gap: 10px; font-family: var(--pixel); font-size: 22px; color: var(--sky); }
+  .marca svg { width: 23px; height: 23px; }
+  .abas-nav { flex: 1; min-width: 0; display: flex; gap: 2px; margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: none; font-family: var(--mono); font-size: 13.5px; }
+  .abas-nav a { display: block; padding: 6px 10px; white-space: nowrap; color: var(--tx2); }
+  .abas-nav a b { font-weight: 500; color: var(--tx3); }
+  .abas-nav a:hover { color: var(--ice); }
+  .abas-nav a.on { background: var(--sky2); color: var(--bg); font-weight: 700; }
+  .abas-nav a.on b { color: var(--bg); }
+  .barra-acoes { display: flex; align-items: center; gap: 16px; font-size: 14px; }
+
+  .btn { display: inline-flex; align-items: center; min-height: 46px; padding: 0 22px; background: var(--sky); color: var(--bg) !important; font-family: var(--mono); font-weight: 700; font-size: 15px; border: 0; transition: background .2s, transform .2s cubic-bezier(.16,1,.3,1); }
+  .btn:hover { background: var(--ice); }
+  .btn:active { transform: translateY(1px); }
+  .btn-sm { min-height: 36px; padding: 0 14px; font-size: 13px; }
+  .btn-ghost { background: transparent; color: var(--ice) !important; box-shadow: inset 0 0 0 1px var(--line2); }
+  .btn-ghost:hover { background: var(--bg3); }
+  .lnk { color: var(--tx2); text-decoration: underline; text-decoration-color: var(--line2); text-underline-offset: 4px; }
+  .lnk:hover { color: var(--ice); text-decoration-color: var(--sky); }
+  .tbtn { min-height: 32px; padding: 0 10px; border: 0; background: var(--sky2); color: var(--bg); font-family: var(--mono); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .tbtn:hover { background: var(--ice); }
+
+  /* caixa com título na borda, como os painéis do TUI */
+  .box { position: relative; border: 1px solid var(--line2); background: rgba(8, 20, 40, .88); padding: 22px 20px 18px; }
+  .box-t { position: absolute; top: -.75em; left: 12px; padding: 0 6px; background: var(--bg); font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--sky); line-height: 1.5; }
+  .box p { margin: 0 0 10px; }
+  .box p:last-child { margin-bottom: 0; }
+
+  .cur { display: inline-block; width: .55em; height: 1.05em; margin-left: 2px; vertical-align: -.15em; background: var(--sky); animation: pisca 1s steps(1) infinite; }
+  @keyframes pisca { 50% { opacity: 0; } }
+
+  /* ---------- TOPO ---------- */
+  .hero { position: relative; }
+  .js .hero { height: 520svh; }
+  .pin { position: relative; height: 100svh; min-height: 560px; overflow: hidden; background: var(--bg); }
+  .js .pin { position: sticky; top: 0; }
+  #radar { position: absolute; top: 0; left: 0; image-rendering: pixelated; }
+  .hero-copy { position: absolute; z-index: 2; left: max(24px, calc((100vw - 1192px) / 2)); top: 50%; width: min(480px, 40vw); transform: translateY(-58%); transition: opacity .4s, transform .6s cubic-bezier(.16,1,.3,1), visibility .4s; }
+  .hero h1 { margin: 0; font-size: clamp(64px, 9vw, 96px); font-weight: 700; line-height: .95; color: var(--sky); }
+  .hero .lead { margin: 18px 0 0; font-family: var(--pixel); font-size: clamp(24px, 2.6vw, 34px); line-height: 1.15; color: var(--ice); }
+  .hero .sub { margin: 16px 0 0; max-width: 46ch; color: var(--tx2); }
+  .instala { display: flex; align-items: stretch; max-width: 100%; margin: 28px 0 0; border: 1px solid var(--line2); background: var(--bg); }
+  .instala code { flex: 1; min-width: 0; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--ice); overflow-wrap: break-word; }
+  .instala .tbtn { min-height: 46px; padding: 0 16px; font-size: 14px; }
+  .instala-nota { margin: 12px 0 0; font-size: 14.5px; color: var(--tx3); }
+  .hero:not([data-fase="0"]) .hero-copy { opacity: 0; visibility: hidden; transform: translate(-32px, -58%); }
+
+  .dica { position: absolute; z-index: 2; left: max(24px, calc((100vw - 1192px) / 2)); bottom: 104px; margin: 0; display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--tx3); transition: opacity .3s; }
+  .dica svg { width: 14px; height: 10px; color: var(--sky); animation: desce 1.2s steps(3) infinite; }
+  @keyframes desce { from { transform: translateY(-3px); } to { transform: translateY(6px); } }
+  .hero:not([data-fase="0"]) .dica { opacity: 0; }
+
+  .alvo-tag { position: absolute; z-index: 1; top: 0; left: 0; padding: 2px 7px; background: rgba(7, 18, 37, .85); border: 1px solid var(--line2); font-family: var(--mono); font-size: 12px; color: var(--ice); opacity: 0; transition: opacity .3s; white-space: nowrap; }
+  .hero[data-alvo] .alvo-tag { opacity: 1; }
+
+  .painel-col { position: absolute; z-index: 2; right: max(24px, calc((100vw - 1192px) / 2)); top: 50%; width: min(500px, 40vw); transform: translateY(-56%); opacity: 0; visibility: hidden; transition: opacity .4s, visibility .4s; font-size: 15.5px; }
+  .hero:not([data-fase="0"]) .painel-col { opacity: 1; visibility: visible; }
+  .abas-tui { display: flex; flex-wrap: wrap; gap: 2px 4px; margin: 0 0 22px; padding: 0; list-style: none; font-family: var(--mono); font-size: 13px; color: var(--tx3); }
+  .abas-tui > * { padding: 2px 6px; }
+  .abas-tui .on, .abas-tui [aria-selected="true"] { background: var(--sky2); color: var(--bg); font-weight: 700; }
+  .painel-col .abas-tui { flex-wrap: nowrap; overflow: hidden; gap: 0 2px; font-size: 12px; }
+  .painel-col .abas-tui li { padding: 2px 5px; white-space: nowrap; }
+  .painel-col .box { background: var(--bg); }
+  .fase { display: none; }
+  .fase.on { display: block; animation: wipe .36s steps(6) both; }
+  @keyframes wipe { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(-2em -1em -1em -1em); } }
+  .campo { font-family: var(--mono); }
+  .mini-lista { margin: 0 0 14px; padding: 0; list-style: none; font-family: var(--mono); font-size: 14px; }
+  .mini-lista li { padding: 1px 6px; }
+  .mini-lista .sel { background: var(--sky2); color: var(--bg); font-weight: 700; }
+  .escolha { display: flex; gap: 14px; font-family: var(--mono); font-weight: 700; }
+  .escolha .opt { padding: 2px 4px; color: var(--tx2); background: none; border: 0; font: inherit; }
+  .escolha .opt.sel { background: var(--sky2); color: var(--bg); }
+  .progresso { font-family: var(--mono); display: flex; align-items: center; gap: 10px; }
+  .cells { display: inline-grid; grid-template-columns: repeat(20, 1fr); gap: 2px; flex: 1; }
+  .cells i { height: 12px; background: var(--bg3); }
+  .cells i.on { background: var(--sky); }
+  .log { margin: 0 0 12px; padding: 0; list-style: none; font-family: var(--mono); font-size: 13.5px; color: var(--tx2); }
+  .log li { visibility: hidden; }
+  .log li::before { content: '✔ '; color: var(--prog); }
+  .log li.on { visibility: visible; }
+  .portas { width: 100%; margin: 4px 0 12px; border-collapse: collapse; font-family: var(--mono); font-size: 13.5px; }
+  .portas th { text-align: left; font-weight: 500; color: var(--tx3); padding: 2px 8px 4px 0; }
+  .portas td { padding: 3px 8px 3px 0; }
+  kbd { padding: 0 5px; border: 1px solid var(--line2); color: var(--ice); font-size: .9em; }
+
+  .cmdbar { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; padding: 12px max(24px, calc((100vw - 1192px) / 2)) 16px; background: var(--bg); border-top: 1px solid var(--line); font-family: var(--mono); }
+  .cmd-cab { display: flex; align-items: center; gap: 10px; }
+  .cmd-t { font-weight: 700; font-size: 14px; color: var(--sky); white-space: nowrap; }
+  .cmd-t .dim { font-weight: 400; }
+  .linha { flex: 1; height: 1px; background: var(--line2); }
+  .cmd { margin: 8px 0 0; font-size: clamp(15px, 1.6vw, 19px); white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .tok { display: none; }
+  .tok.on { display: inline; }
+  .tok.novo { background: rgba(232, 121, 249, .18); }
+
+  /* ---------- seções ---------- */
+  .sec { position: relative; padding: 128px 0 40px; }
+  .caixa { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+  .sec h2 { margin: 0; max-width: 22ch; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.05; }
+  .intro { margin: 20px 0 48px; max-width: 62ch; color: var(--tx2); font-size: 18px; }
+  .box h3 { margin: 0 0 4px; font-size: 24px; color: var(--ice); }
+  .box h4 { margin: 18px 0 4px; font-family: var(--mono); font-size: 12.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--tx3); }
+  .box h4.warn { color: var(--warn); }
+
+  /* gravações */
+  .abas-tui.grande { font-size: 15px; margin-bottom: 26px; }
+  .abas-tui.grande button { padding: 6px 12px; border: 0; background: none; color: var(--tx2); font: inherit; cursor: pointer; }
+  .abas-tui.grande button:hover { color: var(--ice); }
+  .abas-tui.grande button[aria-selected="true"] { background: var(--sky2); color: var(--bg); font-weight: 700; }
+  .tela { padding: 0; background: #0a1628; }
+  .tela video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+  .legenda { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 18px; max-width: 900px; }
+  .legenda b { font-weight: 600; color: var(--ice); }
+  .legenda span { color: var(--tx2); }
+
+  /* comando */
+  .cmd-grande { padding: 30px 24px 26px; }
+  .pedacos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; margin: 0; font-family: var(--mono); font-size: clamp(18px, 2.4vw, 28px); }
+  .pedaco { padding: 4px 8px; border: 0; background: none; font: inherit; cursor: pointer; color: var(--tx); box-shadow: inset 0 -2px 0 var(--line2); transition: background .15s; }
+  .pedaco.prog { color: var(--prog); font-weight: 700; }
+  .pedaco.flag { color: var(--flag); }
+  .pedaco.val { color: var(--sky); }
+  .pedaco:hover { background: var(--bg3); }
+  .pedaco[aria-pressed="true"] { background: var(--sky2); color: var(--bg); box-shadow: none; }
+  .cmd-detalhe { display: grid; grid-template-columns: 1.35fr 1fr; gap: 36px 24px; margin-top: 40px; }
+  .ped-info p.flag, .ped-info p.val, .ped-info p.prog { font-family: var(--mono); }
+
+  /* perfis */
+  .perfis { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 36px 24px; align-items: start; }
+  .lista-perfis { margin: 0; padding: 0; list-style: none; }
+  .lista-perfis button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px; min-height: 38px; padding: 4px 8px; border: 0; background: none; color: var(--tx); font-family: var(--mono); font-size: 14.5px; text-align: left; cursor: pointer; }
+  .lista-perfis button:hover { background: var(--bg3); }
+  .lista-perfis button[aria-pressed="true"] { background: var(--sky2); color: var(--bg); font-weight: 700; }
+  .ruido { display: inline-flex; gap: 2px; flex: none; }
+  .ruido i { width: 8px; height: 12px; background: var(--bg3); }
+  .ruido i.on { background: var(--warn); }
+  [aria-pressed="true"] .ruido i { background: rgba(7, 18, 37, .35); }
+  [aria-pressed="true"] .ruido i.on { background: var(--bg); }
+  .ruido.grande { display: flex; align-items: center; gap: 3px; }
+  .ruido.grande i { width: 18px; height: 18px; }
+  .ruido.grande .dim { margin-left: 10px; font-family: var(--mono); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips code { padding: 2px 8px; border: 1px solid var(--line2); font-size: 14px; }
+  .perfis .box:last-child { position: sticky; top: 88px; }
+
+  /* segurança */
+  .seg { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px 72px; align-items: start; }
+  .dialogo { max-width: 520px; border-color: var(--warn); }
+  .dialogo .box-t { color: var(--warn); }
+  .dialogo .opt { cursor: pointer; min-height: 40px; }
+  .dialogo .opt:hover:not(.sel) { color: var(--ice); }
+  .garantias { margin: 8px 0 0; display: grid; gap: 26px; }
+  .garantias div { padding-top: 14px; border-top: 1px solid var(--line); }
+  .garantias dt { font-family: var(--pixel); font-size: 22px; color: var(--sky); }
+  .garantias dd { margin: 4px 0 0; color: var(--tx2); max-width: 56ch; }
+  .aviso-legal { margin: 64px 0 0; padding: 22px 24px; max-width: 900px; border: 2px solid var(--warn); background: #141206; color: var(--ice); font-size: 17px; }
+  .aviso-legal p { margin: 0; }
+  .aviso-legal p + p { margin-top: 8px; }
+  .aviso-legal b { color: var(--warn); font-weight: 600; }
+  .aviso-legal .dim { color: #d8cfa0; font-size: 15.5px; }
+  .aviso-t { display: flex; align-items: center; gap: 10px; margin-bottom: 10px !important; font-family: var(--pixel); font-size: 24px; color: var(--warn); }
+  .aviso-t svg { width: 22px; height: 22px; }
+
+  /* instalar */
+  .inst { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px 24px; align-items: start; }
+  .nmap-os { margin: 0 0 14px; padding: 0; list-style: none; display: grid; gap: 4px; }
+  .nmap-os li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .nmap-os li span { grid-column: 1 / -1; font-size: 14px; }
+  .nmap-os code { color: var(--ice); font-size: 15px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  .bloco { margin: 0 0 16px; padding: 16px; background: var(--bg); border: 1px solid var(--line); overflow-x: auto; font-size: 15px; line-height: 1.7; color: var(--ice); }
+  .linha-acao { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; font-size: 14px; }
+
+  .teclado { margin-top: 96px; }
+  .teclado h3 { margin: 0; font-size: 30px; }
+  .teclado > p { margin: 8px 0 24px; }
+  .keys { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 14px; }
+  .keys li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--tx2); }
+  .keys kbd { display: inline-grid; place-items: center; min-width: 44px; height: 44px; padding: 0 8px; border: 1px solid var(--line2); border-bottom-width: 4px; background: var(--bg2); font-size: 16px; font-weight: 700; color: var(--ice); transition: transform .08s steps(2), background .08s; }
+  .keys kbd.on { transform: translateY(3px); border-bottom-width: 1px; margin-bottom: 3px; background: var(--sky2); color: var(--bg); }
+
+  .ficha { margin: 96px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 40px; font-size: 15.5px; }
+  .ficha div { display: grid; grid-template-columns: 11ch 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .ficha dt { font-family: var(--mono); color: var(--sky); }
+  .ficha dd { margin: 0; color: var(--tx2); }
+
+  .rodape { margin-top: 96px; border-top: 1px solid var(--line); background: rgba(7, 18, 37, .92); }
+  .rodape-in { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 32px; padding-top: 28px; padding-bottom: 40px; font-size: 15px; color: var(--tx2); }
+  .rodape-in p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+  .rodape svg { width: 23px; height: 23px; }
+
+  .toast { position: fixed; z-index: 30; left: 50%; bottom: 24px; margin: 0; padding: 8px 14px; transform: translate(-50%, 12px); background: var(--prog); color: var(--bg); font-family: var(--mono); font-weight: 700; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .3s cubic-bezier(.16,1,.3,1); }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* revelação em blocos, guiada pelo scroll, só onde o navegador suporta */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .px { animation: wipe linear both; animation-timing-function: steps(8); animation-timeline: view(); animation-range: entry 0% entry 55%; }
+    }
+  }
+
+  @media (max-width: 900px) {
+    .barra-acoes .lnk { display: none; }
+    .cmd-detalhe, .perfis, .seg, .inst { grid-template-columns: minmax(0, 1fr); }
+    .perfis .box:last-child { position: relative; top: 0; }
+  }
+
+  @media (max-width: 760px) {
+    .ns { font-size: 16px; }
+    .barra-in { padding: 0 16px; gap: 12px; }
+    .marca span { display: none; }
+    .barra-acoes { display: none; }
+    .caixa { padding: 0 16px; }
+    .sec { padding-top: 96px; }
+    .js .hero { height: 460svh; }
+    .hero-copy { left: 16px; right: 16px; width: auto; top: auto; bottom: 118px; transform: none; }
+    .hero:not([data-fase="0"]) .hero-copy { transform: translateY(16px); }
+    .hero h1 { font-size: 56px; }
+    .hero .lead { margin-top: 12px; font-size: 22px; }
+    .hero .sub { font-size: 15.5px; margin-top: 12px; }
+    .instala { margin-top: 18px; }
+    .instala code { font-size: 13px; padding: 10px; }
+    .nmap-os code { font-size: 14px; }
+    .dica { display: none; }
+    .painel-col { left: 16px; right: 16px; width: auto; top: auto; bottom: 112px; transform: none; font-size: 14.5px; }
+    .painel-col .abas-tui { margin-bottom: 18px; font-size: 12px; }
+    .painel-col .abas-tui li:not(.on) { display: none; }
+    .cmdbar { padding: 10px 16px 12px; }
+    .cmd-t .dim { display: none; }
+    .tbtn { padding: 0 8px; font-size: 12px; }
+    .intro { margin-bottom: 36px; font-size: 16.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js .hero { height: auto; }
+    .js .pin { position: relative; }
+    .ns *, .ns *::before { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<script>
+  const $ = (s: string, r: ParentNode = document) => r.querySelector(s) as HTMLElement;
+  const $$ = (s: string, r: ParentNode = document) => [...r.querySelectorAll(s)] as HTMLElement[];
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
+  const faixa = (p: number, a: number, b: number) => { const k = clamp((p - a) / (b - a)); return k * k * (3 - 2 * k); };
+
+  /* cores em Uint32 (little-endian: 0xAABBGGRR) */
+  const C = (h: string) => { const n = parseInt(h.slice(1), 16); return (255 << 24) | ((n & 255) << 16) | (n & 0xff00) | (n >> 16); };
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16);
+  const bay = (x: number, y: number) => BAYER[(y & 3) * 4 + (x & 3)];
+  const NAVY = ['#071225', '#0a1a33', '#0e2442', '#12345c'].map(C);
+  const TRILHA = [0, C('#0b3a63'), C('#0e5c8e'), C('#1c8fc5')];
+  const SKY = C('#7dd3fc'), SKY2 = C('#38bdf8'), SKY3 = C('#0ea5e9'), ICE = C('#e0f2fe'), ICE2 = C('#bae6fd');
+  const DOT = C('#163a62'), WARN = C('#facc15'), OK = C('#4ade80'), FLAG = C('#e879f9');
+  const PONTOS = [C('#0d2341'), C('#133356'), C('#1b4c7c'), C('#2a6ea6')];
+
+  /* ---------- toast e copiar ---------- */
+  const toast = $('[data-toast]');
+  let toastT = 0;
+  const avisa = (msg: string) => { toast.textContent = msg; toast.classList.add('on'); clearTimeout(toastT); toastT = window.setTimeout(() => toast.classList.remove('on'), 1600); };
+  const copia = async (txt: string) => {
+    try { await navigator.clipboard.writeText(txt); avisa('copiado ✔'); }
+    catch { avisa('não deu para copiar: selecione o texto'); }
+  };
+  $$('[data-copiar]').forEach((b) => b.addEventListener('click', () => copia(b.dataset.copiar!)));
+
+  /* ---------- radar do topo ---------- */
+  const hero = $('#topo'), pin = $('.pin', hero), cv = $('#radar') as HTMLCanvasElement, cx2 = cv.getContext('2d')!;
+  const tag = $('.alvo-tag'), alvoTxt = $('[data-alvo]'), tokSV = $('[data-tok="sV"]');
+  const ALVO = 'scanme.nmap.org';
+  let S = 4, W = 0, H = 0, img: ImageData, buf: Uint32Array, base: Uint32Array;
+  let p = 0, fase = 0, ang = -Math.PI / 2, tPrev = 0, heroVisivel = true;
+
+  /* hosts falsos no radar: ângulo, raio relativo, último toque do feixe */
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const HOSTS = Array.from({ length: 11 }, () => ({ a: rnd() * Math.PI * 2, r: 0.2 + rnd() * 0.75, hit: -9 }));
+  const ALVO_H = { a: -Math.PI / 4, r: 0.78, hit: -9 };
+
+  function tamanho() {
+    S = innerWidth < 760 ? 3 : 4;
+    W = Math.ceil(pin.clientWidth / S); H = Math.ceil(pin.clientHeight / S);
+    cv.width = W; cv.height = H;
+    cv.style.width = W * S + 'px'; cv.style.height = H * S + 'px';
+    img = cx2.createImageData(W, H); buf = new Uint32Array(img.data.buffer); base = new Uint32Array(W * H);
+    const gx = W * 0.25, gy = H * 0.12, gr = Math.max(W, H) * 0.95;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const g = clamp(1 - Math.hypot(x - gx, y - gy) / gr) * 2.4;
+      const i = Math.min(3, Math.floor(g) + (g % 1 > bay(x, y) ? 1 : 0));
+      base[y * W + x] = x % 6 === 0 && y % 6 === 0 ? DOT : NAVY[i];
+    }
+  }
+
+  const put = (x: number, y: number, c: number) => { x |= 0; y |= 0; if (x >= 0 && y >= 0 && x < W && y < H) buf[y * W + x] = c; };
+  const anel = (cx: number, cy: number, r: number, c: number, passo = 1) => {
+    const n = Math.max(24, Math.ceil(r * 7));
+    for (let i = 0; i < n; i += passo) { const a = (i / n) * Math.PI * 2; put(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), c); }
+  };
+  const bloco = (x: number, y: number, s: number, c: number) => { for (let j = 0; j < s; j++) for (let i = 0; i < s; i++) put(x + i, y + j, c); };
+
+  function geometria() {
+    const mob = innerWidth < 760;
+    if (mob) { const R = Math.min(W * 0.33, H * 0.17); return { cx: W * 0.5, cy: H * (0.22 + faixa(p, 0.1, 0.25) * 0.04), R }; }
+    const R = Math.min(H * 0.34, W * 0.22);
+    return { cx: W * (0.73 - faixa(p, 0.08, 0.3) * 0.42), cy: H * 0.46, R };
+  }
+
+  function desenhaRadar(t: number) {
+    buf.set(base);
+    const { cx, cy, R } = geometria();
+    const R2 = R * R, TR = 1.25;
+    const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(W - 1, Math.ceil(cx + R));
+    const y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.min(H - 1, Math.ceil(cy + R));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const dx = x - cx, dy = y - cy;
+      if (dx * dx + dy * dy > R2) continue;
+      let d = ang - Math.atan2(dy, dx); d = ((d % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (d < TR) {
+        const k = (1 - d / TR) * 3;
+        const i = Math.min(3, Math.floor(k) + (k % 1 > bay(x, y) ? 1 : 0));
+        if (i) buf[y * W + x] = TRILHA[i];
+      }
+    }
+    anel(cx, cy, R, SKY); anel(cx, cy, R - 1, SKY);
+    anel(cx, cy, R * 0.62, SKY2); anel(cx, cy, R * 0.3, SKY3, 3);
+    const t0 = R * 0.86, t1 = R * 1.3;
+    for (let k = t0; k <= t1; k++) for (let w = -1; w <= 0; w++) {
+      put(cx + w, cy - k, ICE2); put(cx + w, cy + k, ICE2); put(cx - k, cy + w, ICE2); put(cx + k, cy + w, ICE2);
+    }
+    for (let r = 0; r < R; r++) put(Math.round(cx + Math.cos(ang) * r), Math.round(cy + Math.sin(ang) * r), ICE);
+    const cr = Math.max(2, R * 0.09);
+    for (let y = -cr; y <= cr; y++) for (let x = -cr; x <= cr; x++) if (x * x + y * y <= cr * cr) put(cx + x, cy + y, ICE);
+
+    /* hosts: acendem quando o feixe passa e apagam devagar */
+    const toca = (h: { a: number; hit: number }) => {
+      let d = ang - h.a; d = ((d % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (d < 0.12 && t - h.hit > 1) h.hit = t;
+    };
+    for (const h of HOSTS) {
+      toca(h);
+      const vida = 1 - (t - h.hit) / 2.4;
+      if (vida <= 0) continue;
+      const hx = Math.round(cx + Math.cos(h.a) * h.r * R), hy = Math.round(cy + Math.sin(h.a) * h.r * R);
+      bloco(hx - 1, hy - 1, 2, vida > 0.6 ? ICE : vida > 0.3 ? SKY : SKY3);
+      const pulso = Math.floor((t - h.hit) * 8);
+      if (pulso > 0 && pulso < 5) anel(hx - 0.5, hy - 0.5, pulso + 1, SKY2, 2);
+    }
+
+    /* alvo: aparece com o alvo digitado, travado por cantoneiras */
+    const ax = Math.round(cx + Math.cos(ALVO_H.a) * ALVO_H.r * R), ay = Math.round(cy + Math.sin(ALVO_H.a) * ALVO_H.r * R);
+    const temAlvo = p > 0.2;
+    if (temAlvo) {
+      toca(ALVO_H);
+      const corAlvo = fase === 3 ? (p > 0.6 ? OK : WARN) : ICE;
+      bloco(ax - 2, ay - 2, 4, corAlvo);
+      const pisca = fase <= 1 && Math.floor(t * 4) % 2 === 0;
+      if (!pisca) {
+        const s = 6 + Math.round((1 - faixa(p, 0.2, 0.3)) * 10), L = 3, c = fase === 3 ? corAlvo : FLAG;
+        for (let i = 0; i < L; i++) {
+          put(ax - s + i, ay - s, c); put(ax - s, ay - s + i, c); put(ax + s - i, ay - s, c); put(ax + s, ay - s + i, c);
+          put(ax - s + i, ay + s, c); put(ax - s, ay + s - i, c); put(ax + s - i, ay + s, c); put(ax + s, ay + s - i, c);
+        }
+      }
+      /* execução e resultados: as portas aparecem em volta do alvo */
+      const q = faixa(p, 0.7, 0.86);
+      for (let i = 0; i < 4; i++) {
+        if (q <= 0.15 + i * 0.22) continue;
+        const a = -Math.PI / 2 + (i / 4) * Math.PI * 2 + t * 0.6 * (fase === 4 ? 1 : 0.2);
+        bloco(Math.round(ax + Math.cos(a) * 10) - 1, Math.round(ay + Math.sin(a) * 10) - 1, 3, OK);
+      }
+      if (fase >= 4) { const pr = Math.floor((t * 6) % 14); anel(ax, ay, pr + 4, pr < 8 ? SKY2 : SKY3, 2); }
+    }
+    cx2.putImageData(img, 0, 0);
+
+    if (temAlvo) {
+      const mob = innerWidth < 760;
+      tag.style.transform = `translate(${ax * S + (mob ? -60 : 22)}px, ${ay * S + (mob ? -50 : -38)}px)`;
+      hero.dataset.alvo = '';
+    } else delete hero.dataset.alvo;
+  }
+
+  /* ---------- fases do scan, guiadas pelo scroll ---------- */
+  const fases = $$('.fase'), abasT = $$('.painel-col .abas-tui li'), cells = $('[data-cells]'), pct = $('[data-pct]');
+  cells.innerHTML = '<i></i>'.repeat(20);
+  const cellEls = [...cells.children] as HTMLElement[];
+  const logs = $$('.log li'), opts = $$('.painel-col [data-opt]'), digita = $('[data-digita]');
+  const LIM = [0.14, 0.32, 0.5, 0.68, 0.86];
+
+  function atualizaFase() {
+    const f = LIM.filter((l) => p >= l).length;
+    if (f !== fase) {
+      fase = f; hero.dataset.fase = String(f);
+      fases.forEach((el) => el.classList.toggle('on', el.dataset.f === String(f)));
+      abasT.forEach((el) => el.classList.toggle('on', el.dataset.f === String(f)));
+    }
+    const n = Math.round(faixa(p, 0.17, 0.3) * ALVO.length);
+    const txt = ALVO.slice(0, n);
+    if (alvoTxt.textContent !== txt) { alvoTxt.textContent = txt; digita.textContent = txt || ' '; }
+    tokSV.classList.toggle('on', p >= 0.4);
+    tokSV.classList.toggle('novo', p >= 0.4 && p < 0.5);
+    const sim = p > 0.6;
+    opts.forEach((o) => o.classList.toggle('sel', (o.dataset.opt === 'sim') === sim));
+    const q = faixa(p, 0.7, 0.86);
+    cellEls.forEach((c, i) => c.classList.toggle('on', i < Math.round(q * 20)));
+    pct.textContent = Math.round(q * 100) + '%';
+    logs.forEach((l) => l.classList.toggle('on', q >= Number(l.dataset.q)));
+  }
+
+  function lerScroll() {
+    if (RM) { p = 0; return; }
+    const r = hero.getBoundingClientRect();
+    p = clamp(-r.top / (hero.offsetHeight - innerHeight));
+  }
+
+  const comandoAtual = () => ['nmap', p >= 0.4 ? '-sV' : '', alvoTxt.textContent].filter(Boolean).join(' ');
+  $('[data-copiar-cmd]').addEventListener('click', () => copia(comandoAtual()));
+  const executar = () => {
+    const fim = hero.offsetTop + hero.offsetHeight - innerHeight;
+    window.scrollTo({ top: p > 0.98 ? hero.offsetTop : fim, behavior: RM ? 'auto' : 'smooth' });
+  };
+  $('[data-executar]').addEventListener('click', executar);
+
+  /* ---------- fundo da página: grade de pontos que reage a scan, cursor e pings ---------- */
+  const fd = $('#fundo') as HTMLCanvasElement, fx = fd.getContext('2d')!;
+  const FS = 4, GAP = 5;
+  let FW = 0, FH = 0, fimg: ImageData, fbuf: Uint32Array;
+  let mx = -999, my = -999;
+  const pings: { x: number; y: number; t: number }[] = [];
+  function tamanhoFundo() {
+    FW = Math.ceil(innerWidth / FS); FH = Math.ceil(innerHeight / FS);
+    fd.width = FW; fd.height = FH; fd.style.width = FW * FS + 'px'; fd.style.height = FH * FS + 'px';
+    fimg = fx.createImageData(FW, FH); fbuf = new Uint32Array(fimg.data.buffer); fbuf.fill(NAVY[0]);
+  }
+  function desenhaFundo(t: number) {
+    if (!RM && Math.random() < 0.08 && pings.length < 4) pings.push({ x: Math.random() * FW, y: Math.random() * FH, t });
+    for (let i = pings.length - 1; i >= 0; i--) if (t - pings[i].t > 1.8) pings.splice(i, 1);
+    const banda = RM ? -99 : ((t * 9) % (FH + 60)) - 30;
+    for (let y = 0; y < FH; y += GAP) for (let x = 0; x < FW; x += GAP) {
+      let v = 0.24 + Math.max(0, 1 - Math.abs(y - banda) / 14) * 0.3;
+      const dm = Math.hypot(x - mx, y - my); if (dm < 30) v += (1 - dm / 30) * 0.9;
+      for (const pg of pings) { const k = (t - pg.t) / 1.8, rr = k * 40; const dp = Math.hypot(x - pg.x, y - pg.y); if (Math.abs(dp - rr) < 3) v += (1 - k) * 0.9; }
+      const l = Math.min(3, v * 3);
+      const i = Math.min(3, Math.floor(l) + (l % 1 > bay(x / GAP, y / GAP) ? 1 : 0));
+      fbuf[y * FW + x] = PONTOS[i];
+    }
+    fx.putImageData(fimg, 0, 0);
+  }
+  addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { mx = e.clientX / FS; my = e.clientY / FS; } }, { passive: true });
+  addEventListener('pointerdown', (e) => { if (!RM && !(e.target as HTMLElement).closest('a,button,video,input,kbd')) pings.push({ x: e.clientX / FS, y: e.clientY / FS, t: performance.now() / 1000 }); });
+
+  /* ---------- laço: 12 passos por segundo, como sprite ---------- */
+  let ultimoPasso = -1, sujo = true;
+  function quadro(ms: number) {
+    const t = ms / 1000, passo = Math.floor(t * 12);
+    if (passo !== ultimoPasso || sujo) {
+      const dt = tPrev ? Math.min(0.2, t - tPrev) : 0; tPrev = t;
+      if (!RM) ang += dt * (fase === 4 ? 4.2 : 1.6);
+      ang %= Math.PI * 2;
+      if (heroVisivel) desenhaRadar(t);
+      else desenhaFundo(t);
+      ultimoPasso = passo; sujo = false;
+    }
+    if (!RM && !document.hidden) requestAnimationFrame(quadro);
+  }
+
+  new IntersectionObserver(([e]) => { heroVisivel = e.isIntersecting; sujo = true; if (!heroVisivel) desenhaFundo(performance.now() / 1000); }).observe(hero);
+  addEventListener('scroll', () => { lerScroll(); atualizaFase(); sujo = true; }, { passive: true });
+  addEventListener('resize', () => { tamanho(); tamanhoFundo(); lerScroll(); sujo = true; if (RM) { desenhaRadar(5); desenhaFundo(0); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !RM) requestAnimationFrame(quadro); });
+
+  tamanho(); tamanhoFundo(); lerScroll(); atualizaFase();
+  if (RM) { HOSTS.forEach((h) => (h.hit = 4.4)); desenhaRadar(5); desenhaFundo(0); }
+  else requestAnimationFrame(quadro);
+
+  /* ---------- abas da barra ---------- */
+  const abasNav = $$('[data-aba]');
+  const secoes = abasNav.map((a) => document.getElementById(a.dataset.aba!)!);
+  const obsAbas = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return;
+    abasNav.forEach((a) => a.classList.toggle('on', a.dataset.aba === e.target.id));
+    const a = abasNav.find((x) => x.dataset.aba === e.target.id)!, ol = a.closest('ol')!;
+    ol.scrollTo({ left: a.offsetLeft - ol.offsetLeft - 16, behavior: RM ? 'auto' : 'smooth' });
+  }), { rootMargin: '-45% 0px -50% 0px' });
+  secoes.forEach((s) => obsAbas.observe(s));
+
+  /* ---------- gravações ---------- */
+  const video = $('[data-player]') as HTMLVideoElement, tabs = $$('[data-vid]'), painel = $('#vid-painel');
+  const legT = $('[data-leg-t]'), legD = $('[data-leg-d]');
+  const MID = video.poster.replace(/fluxo\.webp$/, '');
+  function escolheVideo(b: HTMLElement, foco = false) {
+    tabs.forEach((x) => { const on = x === b; x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1; });
+    painel.setAttribute('aria-labelledby', b.id);
+    video.poster = `${MID}${b.dataset.vid}.webp`;
+    video.src = `${MID}${b.dataset.vid}.mp4`;
+    legT.textContent = b.dataset.t!; legD.textContent = b.dataset.d!;
+    if (!RM) video.play().catch(() => {});
+    if (foco) b.focus();
+  }
+  tabs.forEach((b, i) => {
+    b.addEventListener('click', () => escolheVideo(b));
+    b.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (d) { e.preventDefault(); escolheVideo(tabs[(i + d + tabs.length) % tabs.length], true); }
+    });
+  });
+  if (!RM) new IntersectionObserver(([e]) => { if (e.isIntersecting) video.play().catch(() => {}); else video.pause(); }, { threshold: 0.4 }).observe(video);
+
+  /* ---------- seleção única (pedaços do comando e perfis) ---------- */
+  function seletor(btnSel: string, attr: string, infoSel: string, infoAttr: string) {
+    const bs = $$(btnSel);
+    bs.forEach((b, i) => {
+      b.addEventListener('click', () => {
+        bs.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        $$(infoSel).forEach((el) => (el.hidden = el.getAttribute(infoAttr) !== b.getAttribute(attr)));
+      });
+      b.addEventListener('keydown', (e) => {
+        const d = ['ArrowDown', 'ArrowRight', 'j'].includes(e.key) ? 1 : ['ArrowUp', 'ArrowLeft', 'k'].includes(e.key) ? -1 : 0;
+        if (d) { e.preventDefault(); e.stopPropagation(); const n = bs[(i + d + bs.length) % bs.length]; n.focus(); n.click(); }
+      });
+    });
+  }
+  seletor('[data-ped]', 'data-ped', '[data-info]', 'data-info');
+  seletor('[data-perfil]', 'data-perfil', '[data-pinfo]', 'data-pinfo');
+
+  /* ---------- confirmação de alvo ---------- */
+  const res = $('[data-dlg-res]');
+  $$('[data-dlg]').forEach((b) => b.addEventListener('click', () => {
+    $$('[data-dlg]').forEach((x) => x.classList.toggle('sel', x === b));
+    res.textContent = b.dataset.dlg === 'nao'
+      ? 'Cancelado. Nenhum pacote saiu.'
+      : 'Confirmado. No programa, o scan começaria agora. Só confirme com autorização por escrito.';
+    res.className = 'dlg-res ' + (b.dataset.dlg === 'nao' ? 'ok' : 'warn');
+  }));
+
+  /* ---------- teclado: as teclas do TUI funcionam na página ---------- */
+  const caps = new Map($$('[data-k]').map((k) => [k.dataset.k!, k]));
+  addEventListener('keydown', (e) => {
+    const alvo = e.target as HTMLElement;
+    if (e.ctrlKey || e.metaKey || e.altKey || alvo.closest('input,textarea,select,[contenteditable]')) return;
+    const cap = caps.get(e.key === 'Tab' ? 'Tab' : e.key) || caps.get(e.key.toLowerCase());
+    if (cap) { cap.classList.add('on'); setTimeout(() => cap.classList.remove('on'), 160); }
+    if (alvo.closest('button,[role="tab"],video')) return;
+    const n = Number(e.key);
+    if (n >= 1 && n <= 6) { secoes[n - 1].scrollIntoView({ behavior: RM ? 'auto' : 'smooth' }); return; }
+    if (e.key === 'y') copia(comandoAtual());
+    if (e.key === 'r' && heroVisivel) executar();
+  });
+</script>

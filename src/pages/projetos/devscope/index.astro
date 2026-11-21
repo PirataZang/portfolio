@@ -4,12 +4,14 @@ import Base from '../../../layouts/Base.astro';
 /*
   DEVSCOPE — site do projeto (TUI open source em Go).
 
-  Dark técnico, verde-terminal sobre azul-grafite. O produto é um terminal, então
-  a prova vem do próprio terminal: um simulador clicável logo abaixo do herói
-  (dados fictícios, nada roda de verdade) e as gravações reais do app nas seções
-  de Git e Docker. Nada de captura estática onde um vídeo cabe.
+  Dark técnico, verde-terminal sobre grafite, com a identidade do cubo mágico do
+  modo relax do app (internal/ui/relax_cube.go): as seis cores das faces viram as
+  seis categorias de módulo, o herói tem um cubo 3D de 27 cubinhos que embaralha e
+  desfaz os movimentos na ordem inversa (como no app), e cada seção leva uma face
+  com um adesivo fora do lugar. A prova vem do próprio terminal: um simulador
+  clicável (dados fictícios) e as gravações reais do app.
 
-  Movimento: revelação por IntersectionObserver e formas em CSS puro. Sem
+  Movimento: revelação por IntersectionObserver; o cubo para fora da tela. Sem
   `html.anim` (sem JS ou movimento reduzido) tudo aparece parado, e os vídeos
   trocam o autoplay por controles.
 */
@@ -19,7 +21,7 @@ const MIDIA = `${BASE}projetos/devscope`;
 const GH = 'https://github.com/PirataZang/devscope';
 const RAW = 'https://raw.githubusercontent.com/PirataZang/devscope/main/scripts';
 
-const titulo = 'DevScope — o htop dos seus projetos, no terminal';
+const titulo = 'DevScope: o htop dos seus projetos, no terminal';
 const descricao =
   'TUI open source em Go que junta containers, Git, CI, túneis, banco e saúde de todos os seus projetos numa tela só. Binário único, zero configuração.';
 
@@ -37,9 +39,13 @@ const FAIXA = [
   'Kubernetes', 'Ngrok', 'CF Tunnel', 'Cliente SQL', 'JWT', 'Validade de SSL', 'Workers PM2', '12 temas',
 ];
 
+/* cores das faces do cubo do modo relax (internal/ui/relax_cube.go), tom do meio de cada rampa */
+const FACES = ['#B32626', '#D97316', '#DEDEDA', '#D6A912', '#1FA24C', '#2563C7'];
+const mini = (f: string, o: string, px = 2, py = 1, m = 10) => `--f:${f};--o:${o};--px:${px};--py:${py};--m:${m}px`;
+
 const NUMEROS = [
   ['1', 'binário, sem dependências'],
-  ['15', 'módulos num contexto só'],
+  ['15', 'módulos em 6 categorias'],
   ['12', 'temas com preview na hora'],
   ['x64/ARM', 'nos 3 sistemas'],
   ['0', 'configuração para começar'],
@@ -57,10 +63,10 @@ const ANTES = [
 ];
 
 const PILARES = [
-  ['a.', 'Binário único', 'Sem Node, sem Python, sem daemon, sem browser. Baixa e roda.'],
-  ['b.', 'Zero configuração', 'Ele acha seus projetos sozinho no disco e detecta a stack de cada um.'],
-  ['c.', 'Opera, não só observa', 'Commitar, subir, parar, deploy, túnel e SQL — dali mesmo.'],
-  ['d.', 'Nunca trava', 'Coleta concorrente, com a UI desenhada sobre snapshot imutável.'],
+  ['#1FA24C', 'Binário único', 'Sem Node, sem Python, sem daemon, sem browser. Baixa e roda.'],
+  ['#D6A912', 'Zero configuração', 'Ele acha seus projetos sozinho no disco e detecta a stack de cada um.'],
+  ['#2563C7', 'Opera dali mesmo', 'Commit, deploy, subir e parar container, abrir túnel e rodar SQL sem trocar de janela.'],
+  ['#D97316', 'Nunca trava', 'Coleta concorrente, com a UI desenhada sobre snapshot imutável.'],
 ];
 
 const GIT = [
@@ -81,12 +87,12 @@ const DOCKER = [
 ];
 
 const MODULOS = [
-  ['PROJETO', '#e8ecf1', ['Visão Geral'], 'Stack, saúde, containers, git e atividade num painel.'],
-  ['CÓDIGO', '#e3b341', ['Git', 'Worktrees', 'Releases', 'GH Actions', 'Jenkins'], 'Branches, commits, PR, graph, releases, runs e trigger.'],
-  ['EXECUÇÃO', '#5aa9ff', ['Tarefas', 'Containers', 'Swarm', 'Kubernetes'], 'make/npm/just, start/stop, shell, logs, services e pods.'],
-  ['REDE', '#46d17e', ['Nginx', 'Ngrok', 'CF Tunnel'], 'Vhosts, expor o local, requests ao vivo e URL pública.'],
-  ['DADOS', '#f47ab8', ['API', 'Database'], 'Cliente HTTP e SQL, sem sair da tela.'],
-  ['MESA', '#f39a4c', ['JSON', 'JWT'], 'Formatar JSON, inspecionar e validar tokens.'],
+  ['PROJETO', '#DEDEDA', '#FFFFFF', ['Visão Geral'], 'Stack, saúde, containers, git e atividade num painel.'],
+  ['CÓDIGO', '#D6A912', '#FDE68A', ['Git', 'Worktrees', 'Releases', 'GH Actions', 'Jenkins'], 'Branches, commits, PR, graph, releases, runs e trigger.'],
+  ['EXECUÇÃO', '#2563C7', '#93C5FD', ['Tarefas', 'Containers', 'Swarm', 'Kubernetes'], 'make/npm/just, start/stop, shell, logs, services e pods.'],
+  ['REDE', '#1FA24C', '#86EFAC', ['Nginx', 'Ngrok', 'CF Tunnel'], 'Vhosts, expor o local, requests ao vivo e URL pública.'],
+  ['DADOS', '#B32626', '#FCA5A5', ['API', 'Database'], 'Cliente HTTP e SQL, sem sair da tela.'],
+  ['MESA', '#D97316', '#FDBA74', ['JSON', 'JWT'], 'Formatar JSON, inspecionar e validar tokens.'],
 ];
 
 const ATALHOS = [
@@ -165,7 +171,7 @@ const SIM = [
 
     <header class="topo">
       <nav class="nav" aria-label="Principal">
-        <a class="marca" href="#topo"><span>◆</span>devscope</a>
+        <a class="marca" href="#topo"><span class="mini" aria-hidden="true" style={mini('#1FA24C', '#D6A912', 2, 0, 8)}></span>devscope</a>
         <div class="nav-links">
           {NAV.map(([id, t]) => <a href={`#${id}`}>{t}</a>)}
         </div>
@@ -180,21 +186,10 @@ const SIM = [
     <main id="conteudo">
       <!-- HERO -->
       <section id="topo" class="sec hero">
-        <div class="deco" aria-hidden="true">
-          <div class="dots" style="inset:-40px 0 0 0"></div>
-          <div class="glow" style="width:760px;height:760px;right:-160px;top:-40px"></div>
-          <div style="width:440px;height:440px;right:4%;top:30px"><div class="dia dia-g spin"></div></div>
-          <div style="width:220px;height:220px;right:31%;top:330px"><div class="dia spin-r" style="opacity:.55"></div></div>
-          <div style="width:380px;height:380px;left:-150px;bottom:-120px"><div class="ring spin-ring"></div></div>
-          <div style="left:46%;top:96px"><div class="cross float">+</div></div>
-          <div style="left:7%;top:64px"><div class="cross float-2">+</div></div>
-          <div style="width:14px;height:14px;left:41%;bottom:120px"><div class="dia dia-fill float"></div></div>
-        </div>
         <div class="caixa hero-in">
           <div class="hero-txt" data-stagger>
-            <p class="selo mono"><span class="dot-live" aria-hidden="true"></span>TUI open source em Go · Linux · macOS · Windows</p>
             <h1>O <span class="mono verde">htop</span><br />dos seus projetos.</h1>
-            <p class="lead">Containers, Git, CI, túneis, banco e saúde de todos os seus projetos — numa tela só, dentro do terminal.</p>
+            <p class="lead">Containers, Git, CI, túneis, banco e saúde de todos os seus projetos numa tela só, dentro do terminal. Open source, em Go, para Linux, macOS e Windows.</p>
 
             <div class="instala" data-instala>
               <div class="instala-abas" role="tablist" aria-label="Sistema operacional">
@@ -213,17 +208,22 @@ const SIM = [
             </div>
           </div>
 
-          <figure class="hero-fig" data-rv="zoom">
+          <figure class="hero-cubo" data-rv="zoom">
+            <div class="cubo" data-cubo aria-hidden="true"></div>
+            <figcaption>O cubo do modo relax do DevScope, que no terminal é desenhado em Braille: ele embaralha e depois desfaz cada movimento, na ordem inversa. Arraste para girar.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- GRAVAÇÃO -->
+      <section class="grav" aria-label="Gravação do DevScope">
+        <div class="caixa">
+            <figure class="hero-fig" data-rv="zoom">
             <div class="janela">
               <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>~/projetos — devscope</span></div>
               <video src={`${MIDIA}/overview.mp4`} poster={`${MIDIA}/overview.webp`} muted loop playsinline preload="metadata" data-video aria-label="Gravação do DevScope: lista de projetos com onda de estado, filtro, busca fuzzy, módulos, ajuda e temas" width="1200" height="686"></video>
             </div>
             <figcaption>Gravação real, contra projetos de demonstração.</figcaption>
-            <div class="hero-cards" aria-hidden="true">
-              <div><span class="wave verde"><b style="--i:0">⣀</b><b style="--i:1">⣤</b><b style="--i:2">⣶</b><b style="--i:3">⣿</b></span><span>api-pedidos</span><em>laravel · main</em></div>
-              <div><span class="wave verde"><b style="--i:2">⣠</b><b style="--i:3">⣴</b><b style="--i:4">⣾</b><b style="--i:5">⣿</b></span><span>landing</span><em>vite · :5173</em></div>
-              <div><span class="perigo">⣀⣀⡀⠀</span><span>worker-fila</span><em class="perigo">parado</em></div>
-            </div>
           </figure>
         </div>
       </section>
@@ -233,7 +233,7 @@ const SIM = [
         <div class="marquee mono">
           {[0, 1].map((k) => (
             <div aria-hidden={k ? 'true' : undefined}>
-              {FAIXA.map((f) => <><span>{f}</span><span class="verde">◆</span></>)}
+              {FAIXA.map((f, i) => <><span>{f}</span><i class="st" style={`--c:${FACES[i % 6]}`}></i></>)}
             </div>
           ))}
         </div>
@@ -250,15 +250,11 @@ const SIM = [
 
       <!-- 01 POR QUE -->
       <section id="por-que" class="sec">
-        <div class="deco" aria-hidden="true">
-          <div style="width:300px;height:300px;left:-170px;top:420px"><div class="ring spin-ring"></div></div>
-          <div style="left:34%;top:70px"><div class="cross float-2">+</div></div>
-        </div>
         <div class="caixa duas">
           <div class="col-fixa">
             <div class="fixa" data-rv="left">
-              <p class="idx"><b>01</b> / por que existe</p>
-              <h2>Você trabalha em projetos. Suas ferramentas, não.</h2>
+              <span class="mini" aria-hidden="true" style={mini('#DEDEDA', '#B32626', 2, 0)}></span>
+              <h2>Oito comandos para saber como estão seus projetos.</h2>
               <p class="lead">Cada ferramenta enxerga uma unidade diferente: processo, container, serviço, repositório. Saber como está tudo numa segunda de manhã custa isso.</p>
             </div>
           </div>
@@ -266,12 +262,12 @@ const SIM = [
             <div class="cartao" data-rv>
               <div class="cartao-cab"><span class="perigo mono">antes</span><span class="mono mudo">8 comandos · 8 formatos de saída</span></div>
               <pre class="antes mono" data-stagger="left">{ANTES.map(([c, n]) => <span>{c} <i># {n}</i></span>)}</pre>
-              <p class="cartao-pe">E nenhum deles sabe que tudo aquilo é <strong>o mesmo projeto</strong>.</p>
+              <p class="cartao-pe">E nenhum deles sabe que tudo aquilo é o mesmo projeto.</p>
             </div>
             <div class="cartao depois" data-rv="zoom">
               <div class="cartao-cab"><span class="verde mono">depois</span><span class="mono mudo">1 comando · 1 tela</span></div>
               <p class="cmd-grande mono"><span class="verde">$</span> devscope<span class="caret" aria-hidden="true"></span></p>
-              <p class="cinza">Ele varre o disco, detecta a stack e liga cada container, worker, porta, domínio e certificado <strong>ao projeto certo</strong>. E você opera tudo dali.</p>
+              <p class="cinza">Ele varre o disco, detecta a stack e liga cada container, worker, porta, domínio e certificado ao projeto certo. Dali você também opera tudo.</p>
               <div class="tags mono" data-stagger="pop">
                 {['containers', 'pm2', 'git', 'ci', 'portas', 'nginx', 'ssl'].map((t) => <span>{t}</span>)}
               </div>
@@ -284,20 +280,16 @@ const SIM = [
       <section class="caixa pilares-sec" aria-label="Em 30 segundos">
         <div class="pilares" data-stagger>
           {PILARES.map(([i, t, d]) => (
-            <div><p class="idx">{i}</p><h3>{t}</h3><p>{d}</p></div>
+            <div><span class="mini" aria-hidden="true" style={mini(i, i)}></span><h3>{t}</h3><p>{d}</p></div>
           ))}
         </div>
       </section>
 
       <!-- EXPERIMENTE — simulador -->
       <section id="experimente" class="sec sim-sec">
-        <div class="deco" aria-hidden="true">
-          <div class="gridlines" style="inset:0"></div>
-          <div class="glow" style="width:820px;height:820px;left:50%;top:50%;translate:-50% -50%"></div>
-        </div>
         <div class="caixa">
           <div class="cab" data-rv>
-            <p class="idx"><b>02</b> / experimente</p>
+            <span class="mini" aria-hidden="true" style={mini('#1FA24C', '#D6A912', 1, 1)}></span>
             <h2>Abra o DevScope aqui mesmo.</h2>
             <p class="lead">Um simulador com dados de mentira, mas as mesmas teclas. Use as setas e <span class="kbd">Enter</span>, ou toque nos botões embaixo da tela.</p>
           </div>
@@ -317,21 +309,16 @@ const SIM = [
               </div>
             </div>
           </div>
-          <p class="sim-nota">Dica: clique na tela do simulador para o teclado funcionar nela.</p>
+          <p class="sim-nota">Clique na tela do simulador para o teclado funcionar nela.</p>
         </div>
       </section>
 
       <!-- 03 GIT -->
       <section id="git" class="sec fundo2">
-        <div class="deco" aria-hidden="true">
-          <div style="width:520px;height:520px;right:-200px;top:-180px"><div class="ring spin-ring" style="border-color:rgba(242,184,75,.16)"></div></div>
-          <div style="width:12px;height:12px;right:18%;top:150px"><div class="dia float" style="background:var(--accent);border-color:var(--accent);opacity:.7"></div></div>
-          <div class="dots" style="left:-60px;bottom:-40px;width:520px;height:420px"></div>
-        </div>
         <div class="caixa">
           <div class="cab cab-linha" data-rv>
-            <div><p class="idx"><b>03</b> / módulo git</p><h2>Git, sem sair do terminal.</h2></div>
-            <p class="lead">Aperte <span class="kbd">Enter</span> num projeto e o Git dele está ali — sem <code class="mono">cd</code>, sem decorar flag.</p>
+            <div><span class="mini" aria-hidden="true" style={mini('#D6A912', '#2563C7', 0, 2)}></span><h2>Git, sem sair do terminal.</h2></div>
+            <p class="lead">Aperte <span class="kbd">Enter</span> num projeto e o Git dele está ali, sem <code class="mono">cd</code> e sem decorar flag.</p>
           </div>
           <div class="lado">
             <figure class="lado-m" data-rv="zoom">
@@ -354,13 +341,9 @@ const SIM = [
 
       <!-- 04 DOCKER -->
       <section id="docker" class="sec">
-        <div class="deco" aria-hidden="true">
-          <div class="gridlines" style="left:-120px;top:80px;width:680px;height:560px"></div>
-          <div style="width:180px;height:180px;left:38%;bottom:60px"><div class="dia spin" style="border-color:rgba(90,169,255,.22)"></div></div>
-        </div>
         <div class="caixa">
           <div class="cab cab-linha" data-rv>
-            <div><p class="idx"><b>04</b> / módulo containers</p><h2>Docker, por projeto.</h2></div>
+            <div><span class="mini" aria-hidden="true" style={mini('#2563C7', '#D97316', 2, 2)}></span><h2>Docker, por projeto.</h2></div>
             <p class="lead"><span class="kbd">c</span> abre os containers só daquele projeto. O postgres do projeto A não se mistura com o do B.</p>
           </div>
           <div class="lado lado-inv">
@@ -383,24 +366,20 @@ const SIM = [
 
       <!-- 05 MÓDULOS -->
       <section id="modulos" class="sec fundo2">
-        <div class="deco" aria-hidden="true">
-          <div style="width:480px;height:480px;left:-240px;bottom:-120px"><div class="dia spin-r" style="opacity:.7"></div></div>
-          <div style="left:22%;top:90px"><div class="cross float">+</div></div>
-        </div>
         <div class="caixa duas">
           <div class="col-fixa">
             <div class="fixa" data-rv="left">
-              <p class="idx"><b>05</b> / módulos</p>
-              <h2>15 módulos, um contexto.</h2>
-              <p class="lead">Cada módulo só aparece quando faz sentido para o projeto aberto. Projeto Go sem Docker não mostra containers — <span class="kbd">t</span> mostra todos.</p>
+              <span class="mini" aria-hidden="true" style={mini('#B32626', '#1FA24C', 0, 0)}></span>
+              <h2>15 módulos em seis faces.</h2>
+              <p class="lead">Seis categorias, cada uma com a cor de uma face do cubo. Um módulo só aparece quando faz sentido para o projeto aberto: projeto Go sem Docker não mostra containers, e <span class="kbd">t</span> mostra todos.</p>
             </div>
           </div>
           <div class="modulos col-larga">
             <div class="modulos-cab mono"><span>CATEGORIA</span><span>MÓDULOS</span></div>
             <div data-stagger="left" data-step="110">
-              {MODULOS.map(([cat, cor, mods, d]) => (
-                <div class="modulo row-hover" style={`--cor:${cor}`}>
-                  <b class="mono">{cat}</b>
+              {MODULOS.map(([cat, cor, tx, mods, d]) => (
+                <div class="modulo row-hover" style={`--cor:${cor};--tx:${tx}`}>
+                  <b class="mono"><span class="mini" aria-hidden="true" style={mini(cor, cor, 0, 0, 7)}></span>{cat}</b>
                   <div><div>{mods.map((m) => <span class="mono">{m}</span>)}</div><p>{d}</p></div>
                 </div>
               ))}
@@ -411,13 +390,9 @@ const SIM = [
 
       <!-- 06 ENTREGA -->
       <section id="deploy" class="sec">
-        <div class="deco" aria-hidden="true">
-          <div class="dots" style="right:-80px;top:-40px;width:620px;height:440px"></div>
-          <div style="width:260px;height:260px;right:8%;top:40px"><div class="ring spin-ring"></div></div>
-        </div>
         <div class="caixa">
           <div class="cab" data-rv>
-            <p class="idx"><b>06</b> / do commit ao ar</p>
+            <span class="mini" aria-hidden="true" style={mini('#1FA24C', '#DEDEDA', 1, 0)}></span>
             <h2>Lançar e publicar sem esquecer passo.</h2>
             <p class="lead">Ele confere o que bloqueia antes de agir, mostra o que vai fazer e desfaz quando algo dá errado.</p>
           </div>
@@ -450,15 +425,12 @@ const SIM = [
 
       <!-- 07 ATALHOS -->
       <section id="atalhos" class="sec fundo2">
-        <div class="deco" aria-hidden="true">
-          <div style="width:200px;height:200px;right:-60px;top:60px"><div class="dia spin" style="border-color:rgba(242,184,75,.2)"></div></div>
-        </div>
         <div class="caixa duas">
           <div class="col-fixa">
             <div class="fixa" data-rv="left">
-              <p class="idx"><b>07</b> / atalhos</p>
-              <h2>Feito para quem vive no teclado.</h2>
-              <p class="lead">Três camadas de atalho: global, contextual e local, e a local vence. <span class="kbd">?</span> mostra tudo. Seus comandos ficam em <span class="kbd">1</span>…<span class="kbd">0</span>, e seu agente de IA abre na pasta do projeto.</p>
+              <span class="mini" aria-hidden="true" style={mini('#D97316', '#2563C7', 2, 1)}></span>
+              <h2>Tudo tem atalho, em três camadas.</h2>
+              <p class="lead">Global, contextual e local, e a local vence. <span class="kbd">?</span> mostra tudo. Seus comandos ficam em <span class="kbd">1</span>…<span class="kbd">0</span>, e seu agente de IA abre na pasta do projeto.</p>
             </div>
           </div>
           <div class="grade-atalhos col-larga" data-stagger="pop" data-step="55">
@@ -469,11 +441,10 @@ const SIM = [
 
       <!-- 08 ARQUITETURA -->
       <section id="arquitetura" class="sec">
-        <div class="deco" aria-hidden="true"><div class="gridlines" style="inset:0"></div></div>
         <div class="caixa">
           <div class="cab cab-linha" data-rv>
-            <div><p class="idx"><b>08</b> / como funciona</p><h2>Coleta concorrente. Tela que nunca congela.</h2></div>
-            <p class="lead">A UI desenha o último snapshot e segue — não espera um <code class="mono">docker inspect</code> lento.</p>
+            <div><span class="mini" aria-hidden="true" style={mini('#B32626', '#D6A912', 0, 1)}></span><h2>Coleta em paralelo, sem congelar a tela.</h2></div>
+            <p class="lead">A UI desenha o último snapshot e segue, sem esperar um <code class="mono">docker inspect</code> lento.</p>
           </div>
           <div class="arch" data-stagger data-step="150">
             <div class="arch-col">
@@ -503,15 +474,15 @@ const SIM = [
       <section id="config" class="fundo2 borda">
         <div class="caixa duplo-cod" data-stagger data-step="140">
           <div>
-            <p class="idx"><b>09</b> / fora da TUI</p>
+            <span class="mini" aria-hidden="true" style={mini('#DEDEDA', '#1FA24C', 1, 2)}></span>
             <h3>Também para scripts e automação.</h3>
             <pre class="cod mono"><span class="verde">$</span> devscope scan --json   <i># snapshot em JSON</i>
 <span class="verde">$</span> devscope watch         <i># painel com auto-refresh</i>
 <span class="verde">$</span> devscope version       <i># versão, commit e build</i></pre>
           </div>
           <div>
-            <p class="idx"><b>10</b> / preferências</p>
-            <h3>Do seu jeito, aplicado na hora.</h3>
+            <span class="mini" aria-hidden="true" style={mini('#D6A912', '#B32626', 2, 0)}></span>
+            <h3>Preferências que valem na hora.</h3>
             <pre class="cod mono"><i># ~/.config/devscope/user_config.txt</i>
 <b>Theme:</b> dracula-vivid
 <b>Commands:</b> {'{ "1": {"name": "Lazygit", "command": "lazygit"} }'}
@@ -523,16 +494,10 @@ const SIM = [
 
       <!-- CTA -->
       <section id="instalar" class="sec cta borda">
-        <div class="deco" aria-hidden="true">
-          <div class="dots" style="inset:0"></div>
-          <div class="glow" style="width:900px;height:900px;right:-250px;top:-200px"></div>
-          <div style="width:620px;height:620px;right:-120px;top:-60px"><div class="dia dia-g spin"></div></div>
-          <div style="width:440px;height:440px;right:-30px;top:30px"><div class="dia spin-r" style="opacity:.55"></div></div>
-        </div>
         <div class="caixa cta-in">
           <div class="cta-txt" data-stagger>
-            <div class="wave mono verde" aria-hidden="true"><b style="--i:0">⣀</b><b style="--i:1">⣠</b><b style="--i:2">⣤</b><b style="--i:3">⣴</b><b style="--i:4">⣶</b><b style="--i:5">⣿</b></div>
-            <h2>Uma tela.<br />Todos os projetos.</h2>
+            <div class="resolvido" aria-hidden="true">{FACES.map((f) => <span class="mini" style={mini(f, f, 0, 0, 12)}></span>)}</div>
+            <h2>Todos os projetos<br />numa tela.</h2>
             <p class="lead">Instale em um comando e rode <code class="mono">devscope</code>. Para desinstalar, basta apagar um arquivo.</p>
             <div class="cta-row">
               <a class="btn btn-primary" href={GH} rel="noopener">Dar uma estrela no GitHub</a>
@@ -559,7 +524,7 @@ const SIM = [
 
     <footer class="rodape">
       <div class="caixa rodape-in">
-        <p><span class="verde">◆</span> <b class="mono">devscope</b> <span class="mudo">Feito para quem vive entre vários projetos ao mesmo tempo.</span></p>
+        <p><span class="mini" aria-hidden="true" style={mini('#1FA24C', '#D6A912', 2, 0, 8)}></span> <b class="mono">devscope</b> <span class="mudo">Open source, licença MIT.</span></p>
         <nav aria-label="Rodapé">
           <a href={GH} rel="noopener">GitHub</a>
           <a href={`${GH}/issues/new?template=bug_report.md`} rel="noopener">Reportar bug</a>
@@ -641,6 +606,95 @@ const SIM = [
         }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
         doc.querySelectorAll('[data-rv], [data-stagger]').forEach(function (el) { io.observe(el); });
       }
+
+      /* ---- cubo mágico: mesma lógica do modo relax (relax_cube.go) ----
+         27 cubinhos com posição e orientação inteiras; cada giro de camada é 90° e
+         o embaralhamento guarda os movimentos para desfazer na ordem inversa. */
+      doc.querySelectorAll('[data-cubo]').forEach(function (el) {
+        var S = parseFloat(getComputedStyle(el).getPropertyValue('--s')) || 60;
+        var COR = ['#B32626', '#D97316', '#DEDEDA', '#D6A912', '#1FA24C', '#2563C7']; /* +x -x +y -y +z -z */
+        var FACE = ['rotateY(90deg)', 'rotateY(-90deg)', 'rotateX(-90deg)', 'rotateX(90deg)', '', 'rotateY(180deg)'];
+        var LADO = [[0, 1], [0, -1], [1, 1], [1, -1], [2, 1], [2, -1]];
+        var EIXO = ['rotateX', 'rotateY', 'rotateZ'];
+        var giro = doc.createElement('div'); giro.className = 'cubo-giro'; el.appendChild(giro);
+        var cubos = [];
+        for (var x = -1; x <= 1; x++) for (var y = -1; y <= 1; y++) for (var z = -1; z <= 1; z++) {
+          var p = [x, y, z], d = doc.createElement('div');
+          d.className = 'cb';
+          d.innerHTML = FACE.map(function (t, f) {
+            var fora = p[LADO[f][0]] === LADO[f][1];
+            return '<i' + (fora ? ' class="s"' : '') + ' style="transform:' + t + ' translateZ(' + S / 2 + 'px)' + (fora ? ';--c:' + COR[f] : '') + '"></i>';
+          }).join('');
+          giro.appendChild(d);
+          cubos.push({ el: d, p: p, R: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] });
+        }
+        /* giro de 90° de um vetor inteiro, no mesmo sentido do rotateX/Y/Z(+90deg) do CSS */
+        function rot(v, ax, s) {
+          var a = v[0], b = v[1], c = v[2];
+          if (ax === 0) return s > 0 ? [a, -c, b] : [a, c, -b];
+          if (ax === 1) return s > 0 ? [c, b, -a] : [-c, b, a];
+          return s > 0 ? [-b, a, c] : [b, -a, c];
+        }
+        function base(c) {
+          var R = c.R;
+          return 'translate3d(' + c.p[0] * S + 'px,' + c.p[1] * S + 'px,' + c.p[2] * S + 'px) matrix3d(' +
+            R[0].concat(0, R[1], 0, R[2], 0, 0, 0, 0, 1).join(',') + ')';
+        }
+        cubos.forEach(function (c) { c.el.style.transform = base(c); });
+
+        var yaw = 0.62, pit = -0.5, mov = null, fila = [], hist = [], pausa = 0, resolvendo = true, vivo = false, ultimo = 0, arr = null;
+        function vista() { giro.style.transform = 'rotateX(' + pit + 'rad) rotateY(' + yaw + 'rad)'; }
+        function embaralha() {
+          var n = 20 + Math.floor(Math.random() * 12), ax = -1;
+          for (var i = 0; i < n; i++) {
+            var novo; do { novo = Math.floor(Math.random() * 3); } while (novo === ax);
+            ax = novo;
+            fila.push({ ax: ax, l: Math.floor(Math.random() * 3) - 1, s: Math.random() < 0.5 ? 1 : -1 });
+          }
+        }
+        function quadro(t) {
+          if (!vivo) return;
+          var dt = ultimo ? Math.min(0.1, (t - ultimo) / 1000) : 0; ultimo = t;
+          if (!arr) yaw += dt * 0.42;
+          vista();
+          if (!mov && t >= pausa) {
+            if (fila.length) { mov = fila.shift(); mov.t0 = t; mov.cs = cubos.filter(function (c) { return c.p[mov.ax] === mov.l; }); }
+            else if (!resolvendo) {
+              fila = hist.reverse().map(function (m) { return { ax: m.ax, l: m.l, s: -m.s }; });
+              hist = []; resolvendo = true; pausa = t + 2200;
+            } else { resolvendo = false; embaralha(); pausa = t + 1200; }
+          }
+          if (mov) {
+            var k = Math.min(1, (t - mov.t0) / 300);
+            var e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+            mov.cs.forEach(function (c) { c.el.style.transform = EIXO[mov.ax] + '(' + 90 * mov.s * e + 'deg) ' + base(c); });
+            if (k === 1) {
+              mov.cs.forEach(function (c) {
+                c.p = rot(c.p, mov.ax, mov.s);
+                c.R = c.R.map(function (col) { return rot(col, mov.ax, mov.s); });
+                c.el.style.transform = base(c);
+              });
+              if (!resolvendo) hist.push(mov);
+              mov = null;
+            }
+          }
+          requestAnimationFrame(quadro);
+        }
+        vista();
+        el.addEventListener('pointerdown', function (e) { arr = { x: e.clientX, y: e.clientY, yaw: yaw, pit: pit }; el.setPointerCapture(e.pointerId); });
+        el.addEventListener('pointermove', function (e) {
+          if (!arr) return;
+          yaw = arr.yaw + (e.clientX - arr.x) * 0.012;
+          pit = Math.max(-1.3, Math.min(1.3, arr.pit - (e.clientY - arr.y) * 0.012));
+          vista();
+        });
+        ['pointerup', 'pointercancel'].forEach(function (n) { el.addEventListener(n, function () { arr = null; }); });
+        if (reduz || !('IntersectionObserver' in window)) return;
+        new IntersectionObserver(function (es) {
+          var antes = vivo; vivo = es[0].isIntersecting;
+          if (vivo && !antes) { ultimo = 0; requestAnimationFrame(quadro); }
+        }).observe(el);
+      });
 
       /* ---- simulador ---- */
       var raiz = doc.getElementById('sim');
@@ -729,7 +783,7 @@ const SIM = [
     --line: #232a35; --line-2: #333b47;
     --text: #e8ecf1; --text-2: #a9b3bf; --text-3: #808b98;
     --primary: #46d17e; --on-primary: #06130b; --accent: #f2b84b; --danger: #f2665c;
-    --c-code: #e3b341; --c-run: #5aa9ff; --c-net: #46d17e; --c-data: #f47ab8; --c-desk: #f39a4c;
+    --c-code: #e3b341; --c-run: #5aa9ff; --c-net: #46d17e; --plastico: #16181d;
     --sans: 'Geist', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
     --bounce: cubic-bezier(.34, 1.56, .64, 1); --ease: cubic-bezier(.2, .7, .2, 1);
     --sec-y: 128px; --gut: 24px;
@@ -760,10 +814,27 @@ const SIM = [
   .ds .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 8px; box-sizing: border-box; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 6px; background: var(--surface-2); color: var(--text); font-family: var(--mono); font-size: 12px; font-weight: 500; white-space: nowrap; transition: transform .15s var(--ease), border-color .15s, color .15s; }
   .ds button.kbd { cursor: pointer; min-height: 44px; padding: 0 14px; font-size: 13px; }
   .ds .kbd:hover { transform: translateY(1px); border-color: var(--accent); color: var(--accent); }
-  .ds .idx { font-family: var(--mono); font-size: 13px; color: var(--text-3); }
-  .ds .idx b { color: var(--primary); font-weight: 500; }
   .ds h2 { font-weight: 600; font-size: clamp(34px, 4.6vw, 52px); line-height: 1.04; letter-spacing: -0.035em; color: var(--text); }
   .ds .lead { font-size: 19px; line-height: 1.55; color: var(--text-2); max-width: 31em; }
+
+  /* face do cubo: 3x3 adesivos com plástico entre eles e um adesivo fora do lugar */
+  .ds .mini { --m: 10px; flex: none; display: inline-block; width: calc(var(--m) * 3 + 2px); height: calc(var(--m) * 3 + 2px); border-radius: calc(var(--m) * .45);
+    background:
+      linear-gradient(90deg, var(--plastico) 2px, transparent 0) 0 0 / var(--m) var(--m),
+      linear-gradient(var(--plastico) 2px, transparent 0) 0 0 / var(--m) var(--m),
+      linear-gradient(var(--o), var(--o)) calc(var(--px) * var(--m) + 2px) calc(var(--py) * var(--m) + 2px) / calc(var(--m) - 2px) calc(var(--m) - 2px) no-repeat,
+      var(--f); }
+  .ds .st { flex: none; align-self: center; width: 10px; height: 10px; border-radius: 2px; background: var(--c); }
+
+  /* cubo 3D: 27 cubinhos montados pelo script */
+  .ds .cubo { --s: 78px; position: relative; width: 100%; height: calc(var(--s) * 5.4); perspective: calc(var(--s) * 16); touch-action: pan-y; cursor: grab; user-select: none; }
+  .ds .cubo:active { cursor: grabbing; }
+  .ds .cubo-giro, .ds .cb { position: absolute; transform-style: preserve-3d; }
+  .ds .cubo-giro { inset: 0; }
+  .ds .cb { left: 50%; top: 50%; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); }
+  .ds .cb i { position: absolute; inset: 0; background: var(--plastico); border-radius: calc(var(--s) * .1); backface-visibility: hidden; }
+  .ds .cb i.s::after { content: ''; position: absolute; inset: calc(var(--s) * .07); border-radius: calc(var(--s) * .13); background: var(--c);
+    box-shadow: inset 0 calc(var(--s) * -.06) 0 rgba(0, 0, 0, .2), inset 0 calc(var(--s) * .05) 0 rgba(255, 255, 255, .22); }
 
   /* botões */
   .ds .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; box-sizing: border-box; border-radius: 10px; font-weight: 600; font-size: 16px; text-decoration: none; transition: transform .35s var(--bounce), background .2s, border-color .2s; }
@@ -791,50 +862,26 @@ const SIM = [
   /* fundos */
   .ds .sec { position: relative; overflow: clip; }
   .ds .sec > .caixa { z-index: 1; }
-  .ds .deco { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: clip; }
-  .ds .deco > * { position: absolute; }
   .ds .fundo2 { background: var(--bg-2); }
   .ds .borda, .ds .sec + .sec { border-top: 1px solid var(--line); }
-  .ds .dots { background-image: radial-gradient(#2a323e 1px, transparent 1.3px); background-size: 22px 22px; -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%); mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%); }
-  .ds .gridlines { background-image: linear-gradient(#1a2029 1px, transparent 1px), linear-gradient(90deg, #1a2029 1px, transparent 1px); background-size: 48px 48px; -webkit-mask-image: radial-gradient(ellipse at center, #000 15%, transparent 68%); mask-image: radial-gradient(ellipse at center, #000 15%, transparent 68%); }
-  .ds .dia { width: 100%; height: 100%; box-sizing: border-box; border: 1px solid var(--line-2); transform: rotate(45deg); }
-  .ds .dia-g { border-color: rgba(70, 209, 126, .22); }
-  .ds .dia-fill { background: var(--surface-2); }
-  .ds .ring { width: 100%; height: 100%; box-sizing: border-box; border: 1px dashed #2c3440; border-radius: 50%; }
-  .ds .glow { border-radius: 50%; background: radial-gradient(circle, rgba(70, 209, 126, .13), transparent 62%); }
-  .ds .cross { font-family: var(--mono); font-size: 20px; line-height: 1; color: #3a4350; }
-  .ds .spin { animation: ds-spin 80s linear infinite; }
-  .ds .spin-r { animation: ds-spin 120s linear infinite reverse; }
-  .ds .spin-ring { animation: ds-ring 90s linear infinite; }
-  .ds .float { animation: ds-float 6s cubic-bezier(.45, 0, .55, 1) infinite; }
-  .ds .float-2 { animation: ds-float 7.5s cubic-bezier(.45, 0, .55, 1) infinite -2s; }
-  @keyframes ds-spin { from { transform: rotate(45deg); } to { transform: rotate(405deg); } }
-  @keyframes ds-ring { to { transform: rotate(360deg); } }
-  @keyframes ds-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -16px; } }
 
   /* hero */
   .ds .hero-in { display: flex; flex-wrap: wrap; gap: 64px; align-items: center; padding-top: 96px; padding-bottom: 72px; }
   .ds .hero-txt { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 26px; }
-  .ds .selo { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-2); }
-  .ds .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: ds-ping 2s ease-out infinite; flex: none; }
-  @keyframes ds-ping { 0% { box-shadow: 0 0 0 0 #46d17e88; } 80%, 100% { box-shadow: 0 0 0 10px #46d17e00; } }
   .ds h1 { font-weight: 600; font-size: clamp(46px, 7vw, 80px); line-height: .98; letter-spacing: -0.045em; }
   .ds h1 .mono { font-weight: 700; letter-spacing: -0.06em; }
   .ds .cue { display: inline-block; animation: ds-cue 1.6s var(--ease) infinite; }
   @keyframes ds-cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
-  .ds .hero-fig { flex: 1 1 560px; min-width: 0; position: relative; }
+  .ds .hero-cubo { flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .ds .hero-cubo figcaption { max-width: 34ch; font-size: 14px; line-height: 1.5; color: var(--text-2); text-align: center; }
+  .ds .grav .caixa { padding-top: 0; }
+  .ds .hero-fig { position: relative; }
   .ds .hero-fig figcaption { margin-top: 10px; font-size: 13px; color: var(--text-3); text-align: right; }
   .ds .janela { border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden; background: #05070a; box-shadow: 0 40px 100px rgba(0, 0, 0, .55); }
   .ds .janela video { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 686; background: #05070a; }
   .ds .janela-barra { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--surface); }
   .ds .janela-barra i { width: 11px; height: 11px; border-radius: 50%; background: #3a414c; }
   .ds .janela-barra span { margin-left: 10px; font-family: var(--mono); font-size: 12px; color: var(--text-3); }
-  .ds .hero-cards { position: relative; z-index: 2; margin: -96px 0 0 -20px; width: min(330px, 92%); display: flex; flex-direction: column; gap: 8px; }
-  .ds .hero-cards > div { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 10px; background: rgba(20, 25, 32, .96); box-shadow: 0 16px 40px rgba(0, 0, 0, .5); font-family: var(--mono); font-size: 13px; transition: transform .45s var(--bounce); }
-  .ds .hero-cards > div:hover { transform: translateY(-5px); }
-  .ds .hero-cards > div > span:nth-child(2) { flex: 1; color: var(--text); }
-  .ds .hero-cards em { color: var(--text-3); }
-  .ds .hero-cards em.perigo { color: var(--danger); }
   .ds .wave b { display: inline-block; font-weight: 400; animation: ds-wave 1.8s ease-in-out infinite; animation-delay: calc(var(--i) * 90ms); }
   @keyframes ds-wave { 0%, 100% { opacity: .35; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-2px); } }
 
@@ -943,11 +990,11 @@ const SIM = [
   /* módulos */
   .ds .modulos { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; gap: 0; }
   .ds .modulos-cab { display: flex; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-3); }
-  .ds .modulos-cab span:first-child { width: 92px; }
-  .ds .modulo { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); border-left: 3px solid var(--cor); transition: background .2s, padding-left .35s var(--bounce); }
+  .ds .modulos-cab span:first-child { width: 118px; }
+  .ds .modulo { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); transition: background .2s, padding-left .35s var(--bounce); }
   .ds .modulo:last-child { border-bottom: 0; }
   .ds .modulo:hover { background: var(--surface-2); padding-left: 28px; }
-  .ds .modulo > b { width: 92px; font-size: 12px; font-weight: 700; color: var(--cor); padding-top: 4px; }
+  .ds .modulo > b { width: 118px; display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: var(--tx); padding-top: 2px; }
   .ds .modulo > div { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
   .ds .modulo > div > div { display: flex; flex-wrap: wrap; gap: 6px; }
   .ds .modulo > div > div span { font-size: 13px; padding: 3px 9px; border-radius: 6px; background: var(--surface-2); }
@@ -974,7 +1021,8 @@ const SIM = [
   .ds .arch { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 32px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); }
   .ds .arch-col { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
   .ds .arch-col > p:first-child { font-size: 12px; }
-  .ds .chip { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); border-left: 3px solid var(--c, var(--line-2)); background: var(--surface); font-size: 13px; }
+  .ds .chip { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; }
+  .ds .chip::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 2px; background: var(--c, var(--line-2)); }
   .ds .arch-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .ds .seta { flex: none; color: var(--text-3); }
   .ds .arch-no { flex: 1 1 200px; min-width: 0; padding: 28px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); text-align: center; display: flex; flex-direction: column; gap: 6px; }
@@ -996,7 +1044,7 @@ const SIM = [
   /* cta */
   .ds .cta-in { display: flex; flex-wrap: wrap; gap: 56px; align-items: center; padding-block: calc(var(--sec-y) + 8px); }
   .ds .cta-txt { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
-  .ds .cta-txt .wave { font-size: 26px; letter-spacing: 3px; }
+  .ds .resolvido { display: flex; flex-wrap: wrap; gap: 10px; }
   .ds .cta-txt h2 { font-size: clamp(40px, 6vw, 68px); line-height: 1; letter-spacing: -0.045em; }
   .ds .cta-cmd { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 
@@ -1024,7 +1072,7 @@ const SIM = [
     .ds { --sec-y: 80px; --gut: 20px; }
     .ds .nav-links, .ds .nav-gh { display: none; }
     .ds .hero-in { padding-top: 44px; padding-bottom: 56px; gap: 40px; }
-    .ds .hero-cards { margin: -44px 0 0 12px; width: calc(100% - 24px); max-width: 340px; }
+    .ds .cubo { --s: 52px; }
     .ds .pilares > div { border-right: 0; border-bottom: 1px solid var(--line); padding: 22px 0; }
     .ds .arch { padding: 20px; }
     .ds .seta { rotate: 90deg; margin: 0 auto; }
@@ -1037,10 +1085,9 @@ const SIM = [
     .ds .sim-l em { display: none; }
   }
   @media (hover: none) {
-    .ds .lift:hover, .ds .hero-cards > div:hover { transform: none; }
+    .ds .lift:hover { transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .ds .spin, .ds .spin-r, .ds .spin-ring, .ds .float, .ds .float-2, .ds .marquee,
-    .ds .wave b, .ds .dot-live, .ds .cue, .ds .caret { animation: none; }
+    .ds .marquee, .ds .wave b, .ds .cue, .ds .caret { animation: none; }
   }
 </style>
